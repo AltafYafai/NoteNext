@@ -16,6 +16,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -40,15 +41,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import com.suvojeet.notenext.R
 import com.suvojeet.notenext.util.QrCodeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -163,18 +167,18 @@ fun QrScannerScreen(
             ScanOverlay()
 
             // Top Bar
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .statusBarsPadding()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp)
             ) {
+                // Back Button
                 IconButton(
                     onClick = onBackClick,
                     modifier = Modifier
-                        .size(48.dp)
+                        .align(Alignment.CenterStart)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(Color.Black.copy(alpha = 0.5f))
                 ) {
@@ -185,12 +189,37 @@ fun QrScannerScreen(
                     )
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Title Branding
+                Row(
+                    modifier = Modifier.align(Alignment.Center),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "NoteNext",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                // Actions
+                Row(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     // Gallery Button
                     IconButton(
                         onClick = { galleryLauncher.launch("image/*") },
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
                             .background(Color.Black.copy(alpha = 0.5f))
                     ) {
@@ -205,7 +234,7 @@ fun QrScannerScreen(
                     IconButton(
                         onClick = { isFlashOn = !isFlashOn },
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
                             .background(Color.Black.copy(alpha = 0.5f))
                     ) {
@@ -218,34 +247,39 @@ fun QrScannerScreen(
                 }
             }
 
-            // Bottom Instructions
+            // Bottom Branding & Instructions
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 80.dp),
+                    .padding(bottom = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.Black.copy(alpha = 0.7f)
-                    )
+                // Instruction Pill
+                Surface(
+                    color = Color.Black.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier.padding(bottom = 24.dp)
                 ) {
-                    Text(
-                        text = "Point camera at a QR code",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Point camera at a QR code",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
+                // Branding Watermark
                 Text(
-                    text = "Scan notes or generic QR codes",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
+                    text = "Powered by NoteNext",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.4f),
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.sp
                 )
             }
 
@@ -376,11 +410,9 @@ private fun CameraPreviewView(
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     var camera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
     
-    // Capture latest state for analyzer
     val scanningState = rememberUpdatedState(isScanning)
     val onQrScannedState = rememberUpdatedState(onQrCodeScanned)
 
-    // Update flash when state changes
     LaunchedEffect(isFlashOn) {
         camera?.cameraControl?.enableTorch(isFlashOn)
     }
@@ -469,9 +501,17 @@ private fun ScanOverlay() {
         val cornerLength = 40.dp.toPx()
         val strokeWidth = 4.dp.toPx()
 
-        // Dim overlay
+        // Vignette Effect
+        val brush = Brush.radialGradient(
+            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+            center = Offset(size.width / 2, size.height / 2),
+            radius = size.width * 0.8f
+        )
+        drawRect(brush = brush)
+
+        // Dim overlay outside scan area (Darker now for better contrast)
         drawRect(
-            color = Color.Black.copy(alpha = 0.6f),
+            color = Color.Black.copy(alpha = 0.5f),
             size = size
         )
 
@@ -540,20 +580,22 @@ private fun ScanOverlay() {
             strokeWidth = strokeWidth
         )
 
-        // Animated scan line
+        // Animated scan line (Glow effect)
         val lineY = top + (scanAreaSize * animatedOffset)
         drawLine(
             brush = Brush.horizontalGradient(
                 colors = listOf(
                     Color.Transparent,
+                    Color(0xFF6200EE).copy(alpha = 0.5f),
                     Color(0xFF6200EE),
-                    Color(0xFF6200EE),
+                    Color(0xFF6200EE).copy(alpha = 0.5f),
                     Color.Transparent
                 )
             ),
             start = Offset(left + 20.dp.toPx(), lineY),
             end = Offset(left + scanAreaSize - 20.dp.toPx(), lineY),
-            strokeWidth = 2.dp.toPx()
+            strokeWidth = 4.dp.toPx(),
+            cap = androidx.compose.ui.graphics.StrokeCap.Round
         )
     }
 }
