@@ -1,7 +1,10 @@
 package com.suvojeet.notenext.ui.qr
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.util.Patterns
 import android.util.Size
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -17,11 +20,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,10 +37,10 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -44,11 +50,15 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.suvojeet.notenext.util.QrCodeUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 /**
  * A beautiful QR Scanner screen using CameraX and ML Kit.
  * Scans QR codes to import notes shared from other devices.
+ * Also supports scanning generic QR codes and picking images from gallery.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +68,8 @@ fun QrScannerScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val clipboardManager = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -68,11 +80,61 @@ fun QrScannerScreen(
 
     var isFlashOn by remember { mutableStateOf(false) }
     var isScanning by remember { mutableStateOf(true) }
+    var showRawQrDialog by remember { mutableStateOf(false) }
+    var scannedRawContent by remember { mutableStateOf("") }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasCameraPermission = granted
+    }
+
+    // Helper to handle scanned data from camera or gallery
+    fun handleScannedData(data: String) {
+        val noteData = QrCodeUtils.decodeQrData(data)
+        if (noteData != null) {
+            onNoteScanned(noteData.t, noteData.c)
+        } else {
+            scannedRawContent = data
+            showRawQrDialog = true
+            // Keep isScanning false while dialog is shown
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            isScanning = false // Pause camera
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val inputImage = InputImage.fromFilePath(context, uri)
+                    withContext(Dispatchers.Main) {
+                        val scanner = BarcodeScanning.getClient()
+                        scanner.process(inputImage)
+                            .addOnSuccessListener { barcodes ->
+                                val qr = barcodes.firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
+                                if (qr?.rawValue != null) {
+                                    handleScannedData(qr.rawValue!!)
+                                } else {
+                                    Toast.makeText(context, "No QR code found in image", Toast.LENGTH_SHORT).show()
+                                    isScanning = true
+                                }
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(context, "Failed to scan image", Toast.LENGTH_SHORT).show()
+                                isScanning = true
+                            }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Error loading image", Toast.LENGTH_SHORT).show()
+                        isScanning = true
+                    }
+                }
+            }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -90,18 +152,10 @@ fun QrScannerScreen(
             // Camera Preview
             CameraPreviewView(
                 isFlashOn = isFlashOn,
-                isScanning = isScanning,
+                isScanning = isScanning && !showRawQrDialog,
                 onQrCodeScanned = { data ->
-                    if (isScanning) {
-                        isScanning = false
-                        val noteData = QrCodeUtils.decodeQrData(data)
-                        if (noteData != null) {
-                            onNoteScanned(noteData.t, noteData.c)
-                        } else {
-                            Toast.makeText(context, "Invalid QR code format", Toast.LENGTH_SHORT).show()
-                            isScanning = true
-                        }
-                    }
+                    isScanning = false
+                    handleScannedData(data)
                 }
             )
 
@@ -131,18 +185,36 @@ fun QrScannerScreen(
                     )
                 }
 
-                IconButton(
-                    onClick = { isFlashOn = !isFlashOn },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f))
-                ) {
-                    Icon(
-                        imageVector = if (isFlashOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                        contentDescription = "Toggle Flash",
-                        tint = if (isFlashOn) Color(0xFFFFD700) else Color.White
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // Gallery Button
+                    IconButton(
+                        onClick = { galleryLauncher.launch("image/*") },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = "Pick from Gallery",
+                            tint = Color.White
+                        )
+                    }
+
+                    // Flash Button
+                    IconButton(
+                        onClick = { isFlashOn = !isFlashOn },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                    ) {
+                        Icon(
+                            imageVector = if (isFlashOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                            contentDescription = "Toggle Flash",
+                            tint = if (isFlashOn) Color(0xFFFFD700) else Color.White
+                        )
+                    }
                 }
             }
 
@@ -160,7 +232,7 @@ fun QrScannerScreen(
                     )
                 ) {
                     Text(
-                        text = "Point camera at a NoteNext QR code",
+                        text = "Point camera at a QR code",
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Medium,
@@ -171,9 +243,24 @@ fun QrScannerScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "The note will be imported automatically",
+                    text = "Scan notes or generic QR codes",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.7f)
+                )
+            }
+
+            // Raw QR Dialog
+            if (showRawQrDialog) {
+                RawQrContentDialog(
+                    content = scannedRawContent,
+                    onCopy = {
+                        clipboardManager.setText(AnnotatedString(scannedRawContent))
+                        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                    },
+                    onDismiss = {
+                        showRawQrDialog = false
+                        isScanning = true
+                    }
                 )
             }
 
@@ -223,6 +310,62 @@ fun QrScannerScreen(
 }
 
 @Composable
+private fun RawQrContentDialog(
+    content: String,
+    onCopy: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Scanned QR Code") },
+        text = {
+            SelectionContainer {
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+        confirmButton = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Open Link if URL
+                if (Patterns.WEB_URL.matcher(content).matches()) {
+                    TextButton(
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(content))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Open")
+                    }
+                }
+                
+                TextButton(onClick = onCopy) {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Copy")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
 private fun CameraPreviewView(
     isFlashOn: Boolean,
     isScanning: Boolean,
@@ -232,6 +375,10 @@ private fun CameraPreviewView(
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     var camera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
+    
+    // Capture latest state for analyzer
+    val scanningState = rememberUpdatedState(isScanning)
+    val onQrScannedState = rememberUpdatedState(onQrCodeScanned)
 
     // Update flash when state changes
     LaunchedEffect(isFlashOn) {
@@ -259,7 +406,7 @@ private fun CameraPreviewView(
                 imageAnalysis.setAnalyzer(executor) { imageProxy ->
                     @androidx.camera.core.ExperimentalGetImage
                     val mediaImage = imageProxy.image
-                    if (mediaImage != null && isScanning) {
+                    if (mediaImage != null && scanningState.value) {
                         val inputImage = InputImage.fromMediaImage(
                             mediaImage,
                             imageProxy.imageInfo.rotationDegrees
@@ -269,7 +416,7 @@ private fun CameraPreviewView(
                             .addOnSuccessListener { barcodes ->
                                 for (barcode in barcodes) {
                                     if (barcode.format == Barcode.FORMAT_QR_CODE) {
-                                        barcode.rawValue?.let { onQrCodeScanned(it) }
+                                        barcode.rawValue?.let { onQrScannedState.value(it) }
                                     }
                                 }
                             }
