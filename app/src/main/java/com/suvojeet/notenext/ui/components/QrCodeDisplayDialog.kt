@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.FileProvider
+import com.suvojeet.notenext.R
 import com.suvojeet.notenext.util.QrCodeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,9 +54,14 @@ fun QrCodeDisplayDialog(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    // Load App Logo for QR branding
+    val logoBitmap = remember(context) {
+        BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
+    }
+
     // Generate QR code
-    val qrBitmap = remember(noteTitle, noteContent) {
-        QrCodeUtils.generateQrCode(noteTitle, noteContent, 512)
+    val qrBitmap = remember(noteTitle, noteContent, logoBitmap) {
+        QrCodeUtils.generateQrCode(noteTitle, noteContent, 512, logoBitmap)
     }
 
     val sizePercentage = remember(noteTitle, noteContent) {
@@ -260,6 +267,7 @@ private suspend fun shareQrCode(context: Context, bitmap: Bitmap, noteTitle: Str
                 context.startActivity(Intent.createChooser(shareIntent, "Share QR Code"))
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Failed to share QR code", Toast.LENGTH_SHORT).show()
             }
@@ -304,6 +312,7 @@ private suspend fun saveQrToGallery(context: Context, bitmap: Bitmap, noteTitle:
                 Toast.makeText(context, "QR Code saved to Pictures/NoteNext", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Failed to save QR code", Toast.LENGTH_SHORT).show()
             }
