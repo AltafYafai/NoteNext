@@ -9,6 +9,9 @@ import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notenext.data.NoteDatabase
 import com.suvojeet.notenext.data.ProjectDao
+import com.suvojeet.notenext.data.TodoDao
+import com.suvojeet.notenext.data.TodoRepository
+import com.suvojeet.notenext.data.TodoRepositoryImpl
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.data.AlarmScheduler
 import com.suvojeet.notenext.data.AlarmSchedulerImpl
@@ -58,6 +61,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideTodoDao(db: NoteDatabase): TodoDao {
+        return db.todoDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideNoteRepository(
         noteDao: NoteDao,
         labelDao: LabelDao,
@@ -65,6 +74,12 @@ object AppModule {
         checklistItemDao: ChecklistItemDao
     ): com.suvojeet.notenext.data.NoteRepository {
         return com.suvojeet.notenext.data.NoteRepositoryImpl(noteDao, labelDao, projectDao, checklistItemDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTodoRepository(todoDao: TodoDao): TodoRepository {
+        return TodoRepositoryImpl(todoDao)
     }
 
     @Provides
@@ -85,3 +100,4 @@ object AppModule {
         return SettingsRepository(context)
     }
 }
+

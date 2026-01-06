@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -67,6 +68,7 @@ fun MultiActionFab(
     onChecklistClick: () -> Unit,
     onProjectClick: () -> Unit,
     onScanQrClick: () -> Unit = {},
+    onTodoClick: () -> Unit = {},
     showProjectButton: Boolean = true,
     themeMode: ThemeMode,
     isScrollExpanded: Boolean = true // New parameter for scroll awareness
@@ -79,6 +81,7 @@ fun MultiActionFab(
 
     // State variables to control the staggered visibility of action items.
     var showProject by remember { mutableStateOf(false) }
+    var showTodo by remember { mutableStateOf(false) }
     var showScanQr by remember { mutableStateOf(false) }
     var showChecklist by remember { mutableStateOf(false) }
     var showNote by remember { mutableStateOf(false) }
@@ -91,6 +94,8 @@ fun MultiActionFab(
             kotlinx.coroutines.delay(50)
             showChecklist = true
             kotlinx.coroutines.delay(50)
+            showTodo = true
+            kotlinx.coroutines.delay(50)
             showScanQr = true
             kotlinx.coroutines.delay(50)
             showProject = true
@@ -99,6 +104,8 @@ fun MultiActionFab(
             showProject = false
             kotlinx.coroutines.delay(50)
             showScanQr = false
+            kotlinx.coroutines.delay(50)
+            showTodo = false
             kotlinx.coroutines.delay(50)
             showChecklist = false
             kotlinx.coroutines.delay(50)
@@ -149,6 +156,23 @@ fun MultiActionFab(
                 label = stringResource(id = R.string.scan_qr),
                 onClick = {
                     onScanQrClick()
+                    onExpandedChange(false) // Collapse FAB after action.
+                },
+                themeMode = themeMode
+            )
+        }
+
+        // To-Do action item.
+        AnimatedVisibility(
+            visible = showTodo,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+        ) {
+            FabItem(
+                icon = Icons.Default.TaskAlt,
+                label = stringResource(id = R.string.todo),
+                onClick = {
+                    onTodoClick()
                     onExpandedChange(false) // Collapse FAB after action.
                 },
                 themeMode = themeMode

@@ -195,4 +195,25 @@
     <string name="create_your_first_note">Tap the + button to create your first note.</string>
     <string name="project_description">Description (optional)</string>
     <string name="edit_description">Edit Description</string>
+    
+    <!-- To-Do Feature -->
+    <string name="todo">To-Do</string>
+    <string name="todos">To-Dos</string>
+    <string name="add_todo">Add To-Do</string>
+    <string name="edit_todo">Edit To-Do</string>
+    <string name="no_todos_yet">No to-dos yet</string>
+    <string name="create_first_todo">Tap + to create your first to-do</string>
+    <string name="todo_title">Title</string>
+    <string name="todo_description">Description (optional)</string>
+    <string name="priority">Priority</string>
+    <string name="priority_low">Low</string>
+    <string name="priority_medium">Medium</string>
+    <string name="priority_high">High</string>
+    <string name="due_date">Due Date</string>
+    <string name="overdue">Overdue</string>
+    <string name="all_todos">All</string>
+    <string name="active_todos">Active</string>
+    <string name="completed_todos">Completed</string>
+    <string name="delete_completed">Delete completed</string>
+    <string name="todo_completed">To-do completed</string>
 </resources>

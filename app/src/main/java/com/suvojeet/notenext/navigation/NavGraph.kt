@@ -78,6 +78,7 @@ import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.settings.BackupScreen
 import com.suvojeet.notenext.ui.qr.QrScannerScreen
+import com.suvojeet.notenext.ui.todo.TodoScreen
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
@@ -306,6 +307,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         settingsRepository = settingsRepository,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onScanQrClick = { navController.navigate("qr_scanner") },
+                        onTodoClick = { navController.navigate("todo") },
                         events = notesViewModel.events
                     )
                 }
@@ -423,6 +425,15 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                             notesViewModel.onEvent(NotesEvent.CreateNoteFromQr(title, content))
                             navController.popBackStack()
                         }
+                    )
+                }
+                composable(
+                    route = "todo",
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                ) {
+                    TodoScreen(
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable(
@@ -636,6 +647,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         settingsRepository = settingsRepository,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onScanQrClick = { navController.navigate("qr_scanner") },
+                        onTodoClick = { navController.navigate("todo") },
                         events = notesViewModel.events
                     )
                 }
@@ -791,6 +803,15 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                             notesViewModel.onEvent(NotesEvent.CreateNoteFromQr(title, content))
                             navController.popBackStack()
                         }
+                    )
+                }
+                composable(
+                    route = "todo",
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                ) {
+                    TodoScreen(
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable(

@@ -97,6 +97,7 @@ fun NotesScreen(
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit,
     onScanQrClick: () -> Unit = {},
+    onTodoClick: () -> Unit = {},
     events: SharedFlow<NotesUiEvent>
 ) {
     val state by viewModel.state.collectAsState()
@@ -294,6 +295,10 @@ fun NotesScreen(
                                 },
                                 onScanQrClick = {
                                     onScanQrClick()
+                                    isFabExpanded = false
+                                },
+                                onTodoClick = {
+                                    onTodoClick()
                                     isFabExpanded = false
                                 },
                                 themeMode = themeMode,
