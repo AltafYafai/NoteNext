@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,12 +50,6 @@ fun TodoItemCard(
         2 -> TodoPriorityColors.High
         1 -> TodoPriorityColors.Medium
         else -> TodoPriorityColors.Low
-    }
-    
-    val priorityBackgroundColor = when (todo.priority) {
-        2 -> TodoPriorityColors.HighLight
-        1 -> TodoPriorityColors.MediumLight
-        else -> TodoPriorityColors.LowLight
     }
 
     val dismissState = rememberSwipeToDismissBoxState(
@@ -126,45 +121,46 @@ fun TodoItemCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                containerColor = MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Priority indicator dot
+                // Priority color strip on left
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .defaultMinSize(minHeight = 72.dp)
                         .background(priorityColor)
                 )
-                
-                Spacer(modifier = Modifier.width(12.dp))
                 
                 // Checkbox
                 Checkbox(
                     checked = todo.isCompleted,
                     onCheckedChange = { onToggleComplete() },
+                    modifier = Modifier.padding(start = 8.dp),
                     colors = CheckboxDefaults.colors(
-                        checkedColor = priorityColor,
-                        uncheckedColor = priorityColor.copy(alpha = 0.6f)
+                        checkedColor = MaterialTheme.colorScheme.primary,
+                        uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 
-                Spacer(modifier = Modifier.width(8.dp))
-                
                 // Content
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 12.dp, horizontal = 4.dp)
+                ) {
                     Text(
                         text = todo.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
                         textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                         color = if (todo.isCompleted) 
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) 
@@ -175,59 +171,49 @@ fun TodoItemCard(
                     )
                     
                     if (todo.description.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = todo.description,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                alpha = if (todo.isCompleted) 0.5f else 1f
+                            ),
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
                     
-                    // Due date
+                    // Due date chip
                     todo.dueDate?.let { dueDate ->
-                        Spacer(modifier = Modifier.height(8.dp))
                         val isOverdue = dueDate < System.currentTimeMillis() && !todo.isCompleted
-                        val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                        val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
                         
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
+                        Text(
+                            text = if (isOverdue) "⚠️ ${dateFormat.format(Date(dueDate))}" else "📅 ${dateFormat.format(Date(dueDate))}",
+                            style = MaterialTheme.typography.labelSmall,
                             color = if (isOverdue) 
-                                MaterialTheme.colorScheme.errorContainer 
+                                MaterialTheme.colorScheme.error 
                             else 
-                                MaterialTheme.colorScheme.secondaryContainer
-                        ) {
-                            Text(
-                                text = if (isOverdue) "⚠️ ${dateFormat.format(Date(dueDate))}" else "📅 ${dateFormat.format(Date(dueDate))}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isOverdue) 
-                                    MaterialTheme.colorScheme.error 
-                                else 
-                                    MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
                 
-                // Priority badge
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = priorityBackgroundColor
-                ) {
-                    Text(
-                        text = when (todo.priority) {
-                            2 -> "HIGH"
-                            1 -> "MED"
-                            else -> "LOW"
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = priorityColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
+                // Priority label on right
+                Text(
+                    text = when (todo.priority) {
+                        2 -> "HIGH"
+                        1 -> "MED"
+                        else -> "LOW"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = priorityColor,
+                    modifier = Modifier.padding(end = 16.dp)
+                )
             }
         }
     }
 }
+
