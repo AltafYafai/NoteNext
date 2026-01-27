@@ -78,6 +78,7 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.ClearGrammarFix -> throw IllegalArgumentException("ClearGrammarFix event cannot be converted")
         is NotesEvent.AutoSaveNote -> throw IllegalArgumentException("AutoSaveNote event cannot be converted")
         is NotesEvent.ImportImage -> throw IllegalArgumentException("ImportImage event cannot be converted")
+        is NotesEvent.ExportNote -> throw IllegalArgumentException("ExportNote event cannot be converted")
     }
 }
 

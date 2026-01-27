@@ -94,5 +94,6 @@ sealed class NotesEvent {
     object ApplyGrammarFix : NotesEvent()
     object ClearGrammarFix : NotesEvent()
     data class ImportImage(val uri: Uri) : NotesEvent()
+    data class ExportNote(val uri: Uri, val format: String) : NotesEvent()
     object AutoSaveNote : NotesEvent()
 }

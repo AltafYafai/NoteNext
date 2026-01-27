@@ -478,6 +478,14 @@ fun AddEditNoteScreen(
         )
     }
 
+    // Export Launchers
+    val createTxtLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        uri?.let { onEvent(NotesEvent.ExportNote(it, "TXT")) }
+    }
+    val createMdLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
+        uri?.let { onEvent(NotesEvent.ExportNote(it, "MD")) }
+    }
+
     // Extracted Dialogs
     AddEditNoteDialogs(
         state = state,
@@ -497,7 +505,20 @@ fun AddEditNoteScreen(
         showExactAlarmDialog = showExactAlarmDialog,
         onShowExactAlarmDialogChange = { showExactAlarmDialog = it },
         settingsRepository = settingsRepository,
-        scope = scope
+        scope = scope,
+        onSaveAsPdf = {
+            scope.launch {
+                val htmlContent = com.suvojeet.notenext.util.HtmlConverter.annotatedStringToHtml(state.editingContent.annotatedString)
+                val fullHtml = "<h1>${state.editingTitle}</h1><br>$htmlContent"
+                com.suvojeet.notenext.util.printNote(context, fullHtml)
+            }
+        },
+        onSaveAsTxt = {
+            createTxtLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.txt")
+        },
+        onSaveAsMd = {
+             createMdLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.md")
+        }
     )
     if (showImageViewer && selectedImageData != null) {
         ImageViewerScreen(

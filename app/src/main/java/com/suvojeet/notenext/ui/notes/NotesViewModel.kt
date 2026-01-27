@@ -1177,6 +1177,40 @@ class NotesViewModel @Inject constructor(
                 )
                 scheduleAutoSave()
             }
+            is NotesEvent.ExportNote -> {
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    try {
+                        val contentToExport = if (event.format == "MD") {
+                            if (state.value.editingNoteType == "CHECKLIST") {
+                                state.value.editingChecklist.joinToString("\n") { 
+                                    (if (it.isChecked) "- [x] " else "- [ ] ") + it.text 
+                                }
+                            } else {
+                                HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString).let {
+                                    com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
+                                }
+                            }
+                        } else {
+                            // TXT (Plain Text)
+                            if (state.value.editingNoteType == "CHECKLIST") {
+                                state.value.editingChecklist.joinToString("\n") { 
+                                    (if (it.isChecked) "[x] " else "[ ] ") + it.text 
+                                }
+                            } else {
+                                state.value.editingContent.text
+                            }
+                        }
+
+                        context.contentResolver.openOutputStream(event.uri)?.use { outputStream ->
+                            outputStream.write(contentToExport.toByteArray())
+                        }
+                        _events.emit(NotesUiEvent.ShowToast("Exported successfully"))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        _events.emit(NotesUiEvent.ShowToast("Export failed: ${e.message}"))
+                    }
+                }
+            }
             else -> {
                 // Handle any other events or do nothing
             }

@@ -42,7 +42,10 @@ fun AddEditNoteDialogs(
     showExactAlarmDialog: Boolean,
     onShowExactAlarmDialogChange: (Boolean) -> Unit,
     settingsRepository: SettingsRepository,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    onSaveAsPdf: () -> Unit = {},
+    onSaveAsTxt: () -> Unit = {},
+    onSaveAsMd: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -115,6 +118,15 @@ fun AddEditNoteDialogs(
                     onEvent(NotesEvent.OnToggleLockClick)
                 }
             }
+        )
+    }
+
+    if (showSaveAsDialog) {
+        com.suvojeet.notenext.ui.add_edit_note.components.SaveAsDialog(
+            onDismiss = { onShowSaveAsDialogChange(false) },
+            onSaveAsPdf = onSaveAsPdf,
+            onSaveAsTxt = onSaveAsTxt,
+            onSaveAsMd = onSaveAsMd
         )
     }
 
