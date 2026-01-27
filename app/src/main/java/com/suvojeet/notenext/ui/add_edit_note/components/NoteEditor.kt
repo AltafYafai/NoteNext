@@ -98,7 +98,8 @@ fun NoteTitleEditor(
 fun NoteContentEditor(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
-    onUrlClick: (String) -> Unit
+    onUrlClick: (String) -> Unit,
+    onSlashCommand: () -> Unit // New callback
 ) {
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -141,7 +142,20 @@ fun NoteContentEditor(
 
         BasicTextField(
             value = state.editingContent,
-            onValueChange = { onEvent(NotesEvent.OnContentChange(it)) },
+            onValueChange = { newContent -> 
+                onEvent(NotesEvent.OnContentChange(newContent))
+                // Detect Slash Command
+                val cursor = newContent.selection.start
+                if (cursor > 0 && newContent.text.isNotEmpty() && cursor <= newContent.text.length) {
+                    val lastChar = newContent.text[cursor - 1]
+                    if (lastChar == '/') {
+                         val precedingChar = if (cursor > 1) newContent.text[cursor - 2] else ' '
+                         if (precedingChar.isWhitespace()) {
+                             onSlashCommand()
+                         }
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {

@@ -13,7 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -43,13 +44,14 @@ fun ColorPicker(
     editingColor: Int,
     onEvent: (NotesEvent) -> Unit
 ) {
-    LazyRow(
+
+    androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+        columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(minSize = 60.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // No Color Option with animation
         item {
@@ -58,12 +60,7 @@ fun ColorPicker(
             
             AnimatedVisibility(
                 visible = isVisible,
-                enter = scaleIn(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                ) + fadeIn()
+                enter = scaleIn() + fadeIn()
             ) {
                 ColorCircle(
                     color = null,
@@ -77,18 +74,13 @@ fun ColorPicker(
         itemsIndexed(colors) { index, color ->
             var isVisible by remember { mutableStateOf(false) }
             LaunchedEffect(Unit) {
-                delay((index + 1) * 30L) // Stagger delay for each color
+                delay((index + 1) * 20L) // Faster stagger for grid
                 isVisible = true
             }
             
             AnimatedVisibility(
                 visible = isVisible,
-                enter = scaleIn(
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessLow
-                    )
-                ) + fadeIn()
+                enter = scaleIn() + fadeIn()
             ) {
                 ColorCircle(
                     color = color,

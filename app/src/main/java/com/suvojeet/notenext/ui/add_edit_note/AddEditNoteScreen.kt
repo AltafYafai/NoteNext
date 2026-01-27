@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +47,7 @@ import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.ui.reminder.ReminderSetDialog
+import com.suvojeet.notenext.ui.reminder.ReminderSheetContent
 import com.suvojeet.notenext.data.RepeatOption
 import java.time.LocalDate
 import java.time.LocalTime
@@ -68,8 +70,15 @@ fun AddEditNoteScreen(
     // Local UI State
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
+    val colorPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     var showFormatBar by remember { mutableStateOf(false) }
     var showReminderDialog by remember { mutableStateOf(false) }
+    val reminderSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    
+    var showSlashCommandSheet by remember { mutableStateOf(false) }
+    val slashCommandSheetState = rememberModalBottomSheetState()
+
     var showMoreOptions by remember { mutableStateOf(false) }
     var showSaveAsDialog by remember { mutableStateOf(false) }
     var showInsertLinkDialog by remember { mutableStateOf(false) }
@@ -288,15 +297,14 @@ fun AddEditNoteScreen(
                                 onEvent = onEvent,
                                 onReminderClick = { checkAndRequestReminderPermissions() }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
                             
-                            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                                NoteContentEditor(
-                                    state = state,
-                                    onEvent = onEvent,
-                                    onUrlClick = { url -> clickedUrl = url }
-                                )
-                            }
+                            // Immersive Canvas: No Spacer, unified scrolling
+                            NoteContentEditor(
+                                state = state,
+                                onEvent = onEvent,
+                                onUrlClick = { url -> clickedUrl = url },
+                                onSlashCommand = { showSlashCommandSheet = true }
+                            )
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -342,10 +350,11 @@ fun AddEditNoteScreen(
                                 )
                             } else {
                                 item { 
-                                     NoteContentEditor(
+                                    NoteContentEditor(
                                         state = state,
                                         onEvent = onEvent,
-                                        onUrlClick = { url -> clickedUrl = url }
+                                        onUrlClick = { url -> clickedUrl = url },
+                                        onSlashCommand = { showSlashCommandSheet = true }
                                      )
                                 }
                             }
@@ -361,16 +370,26 @@ fun AddEditNoteScreen(
                     }
 
                     // Floating Color Picker
-                    AnimatedVisibility(
-                        visible = showColorPicker,
-                        enter = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)),
-                        exit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300))
-                    ) {
-                        ColorPicker(
-                            colors = colors,
-                            editingColor = state.editingColor,
-                            onEvent = onEvent
-                        )
+                    // Floating Color Picker (Modal Bottom Sheet)
+                    if (showColorPicker) {
+                        ModalBottomSheet(
+                            onDismissRequest = { showColorPicker = false },
+                            sheetState = colorPickerSheetState,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            dragHandle = { BottomSheetDefaults.DragHandle() }
+                        ) {
+                            Text(
+                                text = "Color",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                            ColorPicker(
+                                colors = colors,
+                                editingColor = state.editingColor,
+                                onEvent = onEvent
+                            )
+                            Spacer(modifier = Modifier.height(48.dp))
+                        }
                     }
                 }
             }
@@ -490,12 +509,41 @@ fun AddEditNoteScreen(
     }
     
     if (showReminderDialog) {
-        ReminderSetDialog(
+        ModalBottomSheet(
             onDismissRequest = { showReminderDialog = false },
-            onConfirm = { date: LocalDate, time: LocalTime, repeat: RepeatOption ->
-                onEvent(NotesEvent.SetReminderForSelectedNotes(date, time, repeat))
-                showReminderDialog = false
-            }
-        )
+            sheetState = reminderSheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            ReminderSheetContent(
+                onDismissRequest = { showReminderDialog = false },
+                onConfirm = { date: LocalDate, time: LocalTime, repeat: RepeatOption ->
+                    onEvent(NotesEvent.SetReminderForSelectedNotes(date, time, repeat))
+                    showReminderDialog = false
+                }
+            )
+        }
+    }
+
+    if (showSlashCommandSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSlashCommandSheet = false },
+            sheetState = slashCommandSheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            SlashCommandSheetContent(
+                onDismissRequest = { showSlashCommandSheet = false },
+                onCommandSelected = { command ->
+                    showSlashCommandSheet = false
+                    when (command.title) {
+                        "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
+                        "Checklist" -> if (state.editingNoteType == "TEXT") onEvent(NotesEvent.OnToggleNoteType)
+                        "Image" -> getContent.launch("image/*")
+                        "Bulleted List" -> { /* TODO: Implement Bullet list logic */ }
+                    }
+                }
+            )
+        }
     }
 }

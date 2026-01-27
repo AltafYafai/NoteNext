@@ -70,8 +70,6 @@ fun AddEditNoteTopAppBar(
                     } else "",
                     style = MaterialTheme.typography.titleLarge
                 )
-                // Save Status Indicator
-                SavedStatusIndicator(status = state.saveStatus, contentColor = contentColor)
             }
         },
         navigationIcon = {
@@ -86,6 +84,9 @@ fun AddEditNoteTopAppBar(
             actionIconContentColor = contentColor
         ),
         actions = {
+            // Saved Status Indicator (Moved here)
+            SavedStatusIndicator(status = state.saveStatus, contentColor = contentColor)
+
             // Summarize Note
             if (editingNoteType == "TEXT" && !state.editingIsNewNote) {
                 IconButton(onClick = { onEvent(NotesEvent.SummarizeNote) }) {

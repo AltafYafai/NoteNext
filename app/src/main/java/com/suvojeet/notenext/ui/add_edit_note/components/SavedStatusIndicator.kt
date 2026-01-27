@@ -41,62 +41,53 @@ fun SavedStatusIndicator(
     status: SaveStatus, 
     contentColor: Color
 ) {
-    // Local state to control the visibility of the "Saved" message
-    // It should appear for a short duration after status changes to SAVED
-    var showSavedMessage by remember { mutableStateOf(false) }
+    // Determine icon and tint based on status
+    // We want a subtle indicator.
+    // SAVING -> Circular Progress (Small)
+    // SAVED -> Cloud Done (Fade out)
+    // ERROR -> Cloud Off (Red) - Assuming SaveStatus might have error, or just handle basic states for now. Since SaveStatus wasn't shown fully, I'll stick to SAVING/SAVED.
+    
+    // We'll keep the logic of showing "Saved" state for a moment, but since it's an icon, we can just keep it visible or fade it out.
+    // Let's make it always visible if SAVING, and briefly visible if SAVED.
+
+    var showSavedIcon by remember { mutableStateOf(false) }
 
     LaunchedEffect(status) {
         if (status == SaveStatus.SAVED) {
-            showSavedMessage = true
+            showSavedIcon = true
             delay(2000)
-            showSavedMessage = false
-        } else {
-            // Immediately hide saved message if status changes to something else (e.g. SAVING)
-            if (status != SaveStatus.SAVED) {
-                showSavedMessage = false
-            }
+            showSavedIcon = false
         }
     }
 
-    // Use a subtle container background for better contrast if needed, 
-    // or just clean text/icon on the app bar background.
-    // Here we use a clean Row with animations.
-    
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+        modifier = Modifier.padding(end = 8.dp)
     ) {
-        androidx.compose.animation.AnimatedContent(
-            targetState = status,
-            label = "SaveStatusAnimation"
-        ) { targetStatus ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                when (targetStatus) {
-                    SaveStatus.SAVING -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = contentColor.copy(alpha = 0.8f)
-                        )
-                    }
-                    SaveStatus.SAVED -> {
-                        if (showSavedMessage) {
-                             Icon(
-                                imageVector = Icons.Default.CloudDone,
-                                contentDescription = "Saved",
-                                modifier = Modifier.size(20.dp),
-                                tint = contentColor.copy(alpha = 0.8f)
-                            )
-                        } else {
-                            Spacer(modifier = Modifier.size(1.dp)) 
-                        }
-                    }
-                    else -> {
-                         Spacer(modifier = Modifier.size(1.dp))
-                    }
-                }
-            }
+        AnimatedVisibility(
+            visible = status == SaveStatus.SAVING,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+             CircularProgressIndicator(
+                modifier = Modifier.size(18.dp),
+                strokeWidth = 2.dp,
+                color = contentColor.copy(alpha = 0.7f),
+                trackColor = Color.Transparent
+            )
+        }
+
+        AnimatedVisibility(
+            visible = status == SaveStatus.SAVED && showSavedIcon,
+            enter = fadeIn() + androidx.compose.animation.scaleIn(),
+            exit = fadeOut() + androidx.compose.animation.scaleOut()
+        ) {
+            Icon(
+                imageVector = Icons.Default.CloudDone,
+                contentDescription = "Saved",
+                modifier = Modifier.size(24.dp),
+                tint = contentColor.copy(alpha = 0.7f)
+            )
         }
     }
 }
