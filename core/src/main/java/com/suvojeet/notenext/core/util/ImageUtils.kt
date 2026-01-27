@@ -1,4 +1,4 @@
-package com.suvojeet.notenext.util
+package com.suvojeet.notenext.core.util
 
 import android.content.Context
 import android.graphics.Bitmap

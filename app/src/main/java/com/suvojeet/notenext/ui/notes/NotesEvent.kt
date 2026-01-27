@@ -1,6 +1,7 @@
 
 package com.suvojeet.notenext.ui.notes
 
+import android.net.Uri
 import com.suvojeet.notenext.data.SortType
 
 import androidx.compose.ui.text.SpanStyle
@@ -92,5 +93,6 @@ sealed class NotesEvent {
     object FixGrammar : NotesEvent()
     object ApplyGrammarFix : NotesEvent()
     object ClearGrammarFix : NotesEvent()
+    data class ImportImage(val uri: Uri) : NotesEvent()
     object AutoSaveNote : NotesEvent()
 }

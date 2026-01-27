@@ -19,6 +19,7 @@ import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.core.util.ImageUtils
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.Project
@@ -249,6 +250,24 @@ class NotesViewModel @Inject constructor(
                 viewModelScope.launch {
                     saveNote(shouldCollapse = false)
                     _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
+                }
+            }
+            is NotesEvent.ImportImage -> {
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                    val uri = event.uri
+                    val compressedUri = ImageUtils.compressImage(context, uri)
+                    if (compressedUri != null) {
+                        val mimeType = context.contentResolver.getType(compressedUri)
+                        onEvent(NotesEvent.AddAttachment(compressedUri.toString(), mimeType ?: "image/jpeg"))
+                    } else {
+                        val mimeType = context.contentResolver.getType(uri)
+                        try {
+                             context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        } catch (e: Exception) {
+                            // Ignore if permission not persistable
+                        }
+                        onEvent(NotesEvent.AddAttachment(uri.toString(), mimeType ?: "image/jpeg"))
+                    }
                 }
             }
             is NotesEvent.ApplyGrammarFix -> {

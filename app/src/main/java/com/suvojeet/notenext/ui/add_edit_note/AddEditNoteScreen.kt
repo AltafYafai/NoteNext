@@ -2,92 +2,57 @@ package com.suvojeet.notenext.ui.add_edit_note
 
 import android.content.Context
 import android.net.Uri
-import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-
-
-
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.clickable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import com.suvojeet.notenext.util.SimpleDiffUtils
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloseFullscreen
-import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
+import com.suvojeet.notenext.data.MarkdownExporter
+import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.add_edit_note.components.*
-import com.suvojeet.notenext.ui.add_edit_note.components.ReminderDisplay
-import com.suvojeet.notenext.ui.components.WavyProgressIndicator
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
-import com.suvojeet.notenext.data.repository.SettingsRepository
-import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import com.suvojeet.notenext.data.saveAsPdf
-import com.suvojeet.notenext.data.saveAsTxt
-import com.suvojeet.notenext.data.saveAsMd
-import com.suvojeet.notenext.util.ImageUtils
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.SharedFlow
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import android.content.Intent
+import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.util.HtmlConverter
-import com.suvojeet.notenext.data.MarkdownExporter
-import com.suvojeet.notenext.util.printNote
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.withStyle
-import com.suvojeet.notenext.util.findActivity
 import com.suvojeet.notenext.ui.reminder.ReminderSetDialog
 import com.suvojeet.notenext.data.RepeatOption
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 
 data class ImageViewerData(val uri: Uri, val tempId: String)
 
@@ -102,6 +67,7 @@ fun AddEditNoteScreen(
     events: SharedFlow<NotesUiEvent>,
     modifier: Modifier = Modifier
 ) {
+    // Local UI State
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
     var showFormatBar by remember { mutableStateOf(false) }
@@ -112,14 +78,16 @@ fun AddEditNoteScreen(
     var showHistoryDialog by remember { mutableStateOf(false) }
     var showImageViewer by remember { mutableStateOf(false) }
     var selectedImageData by remember { mutableStateOf<ImageViewerData?>(null) }
+    var isFocusMode by remember { mutableStateOf(false) }
+    var showMarkdownPreview by remember { mutableStateOf(false) }
+    var clickedUrl by remember { mutableStateOf<String?>(null) }
+    var showExactAlarmDialog by remember { mutableStateOf(false) }
+
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsState(initial = false)
-    var isFocusMode by remember { mutableStateOf(false) }
-    var showMarkdownPreview by remember { mutableStateOf(false) }
-    var clickedUrl by remember { mutableStateOf<String?>(null) }
-    
+
     // Auto-save on background
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -134,14 +102,11 @@ fun AddEditNoteScreen(
         }
     }
 
-    // --- Permission Logic Start ---
-    var showExactAlarmDialog by remember { mutableStateOf(false) }
-
+    // Permission Logic
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
              if (isGranted) {
-                 // Check exact alarm next
                  if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                      val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
                      if (alarmManager.canScheduleExactAlarms()) {
@@ -161,7 +126,6 @@ fun AddEditNoteScreen(
     val checkAndRequestReminderPermissions: () -> Unit = {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
              if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                 // Notification granted, check alarm
                  if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                      val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
                      if (alarmManager.canScheduleExactAlarms()) {
@@ -176,7 +140,6 @@ fun AddEditNoteScreen(
                  notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
              }
         } else {
-             // For older Android versions, we might verify exact alarm if S+
              if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                  val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
                  if (alarmManager.canScheduleExactAlarms()) {
@@ -189,49 +152,11 @@ fun AddEditNoteScreen(
              }
         }
     }
- 
-    if (showExactAlarmDialog) {
-        AlertDialog(
-            onDismissRequest = { showExactAlarmDialog = false },
-            title = { Text("Exact Alarm Permission Needed") },
-            text = { Text("To ensure reminders fire at the exact time, please allow 'Alarms & reminders' permission in Settings.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showExactAlarmDialog = false
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                         val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                         context.startActivity(intent)
-                    }
-                }) {
-                    Text("Go to Settings")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showExactAlarmDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-    // --- Permission Logic End ---
 
+    // Image/Photo Pickers
     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        scope.launch {
-            uris.forEach { uri ->
-                val compressedUri = ImageUtils.compressImage(context, uri)
-                if (compressedUri != null) {
-                    val mimeType = context.contentResolver.getType(compressedUri)
-                    onEvent(NotesEvent.AddAttachment(compressedUri.toString(), mimeType ?: "image/jpeg"))
-                } else {
-                    val mimeType = context.contentResolver.getType(uri)
-                    try {
-                        context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    } catch (e: Exception) {
-                        // Ignore if we can't take permission (e.g. if we don't need it or it's not persistable)
-                    }
-                    onEvent(NotesEvent.AddAttachment(uri.toString(), mimeType ?: ""))
-                }
-            }
+        uris.forEach { uri ->
+            onEvent(NotesEvent.ImportImage(uri))
         }
     }
 
@@ -239,20 +164,7 @@ fun AddEditNoteScreen(
     val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
             photoUri?.let { uri ->
-                scope.launch {
-                    val compressedUri = ImageUtils.compressImage(context, uri)
-                    if (compressedUri != null) {
-                        val mimeType = context.contentResolver.getType(compressedUri)
-                        onEvent(NotesEvent.AddAttachment(compressedUri.toString(), mimeType ?: "image/jpeg"))
-                    } else {
-                        val mimeType = context.contentResolver.getType(uri)
-                         try {
-                            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        } catch (e: Exception) {
-                        }
-                        onEvent(NotesEvent.AddAttachment(uri.toString(), mimeType ?: "image/jpeg"))
-                    }
-                }
+                onEvent(NotesEvent.ImportImage(uri))
             }
         }
     }
@@ -268,8 +180,7 @@ fun AddEditNoteScreen(
     }
 
     LaunchedEffect(Unit) {
-        events.collect {
-            event ->
+        events.collect { event ->
             when (event) {
                 is NotesUiEvent.LinkPreviewRemoved -> {
                     Toast.makeText(context, "Link preview removed", Toast.LENGTH_SHORT).show()
@@ -281,41 +192,26 @@ fun AddEditNoteScreen(
 
     LaunchedEffect(state.editingContent) {
         if (state.editingContent.selection.end == state.editingContent.text.length) {
-            scrollState.animateScrollTo(scrollState.maxValue)
+            // Optional: Auto-scroll logic if needed
         }
     }
 
+    // Theme calculations
     val systemInDarkTheme = isSystemInDarkTheme()
     val isDarkTheme = when (themeMode) {
         ThemeMode.DARK, ThemeMode.AMOLED -> true
         ThemeMode.SYSTEM -> systemInDarkTheme
         else -> false
     }
-    
-    // Use unified colors from NoteGradients for color picker
     val colors = NoteGradients.getNoteColors(isDarkTheme)
-    
-    // Get theme-adaptive color (maps dark colors to light equivalents when in light mode, etc.)
     val adaptiveColor = NoteGradients.getAdaptiveColor(state.editingColor, isDarkTheme)
-
-    // Use note's adaptive color if set, otherwise use theme surface color
-    val backgroundColor = if (adaptiveColor != 0) {
-        Color(adaptiveColor)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    
-    // Get content color based on adaptive background for text visibility
-    val contentColor = if (adaptiveColor != 0) {
-        NoteGradients.getContentColor(adaptiveColor)
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
+    val backgroundColor = if (adaptiveColor != 0) Color(adaptiveColor) else MaterialTheme.colorScheme.surface
+    val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.imePadding(),
-            containerColor = backgroundColor, // Full screen note color like Google Keep
+            containerColor = backgroundColor,
             topBar = {
                 AnimatedVisibility(
                     visible = !isFocusMode,
@@ -352,11 +248,9 @@ fun AddEditNoteScreen(
                             if (it) checkAndRequestReminderPermissions() else showReminderDialog = false 
                         },
                         showMoreOptions = { showMoreOptions = it },
-                        onImageClick = {
-                            getContent.launch("image/*")
-                        },
+                        onImageClick = { getContent.launch("image/*") },
                         onTakePhotoClick = {
-                            val uri = createImageFile(context)
+                            val uri = com.suvojeet.notenext.ui.add_edit_note.createImageFile(context)
                             photoUri = uri
                             takePictureLauncher.launch(uri)
                         },
@@ -382,69 +276,16 @@ fun AddEditNoteScreen(
                                 .background(backgroundColor)
                                 .verticalScroll(scrollState)
                         ) {
-                            val imageAttachments = state.editingAttachments.filter { it.type == "IMAGE" }
-                            if (imageAttachments.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                val imageCount = imageAttachments.size
-                                if (imageCount == 1) {
-                                    // Single image: full width
-                                    Box(modifier = Modifier.fillMaxWidth()) {
-                                        AsyncImage(
-                                            model = imageAttachments.first().uri,
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .heightIn(max = 400.dp)
-                                                .clickable {
-                                                    selectedImageData = ImageViewerData(uri = Uri.parse(imageAttachments.first().uri), tempId = imageAttachments.first().tempId)
-                                                    showImageViewer = true
-                                                },
-                                            contentScale = ContentScale.Fit
-                                        )
-                                        IconButton(
-                                            onClick = { onEvent(NotesEvent.RemoveAttachment(imageAttachments.first().tempId)) },
-                                            modifier = Modifier.align(Alignment.TopEnd)
-                                        ) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Remove image", tint = MaterialTheme.colorScheme.onSurface)
-                                        }
-                                    }
-                                } else {
-                                    // Multiple images: up to 3 per row in a horizontal scrollable row
-                                    LazyRow(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        contentPadding = PaddingValues(horizontal = 8.dp)
-                                    ) {
-                                        items(imageAttachments, key = { it.uri }) { attachment ->
-                                            Box {
-                                                AsyncImage(
-                                                    model = attachment.uri,
-                                                    contentDescription = null,
-                                                    modifier = Modifier
-                                                        .width(120.dp)
-                                                        .height(120.dp)
-                                                        .aspectRatio(1f)
-                                                        .clickable {
-                                                            selectedImageData = ImageViewerData(uri = Uri.parse(attachment.uri), tempId = attachment.tempId)
-                                                            showImageViewer = true
-                                                        },
-                                                    contentScale = ContentScale.Crop
-                                                )
-                                                IconButton(
-                                                    onClick = { onEvent(NotesEvent.RemoveAttachment(attachment.tempId)) },
-                                                    modifier = Modifier.align(Alignment.TopEnd)
-                                                ) {
-                                                    Icon(Icons.Default.Delete, contentDescription = "Remove image", tint = MaterialTheme.colorScheme.onSurface)
-                                                }
-                                            }
-                                        }
-                                    }
+                            // Extracted Attachments List
+                            NoteAttachmentsList(
+                                attachments = state.editingAttachments,
+                                onEvent = onEvent,
+                                onImageClick = { data ->
+                                    selectedImageData = data
+                                    showImageViewer = true
                                 }
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
+                            )
 
-
-                            
                             if (showMarkdownPreview) {
                                 val markdownContent = produceState(initialValue = "") {
                                     val html = HtmlConverter.annotatedStringToHtml(state.editingContent.annotatedString)
@@ -452,7 +293,6 @@ fun AddEditNoteScreen(
                                 }
                                 MarkdownPreview(content = markdownContent.value)
                             } else {
-                                // Landscape Mode Editor
                                 NoteTitleEditor(
                                     state = state,
                                     onEvent = onEvent,
@@ -460,28 +300,14 @@ fun AddEditNoteScreen(
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 
-                                if (state.editingNoteType == "CHECKLIST") {
-                                    LazyColumn(modifier = Modifier.weight(1f)) {
-                                         ChecklistEditor(
-                                             state = state,
-                                             onEvent = onEvent,
-                                             isCheckedItemsExpanded = state.isCheckedItemsExpanded,
-                                             onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) }
-                                         )
-                                    }
-                                } else {
-                                    // Wrap text editor in a box/column to ensure layout
-                                    Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                                        NoteContentEditor(
-                                            state = state,
-                                            onEvent = onEvent,
-                                            onUrlClick = { url -> clickedUrl = url }
-                                        )
-                                    }
+                                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                                    NoteContentEditor(
+                                        state = state,
+                                        onEvent = onEvent,
+                                        onUrlClick = { url -> clickedUrl = url }
+                                    )
                                 }
                             }
-                            
-
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -492,6 +318,7 @@ fun AddEditNoteScreen(
                             }
                         }
                     } else {
+                        // CHECKLIST MODE
                         LazyColumn(
                             modifier = Modifier
                                 .weight(1f)
@@ -507,69 +334,16 @@ fun AddEditNoteScreen(
                             }
 
                             item {
-                                val imageAttachments = state.editingAttachments.filter { it.type == "IMAGE" }
-                                if (imageAttachments.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    val imageCount = imageAttachments.size
-                                    if (imageCount == 1) {
-                                        // Single image: full width
-                                        Box(modifier = Modifier.fillMaxWidth()) {
-                                            AsyncImage(
-                                                model = imageAttachments.first().uri,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .heightIn(max = 400.dp)
-                                                    .clickable {
-                                                        selectedImageData = ImageViewerData(uri = Uri.parse(imageAttachments.first().uri), tempId = imageAttachments.first().tempId)
-                                                        showImageViewer = true
-                                                    },
-                                                contentScale = ContentScale.Fit
-                                            )
-                                            IconButton(
-                                                onClick = { onEvent(NotesEvent.RemoveAttachment(imageAttachments.first().tempId)) },
-                                                modifier = Modifier.align(Alignment.TopEnd)
-                                            ) {
-                                                Icon(Icons.Default.Delete, contentDescription = "Remove image", tint = MaterialTheme.colorScheme.onSurface)
-                                            }
-                                        }
-                                    } else {
-                                        // Multiple images: up to 3 per row in a horizontal scrollable row
-                                        LazyRow(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 8.dp)
-                                        ) {
-                                            items(imageAttachments, key = { it.uri }) { attachment ->
-                                                Box {
-                                                    AsyncImage(
-                                                        model = attachment.uri,
-                                                        contentDescription = null,
-                                                        modifier = Modifier
-                                                            .width(120.dp)
-                                                            .height(120.dp)
-                                                            .aspectRatio(1f)
-                                                            .clickable {
-                                                                selectedImageData = ImageViewerData(uri = Uri.parse(attachment.uri), tempId = attachment.tempId)
-                                                                showImageViewer = true
-                                                            },
-                                                        contentScale = ContentScale.Crop
-                                                    )
-                                                    IconButton(
-                                                        onClick = { onEvent(NotesEvent.RemoveAttachment(attachment.tempId)) },
-                                                        modifier = Modifier.align(Alignment.TopEnd)
-                                                    ) {
-                                                        Icon(Icons.Default.Delete, contentDescription = "Remove image", tint = MaterialTheme.colorScheme.onSurface)
-                                                    }
-                                                }
-                                            }
-                                        }
+                                 NoteAttachmentsList(
+                                    attachments = state.editingAttachments,
+                                    onEvent = onEvent,
+                                    onImageClick = { data ->
+                                        selectedImageData = data
+                                        showImageViewer = true
                                     }
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
+                                )
                             }
 
-                            // Content: Text or Checklist
                             if (state.editingNoteType == "CHECKLIST") {
                                 ChecklistEditor(
                                     state = state,
@@ -588,9 +362,7 @@ fun AddEditNoteScreen(
                             }
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
-                                item {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
+                                item { Spacer(modifier = Modifier.height(16.dp)) }
                                 items(state.linkPreviews) { linkPreview ->
                                     LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
                                     Spacer(modifier = Modifier.height(8.dp))
@@ -599,7 +371,7 @@ fun AddEditNoteScreen(
                         }
                     }
 
-                    // FormatToolbar removed from here and moved to Box overlay below
+                    // Floating Color Picker
                     AnimatedVisibility(
                         visible = showColorPicker,
                         enter = slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)),
@@ -615,7 +387,7 @@ fun AddEditNoteScreen(
             }
         }
         
-        // Floating Toolbar
+        // Formatting Toolbar
         AnimatedVisibility(
             visible = showFormatBar && (state.editingNoteType == "TEXT" || state.editingNoteType == "CHECKLIST"),
             enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -623,7 +395,7 @@ fun AddEditNoteScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .imePadding()
-                .padding(bottom = 60.dp) // Sit above the bottom bar
+                .padding(bottom = 60.dp)
         ) {
             Surface(
                 shadowElevation = 8.dp,
@@ -643,10 +415,8 @@ fun AddEditNoteScreen(
             }
         }
         
-        // AI Checklist Entry Point
+        // AI Checklist Feature
         var showAiChecklistSheet by remember { mutableStateOf(false) }
-        
-        // Show AI Button: for empty text notes OR for empty checklist notes
         val showAiButton = (state.editingNoteType == "TEXT" && state.editingContent.text.isEmpty()) || 
                            (state.editingNoteType == "CHECKLIST" && state.editingChecklist.isEmpty())
                            
@@ -658,13 +428,10 @@ fun AddEditNoteScreen(
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 85.dp, end = 16.dp) 
         ) {
-            AiAssistantButton(
-                onClick = { showAiChecklistSheet = true }
-            )
+            AiAssistantButton(onClick = { showAiChecklistSheet = true })
         }
 
-        // Grammar Fix Result Dialog
-        // Grammar Review Controls (Inline)
+        // Grammar Fix Dialog
         AnimatedVisibility(
             visible = state.fixedContentPreview != null,
             enter = androidx.compose.animation.scaleIn() + fadeIn(),
@@ -673,23 +440,22 @@ fun AddEditNoteScreen(
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 100.dp, end = 16.dp)
         ) {
-            androidx.compose.material3.Surface(
-                shape = androidx.compose.foundation.shape.CircleShape,
+            Surface(
+                shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 6.dp
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
                     IconButton(onClick = { onEvent(NotesEvent.ApplyGrammarFix) }) {
-                        Icon(androidx.compose.material.icons.Icons.Filled.Check, contentDescription = "Accept", tint = androidx.compose.ui.graphics.Color(0xFF4CAF50))
+                        Icon(Icons.Filled.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
                     }
                     IconButton(onClick = { onEvent(NotesEvent.ClearGrammarFix) }) {
-                        Icon(androidx.compose.material.icons.Icons.Filled.Close, contentDescription = "Discard", tint = androidx.compose.ui.graphics.Color(0xFFE57373))
+                        Icon(Icons.Filled.Close, contentDescription = "Discard", tint = Color(0xFFE57373))
                     }
                 }
             }
         }
 
-        // AI Checklist Sheet (ModalBottomSheet)
         AiChecklistSheet(
             isVisible = showAiChecklistSheet,
             isGenerating = state.isGeneratingChecklist,
@@ -702,217 +468,45 @@ fun AddEditNoteScreen(
             onInsert = { editedItems -> onEvent(NotesEvent.InsertGeneratedChecklist(editedItems)) },
             onRegenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) }
         )
-    } // Closes Box
-
-    if (showMoreOptions) {
-        MoreOptionsSheet(
-            state = state,
-            onEvent = onEvent,
-            onDismiss = { showMoreOptions = false },
-            showDeleteDialog = { showDeleteDialog = it },
-            showSaveAsDialog = { showSaveAsDialog = it },
-            showHistoryDialog = { showHistoryDialog = it },
-            onPrint = {
-                scope.launch {
-                    val htmlContent = HtmlConverter.annotatedStringToHtml(state.editingContent.annotatedString)
-                    val fullHtml = "<h1>${state.editingTitle}</h1><br>$htmlContent"
-                    printNote(context, fullHtml)
-                }
-            },
-            onToggleLock = {
-                if (state.editingIsLocked) {
-                    val activity = context.findActivity() as? androidx.fragment.app.FragmentActivity
-                    if (activity != null) {
-                         val biometricAuthManager = com.suvojeet.notenext.util.BiometricAuthManager(context, activity)
-                         biometricAuthManager.showBiometricPrompt(
-                             onAuthSuccess = { onEvent(NotesEvent.OnToggleLockClick) },
-                             onAuthError = { Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show() }
-                         )
-                    } else {
-                        Toast.makeText(context, "Authentication unavailable", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    onEvent(NotesEvent.OnToggleLockClick)
-                }
-            }
-        )
     }
 
-
-
-
-    if (clickedUrl != null) {
-        AlertDialog(
-            onDismissRequest = { clickedUrl = null },
-            title = { Text("Open Link") },
-            text = { Text("Do you want to open this link?\n\n$clickedUrl") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        openUrl(context, clickedUrl!!)
-                        clickedUrl = null
-                    }
-                ) {
-                    Text("Open")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { clickedUrl = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    if (showHistoryDialog) {
-        NoteHistoryDialog(
-            versions = state.editingNoteVersions,
-            onDismiss = { showHistoryDialog = false },
-            onVersionSelected = { version ->
-                onEvent(NotesEvent.OnRestoreVersion(version))
-            }
+    // Extracted Dialogs
+    AddEditNoteDialogs(
+        state = state,
+        onEvent = onEvent,
+        showDeleteDialog = showDeleteDialog,
+        onShowDeleteDialogChange = { showDeleteDialog = it },
+        showMoreOptions = showMoreOptions,
+        onShowMoreOptionsChange = { showMoreOptions = it },
+        showSaveAsDialog = showSaveAsDialog,
+        onShowSaveAsDialogChange = { showSaveAsDialog = it },
+        showHistoryDialog = showHistoryDialog,
+        onShowHistoryDialogChange = { showHistoryDialog = it },
+        showInsertLinkDialog = showInsertLinkDialog,
+        onShowInsertLinkDialogChange = { showInsertLinkDialog = it },
+        clickedUrl = clickedUrl,
+        onClickedUrlChange = { clickedUrl = it },
+        showExactAlarmDialog = showExactAlarmDialog,
+        onShowExactAlarmDialogChange = { showExactAlarmDialog = it },
+        settingsRepository = settingsRepository,
+        scope = scope
+    )
+    if (showImageViewer && selectedImageData != null) {
+        ImageViewerScreen(
+            imageUri = selectedImageData!!.uri,
+            attachmentTempId = selectedImageData!!.tempId,
+            onDismiss = { showImageViewer = false },
+            onEvent = onEvent
         )
     }
     
-    // Awesome AI Summary Sheet
-    if (state.showSummaryDialog) {
-        AiSummarySheet(
-            summary = state.summaryResult,
-            isSummarizing = state.isSummarizing,
-            onDismiss = { if (!state.isSummarizing) onEvent(NotesEvent.ClearSummary) },
-            onClearSummary = { onEvent(NotesEvent.ClearSummary) }
-        )
-    }
-    if (showInsertLinkDialog) {
-        InsertLinkDialog(
-            onDismiss = { showInsertLinkDialog = false },
-            onConfirm = { url ->
-                onEvent(NotesEvent.OnInsertLink(url))
-                showInsertLinkDialog = false
-            }
-        )
-    }
-
-    if (showDeleteDialog) {
-        val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Move note to bin?") },
-            text = { Text("This note will be moved to the bin and will be permanently deleted after $autoDeleteDays days.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onEvent(NotesEvent.OnDeleteNoteClick)
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Move to bin")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    if (showSaveAsDialog) {
-        SaveAsDialog(
-            onDismiss = { showSaveAsDialog = false },
-            onSaveAsPdf = {
-                saveAsPdf(context, state.editingTitle, state.editingContent.annotatedString, state.editingAttachments, state.editingChecklist)
-                Toast.makeText(context, "Note saved to Documents as PDF", Toast.LENGTH_SHORT).show()
-            },
-            onSaveAsTxt = {
-                saveAsTxt(context, state.editingTitle, state.editingContent.text, state.editingChecklist)
-                Toast.makeText(context, "Note saved to Documents as TXT", Toast.LENGTH_SHORT).show()
-            },
-            onSaveAsMd = {
-                scope.launch {
-                    saveAsMd(context, state.editingTitle, state.editingContent.annotatedString, state.editingChecklist)
-                    Toast.makeText(context, "Note saved to Documents as MD", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-    }
-
-    if (state.showLabelDialog) {
-        LabelDialog(
-            labels = state.labels,
-            onDismiss = { onEvent(NotesEvent.DismissLabelDialog) },
-            onConfirm = { label ->
-                onEvent(NotesEvent.OnLabelChange(label))
-                onEvent(NotesEvent.DismissLabelDialog)
-            }
-        )
-    }
-
     if (showReminderDialog) {
-        val initialDate = state.editingReminderTime?.let {
-            java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-        }
-        val initialTime = state.editingReminderTime?.let {
-            java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).toLocalTime()
-        }
-        val initialRepeatOption = state.editingRepeatOption?.let {
-            try { RepeatOption.valueOf(it) } catch (e: Exception) { null }
-        }
-
         ReminderSetDialog(
-            initialDate = initialDate,
-            initialTime = initialTime,
-            initialRepeatOption = initialRepeatOption,
             onDismissRequest = { showReminderDialog = false },
-            onConfirm = { date, time, repeatOption ->
-                val reminderDateTime = java.time.LocalDateTime.of(date, time)
-                val reminderMillis = reminderDateTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                onEvent(NotesEvent.OnReminderChange(reminderMillis, repeatOption.name))
+            onConfirm = { date: LocalDate, time: LocalTime, repeat: RepeatOption ->
+                onEvent(NotesEvent.SetReminderForSelectedNotes(date, time, repeat))
                 showReminderDialog = false
             }
         )
     }
-
-    AnimatedVisibility(
-        visible = showImageViewer && selectedImageData != null,
-        enter = fadeIn(),
-        exit = fadeOut()
-    ) {
-        selectedImageData?.let { data ->
-            ImageViewerScreen(
-                imageUri = data.uri,
-                attachmentTempId = data.tempId,
-                onDismiss = { showImageViewer = false },
-                onEvent = onEvent
-            )
-        }
-    }
 }
-
-private fun createImageFile(context: Context): Uri {
-    val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val storageDir: File? = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-    val file = File.createTempFile(
-        "JPEG_${timeStamp}_",
-        ".jpg",
-        storageDir
-    )
-    return FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.provider",
-        file
-    )
-}
-
-
-
-private fun openUrl(context: Context, url: String) {
-    try {
-        val finalUrl = if (url.startsWith("www.")) "https://$url" else url
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl))
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        Toast.makeText(context, "Could not open link", Toast.LENGTH_SHORT).show()
-    }
-}
-
