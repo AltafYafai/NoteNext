@@ -56,8 +56,7 @@ fun AddEditNoteTopAppBar(
     editingNoteType: String,
     onToggleFocusMode: () -> Unit,
     isFocusMode: Boolean,
-    onToggleMarkdownPreview: () -> Unit,
-    isMarkdownPreviewVisible: Boolean,
+
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
@@ -87,24 +86,15 @@ fun AddEditNoteTopAppBar(
             actionIconContentColor = contentColor
         ),
         actions = {
-            // Markdown Preview Toggle
-            if (editingNoteType == "TEXT") {
-                 IconButton(onClick = onToggleMarkdownPreview) {
+            // Summarize Note
+            if (editingNoteType == "TEXT" && !state.editingIsNewNote) {
+                IconButton(onClick = { onEvent(NotesEvent.SummarizeNote) }) {
                     Icon(
-                        imageVector = if (isMarkdownPreviewVisible) Icons.Default.CodeOff else Icons.Default.Code,
-                        contentDescription = "Toggle Markdown Preview",
-                        tint = if (isMarkdownPreviewVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "Summarize Note",
+                        tint = contentColor
                     )
                 }
-
-            // Summarize Note
-            IconButton(onClick = { onEvent(NotesEvent.SummarizeNote) }) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = "Summarize Note",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
             }
             
             // Focus Mode Toggle

@@ -66,9 +66,6 @@ fun SavedStatusIndicator(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(contentColor.copy(alpha = 0.05f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         androidx.compose.animation.AnimatedContent(
             targetState = status,
@@ -78,41 +75,20 @@ fun SavedStatusIndicator(
                 when (targetStatus) {
                     SaveStatus.SAVING -> {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(12.dp),
+                            modifier = Modifier.size(16.dp),
                             strokeWidth = 2.dp,
-                            color = contentColor.copy(alpha = 0.8f)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Saving...",
-                            style = MaterialTheme.typography.labelSmall,
                             color = contentColor.copy(alpha = 0.8f)
                         )
                     }
                     SaveStatus.SAVED -> {
-                        // Only show if the ephemeral message shoud be visible, 
-                        // OR if we want it to stay visible. 
-                        // The user request implied "ajeeb garib" likely meant it was jumping around.
-                        // Let's show "Saved" with a Check icon.
                         if (showSavedMessage) {
                              Icon(
                                 imageVector = Icons.Default.CloudDone,
                                 contentDescription = "Saved",
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(20.dp),
                                 tint = contentColor.copy(alpha = 0.8f)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Saved",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = contentColor.copy(alpha = 0.8f)
-                            )
                         } else {
-                            // When idle/not saved recently, show nothing or just a small dot?
-                            // For now, let's show an empty box to collapse the size smoothly, 
-                            // or keep it hidden.
-                            // Providing a small spacer to prevent complete collapse if desired,
-                            // but usually hidden is better.
                             Spacer(modifier = Modifier.size(1.dp)) 
                         }
                     }

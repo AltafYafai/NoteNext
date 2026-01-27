@@ -37,7 +37,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.suvojeet.notenext.data.MarkdownExporter
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.add_edit_note.components.*
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
@@ -46,7 +45,6 @@ import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.ui.reminder.ReminderSetDialog
 import com.suvojeet.notenext.data.RepeatOption
 import java.time.LocalDate
@@ -79,7 +77,7 @@ fun AddEditNoteScreen(
     var showImageViewer by remember { mutableStateOf(false) }
     var selectedImageData by remember { mutableStateOf<ImageViewerData?>(null) }
     var isFocusMode by remember { mutableStateOf(false) }
-    var showMarkdownPreview by remember { mutableStateOf(false) }
+
     var clickedUrl by remember { mutableStateOf<String?>(null) }
     var showExactAlarmDialog by remember { mutableStateOf(false) }
 
@@ -226,8 +224,7 @@ fun AddEditNoteScreen(
                         editingNoteType = state.editingNoteType,
                         onToggleFocusMode = { isFocusMode = !isFocusMode },
                         isFocusMode = isFocusMode,
-                        onToggleMarkdownPreview = { showMarkdownPreview = !showMarkdownPreview },
-                        isMarkdownPreviewVisible = showMarkdownPreview,
+
                         backgroundColor = backgroundColor,
                         contentColor = contentColor
                     )
@@ -286,27 +283,19 @@ fun AddEditNoteScreen(
                                 }
                             )
 
-                            if (showMarkdownPreview) {
-                                val markdownContent = produceState(initialValue = "") {
-                                    val html = HtmlConverter.annotatedStringToHtml(state.editingContent.annotatedString)
-                                    value = MarkdownExporter.convertHtmlToMarkdown(html)
-                                }
-                                MarkdownPreview(content = markdownContent.value)
-                            } else {
-                                NoteTitleEditor(
+                            NoteTitleEditor(
+                                state = state,
+                                onEvent = onEvent,
+                                onReminderClick = { checkAndRequestReminderPermissions() }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                                NoteContentEditor(
                                     state = state,
                                     onEvent = onEvent,
-                                    onReminderClick = { checkAndRequestReminderPermissions() }
+                                    onUrlClick = { url -> clickedUrl = url }
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                                    NoteContentEditor(
-                                        state = state,
-                                        onEvent = onEvent,
-                                        onUrlClick = { url -> clickedUrl = url }
-                                    )
-                                }
                             }
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
