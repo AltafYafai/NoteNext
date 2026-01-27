@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -62,10 +63,17 @@ fun AddEditNoteTopAppBar(
 ) {
     TopAppBar(
         title = {
-            // Dynamic title based on whether it's a new note and its type.
-            Text(if (state.editingIsNewNote) {
-                if (editingNoteType == "CHECKLIST") stringResource(id = R.string.add_checklist) else stringResource(id = R.string.add_note)
-            } else "")
+            Column {
+                 // Dynamic title based on whether it's a new note and its type.
+                Text(
+                    text = if (state.editingIsNewNote) {
+                        if (editingNoteType == "CHECKLIST") stringResource(id = R.string.add_checklist) else stringResource(id = R.string.add_note)
+                    } else "",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                // Save Status Indicator
+                SavedStatusIndicator(status = state.saveStatus, contentColor = contentColor)
+            }
         },
         navigationIcon = {
             // Back button to dismiss the screen.

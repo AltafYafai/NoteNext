@@ -76,6 +76,7 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.FixGrammar -> throw IllegalArgumentException("FixGrammar event cannot be converted")
         is NotesEvent.ApplyGrammarFix -> throw IllegalArgumentException("ApplyGrammarFix event cannot be converted")
         is NotesEvent.ClearGrammarFix -> throw IllegalArgumentException("ClearGrammarFix event cannot be converted")
+        is NotesEvent.AutoSaveNote -> throw IllegalArgumentException("AutoSaveNote event cannot be converted")
     }
 }
 

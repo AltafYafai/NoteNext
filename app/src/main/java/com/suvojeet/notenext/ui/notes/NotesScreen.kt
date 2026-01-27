@@ -169,7 +169,7 @@ fun NotesScreen(
                 is NotesUiEvent.NavigateToNoteByTitle -> {
                     val noteId = viewModel.getNoteIdByTitle(event.title)
                     if (noteId != null) {
-                        viewModel.onEvent(NotesEvent.ExpandNote(noteId))
+                        viewModel.onEvent(NotesEvent.ExpandNote(noteId as Int))
                     } else {
                         Toast.makeText(context, "Note \"${event.title}\" not found", Toast.LENGTH_SHORT).show()
                     }

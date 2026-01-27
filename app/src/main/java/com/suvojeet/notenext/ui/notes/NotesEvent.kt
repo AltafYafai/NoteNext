@@ -92,4 +92,5 @@ sealed class NotesEvent {
     object FixGrammar : NotesEvent()
     object ApplyGrammarFix : NotesEvent()
     object ClearGrammarFix : NotesEvent()
+    object AutoSaveNote : NotesEvent()
 }

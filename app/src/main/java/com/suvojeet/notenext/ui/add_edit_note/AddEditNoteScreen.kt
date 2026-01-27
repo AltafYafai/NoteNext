@@ -46,6 +46,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -115,6 +119,20 @@ fun AddEditNoteScreen(
     var isFocusMode by remember { mutableStateOf(false) }
     var showMarkdownPreview by remember { mutableStateOf(false) }
     var clickedUrl by remember { mutableStateOf<String?>(null) }
+    
+    // Auto-save on background
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                onEvent(NotesEvent.AutoSaveNote)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // --- Permission Logic Start ---
     var showExactAlarmDialog by remember { mutableStateOf(false) }

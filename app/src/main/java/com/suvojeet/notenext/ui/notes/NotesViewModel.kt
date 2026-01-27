@@ -39,6 +39,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteWithAttachments
@@ -77,6 +79,19 @@ class NotesViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
+
+    private var autoSaveJob: Job? = null
+
+    private fun scheduleAutoSave() {
+        autoSaveJob?.cancel()
+        _state.value = state.value.copy(saveStatus = SaveStatus.SAVING)
+        autoSaveJob = viewModelScope.launch {
+            delay(1000L) // 1 second debounce
+            _events.emit(NotesUiEvent.ShowToast("Saving...")) // Optional debug
+            saveNote(shouldCollapse = false)
+            _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
+        }
+    }
 
     init {
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -228,6 +243,12 @@ class NotesViewModel @Inject constructor(
                             _events.emit(NotesUiEvent.ShowToast(errorMessage))
                         }
                     }
+                }
+            }
+            is NotesEvent.AutoSaveNote -> {
+                viewModelScope.launch {
+                    saveNote(shouldCollapse = false)
+                    _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
                 }
             }
             is NotesEvent.ApplyGrammarFix -> {
@@ -593,6 +614,7 @@ class NotesViewModel @Inject constructor(
                     newlyAddedChecklistItemId = newItem.id,
                     checklistInputValues = state.value.checklistInputValues + (newItem.id to TextFieldValue(""))
                 )
+                scheduleAutoSave()
             }
             is NotesEvent.SwapChecklistItems -> {
                 val list = state.value.editingChecklist.toMutableList()
@@ -604,6 +626,7 @@ class NotesViewModel @Inject constructor(
                     // Update all positions to match indices to be safe
                     val updatedList = list.mapIndexed { index, item -> item.copy(position = index) }
                     _state.value = state.value.copy(editingChecklist = updatedList)
+                    scheduleAutoSave()
                 }
             }
             is NotesEvent.DeleteChecklistItem -> {
@@ -612,18 +635,21 @@ class NotesViewModel @Inject constructor(
                     editingChecklist = updatedChecklist,
                     checklistInputValues = state.value.checklistInputValues - event.itemId
                 )
+                scheduleAutoSave()
             }
             is NotesEvent.IndentChecklistItem -> {
                 val updatedChecklist = state.value.editingChecklist.map {
                     if (it.id == event.itemId) it.copy(level = kotlin.math.min(it.level + 1, 5)) else it
                 }
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is NotesEvent.OutdentChecklistItem -> {
                 val updatedChecklist = state.value.editingChecklist.map {
                     if (it.id == event.itemId) it.copy(level = kotlin.math.max(it.level - 1, 0)) else it
                 }
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
 
             is NotesEvent.OnChecklistItemCheckedChange -> {
@@ -644,12 +670,14 @@ class NotesViewModel @Inject constructor(
                     }
                 }
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is NotesEvent.OnChecklistItemTextChange -> {
                 val updatedChecklist = state.value.editingChecklist.map {
                     if (it.id == event.itemId) it.copy(text = event.text) else it
                 }
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is NotesEvent.OnTitleChange -> {
                 undoRedoManager.addState(event.title to state.value.editingContent)
@@ -659,6 +687,7 @@ class NotesViewModel @Inject constructor(
                     canRedo = undoRedoManager.canRedo.value,
                     summaryResult = null // Invalidate cache on title change
                 )
+                scheduleAutoSave()
             }
             is NotesEvent.OnContentChange -> {
                 if (state.value.editingNoteType == "TEXT") {
@@ -702,6 +731,10 @@ class NotesViewModel @Inject constructor(
                         isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline },
                         summaryResult = null // Invalidate cache on content change
                     )
+                    
+                    if (textChanged) {
+                        scheduleAutoSave()
+                    }
 
                     // Link detection
                     val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
@@ -747,6 +780,7 @@ class NotesViewModel @Inject constructor(
                      isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                      isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline }
                 )
+                scheduleAutoSave()
                 
                 // Async update for persistence model
                 viewModelScope.launch {
@@ -853,6 +887,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnColorChange -> {
                 _state.value = state.value.copy(editingColor = event.color)
+                scheduleAutoSave()
             }
             is NotesEvent.OnLabelChange -> {
                 viewModelScope.launch {
@@ -997,6 +1032,7 @@ class NotesViewModel @Inject constructor(
                     tempId = java.util.UUID.randomUUID().toString()
                 )
                 _state.value = state.value.copy(editingAttachments = state.value.editingAttachments + attachment)
+                scheduleAutoSave()
             }
             is NotesEvent.OnLinkDetected -> { /* TODO: Handle link detection */ }
             is NotesEvent.OnLinkPreviewFetched -> { /* TODO: Handle link preview fetched */ }
@@ -1009,6 +1045,7 @@ class NotesViewModel @Inject constructor(
                         }
                         val updatedAttachments = _state.value.editingAttachments.filter { attachment -> attachment.tempId != event.tempId }
                         _state.value = _state.value.copy(editingAttachments = updatedAttachments)
+                        scheduleAutoSave()
                     }
                 }
             }
@@ -1119,6 +1156,10 @@ class NotesViewModel @Inject constructor(
                     editingReminderTime = event.time,
                     editingRepeatOption = event.repeatOption
                 )
+                scheduleAutoSave()
+            }
+            else -> {
+                // Handle any other events or do nothing
             }
         }
     }

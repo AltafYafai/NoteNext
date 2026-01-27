@@ -66,5 +66,12 @@ data class NotesState(
     // AI Grammar Fix
     val isFixingGrammar: Boolean = false,
     val fixedContentPreview: String? = null,
-    val originalContentBackup: TextFieldValue? = null
+    val originalContentBackup: TextFieldValue? = null,
+    val saveStatus: SaveStatus = SaveStatus.SAVED
 )
+
+enum class SaveStatus {
+    SAVED,
+    SAVING,
+    UNSAVED
+}
