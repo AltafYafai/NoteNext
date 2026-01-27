@@ -25,25 +25,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Backup
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.ImportExport
-import androidx.compose.material.icons.filled.PrivacyTip
-import androidx.compose.material.icons.filled.NewReleases
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.SentimentDissatisfied
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Backup
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Description
+import androidx.compose.material.icons.rounded.ImportExport
+import androidx.compose.material.icons.rounded.PrivacyTip
+import androidx.compose.material.icons.rounded.NewReleases
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.SentimentDissatisfied
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.layout.height
@@ -154,7 +154,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -180,7 +180,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 ) {
                     SettingsGroupCard {
                         SettingsItem(
-                            icon = Icons.Default.Palette,
+                            icon = Icons.Rounded.Palette,
                             title = stringResource(id = R.string.theme),
                             subtitle = selectedThemeMode.name.lowercase().replaceFirstChar { it.uppercase() },
                             iconColor = Color(0xFF2196F3),
@@ -189,7 +189,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         
                         SettingsItem(
-                            icon = Icons.Default.Link,
+                            icon = Icons.Rounded.Link,
                             title = stringResource(id = R.string.rich_link_preview),
                             subtitle = stringResource(id = R.string.rich_link_preview_subtitle),
                             hasSwitch = true,
@@ -202,7 +202,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
 
 
                         SettingsItem(
-                            icon = Icons.Default.Language,
+                            icon = Icons.Rounded.Language,
                             title = stringResource(id = R.string.language),
                             subtitle = stringResource(id = R.string.language_subtitle),
                             iconColor = Color(0xFF3F51B5),
@@ -220,7 +220,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 ) {
                     SettingsGroupCard {
                         SettingsItem(
-                            icon = Icons.Default.Delete,
+                            icon = Icons.Rounded.Delete,
                             title = stringResource(id = R.string.auto_delete_binned_notes),
                             subtitle = stringResource(id = R.string.auto_delete_subtitle, autoDeleteDays),
                             iconColor = Color(0xFFF44336),
@@ -238,7 +238,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 ) {
                     SettingsGroupCard {
                         SettingsItem(
-                            icon = Icons.Default.Security,
+                            icon = Icons.Rounded.Security,
                             title = stringResource(id = R.string.app_lock),
                             subtitle = stringResource(id = R.string.app_lock_subtitle),
                             hasSwitch = true,
@@ -268,7 +268,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         SettingsItem(
-                            icon = Icons.Default.Lock, // Use a suitable icon like Lock or MobileOff
+                            icon = Icons.Rounded.Lock, // Use a suitable icon like Lock or MobileOff
                             title = "Disallow Screenshots",
                             subtitle = "Prevent screen capture in app",
                             hasSwitch = true,
@@ -289,7 +289,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 ) {
                     SettingsGroupCard {
                         SettingsItem(
-                            icon = Icons.Default.Backup,
+                            icon = Icons.Rounded.Backup,
                             title = "Backup & Restore",
                             subtitle = "Manage backups and restore data",
                             iconColor = Color(0xFFFF9800),
@@ -297,7 +297,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         SettingsItem(
-                            icon = Icons.Default.ImportExport, // or generic import icon
+                            icon = Icons.Rounded.ImportExport, // or generic import icon
                             title = "Import Notes",
                             subtitle = "From Google Keep, etc.",
                             iconColor = Color(0xFFE91E63),
@@ -315,7 +315,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 ) {
                     SettingsGroupCard {
                         SettingsItem(
-                            icon = Icons.Default.Star,
+                            icon = Icons.Rounded.Star,
                             title = "Rate App",
                             subtitle = "Rate us on Play Store",
                             iconColor = Color(0xFF9C27B0),
@@ -325,7 +325,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                         SettingsItem(
-                            icon = Icons.Default.Share,
+                            icon = Icons.Rounded.Share,
                             title = "Share App",
                             subtitle = "Share with your friends",
                             iconColor = Color(0xFF673AB7),
@@ -350,7 +350,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
             item {
                 SettingsGroupCard(modifier = Modifier.padding(top = 8.dp)) {
                     SettingsItem(
-                        icon = Icons.Default.Info,
+                        icon = Icons.Rounded.Info,
                         title = stringResource(id = R.string.about),
                         subtitle = "Version, License & Credits",
                         iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -359,7 +359,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     
                     SettingsItem(
-                        icon = Icons.Default.NewReleases,
+                        icon = Icons.Rounded.NewReleases,
                          title = "Changelog",
                         subtitle = "See what's new in v1.2.6",
                         iconColor = Color(0xFFE91E63),
@@ -368,7 +368,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     SettingsItem(
-                        icon = Icons.Default.Code,
+                        icon = Icons.Rounded.Code,
                         title = "Source Code",
                         subtitle = "View on GitHub",
                         iconColor = Color(0xFF24292E), // GitHub Dark
@@ -384,7 +384,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
                     SettingsItem(
-                        icon = androidx.compose.material.icons.Icons.Filled.PrivacyTip,
+                        icon = Icons.Rounded.PrivacyTip,
                         title = "Privacy Policy",
                         subtitle = "Read our privacy policy",
                         iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -512,7 +512,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     if (showContactUsDialog) {
         AlertDialog(
             onDismissRequest = { showContactUsDialog = false },
-            icon = { Icon(Icons.Default.SentimentDissatisfied, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            icon = { Icon(Icons.Rounded.SentimentDissatisfied, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
             title = { Text("We are sad to hear that") },
             text = {
                 Column {
@@ -670,7 +670,7 @@ private fun SettingsItem(
                 if (onInfoClick != null) {
                     IconButton(onClick = onInfoClick) {
                         Icon(
-                            imageVector = Icons.Default.Info, 
+                            imageVector = Icons.Rounded.Info, 
                             contentDescription = "Info",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -690,7 +690,7 @@ private fun SettingsItem(
                     )
                 } else if (onClick != null) {
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
+                        imageVector = Icons.Rounded.ChevronRight,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -843,24 +843,24 @@ fun ImportSourceDialog(onDismiss: () -> Unit, onSelectKeep: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ImportOptionItem(
                     text = "Google Keep",
-                    icon = Icons.Default.Description, // Using generic Description icon
+                    icon = Icons.Rounded.Description, // Using generic Description icon
                     color = Color(0xFFFFBB00), // Keep Yellow
                     onClick = onSelectKeep
                 )
                 ImportOptionItem(
                     text = "Evernote",
-                    icon = Icons.Default.Description,
+                    icon = Icons.Rounded.Description,
                     color = Color(0xFF00A82D), // Evernote Green
                     enabled = false
                 )
                 ImportOptionItem(
                     text = "Markdown/Plain Text Files",
-                    icon = Icons.Default.Description,
+                    icon = Icons.Rounded.Description,
                     enabled = false
                 )
                 ImportOptionItem(
                     text = "JSON Files",
-                    icon = Icons.Default.Description, // Use Code or DataObject if available
+                    icon = Icons.Rounded.Description, // Use Code or DataObject if available
                     enabled = false
                 )
             }
@@ -993,7 +993,7 @@ private fun CheckForUpdateItem(context: android.content.Context) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Info,
+                    imageVector = Icons.Rounded.Info,
                     contentDescription = null,
                     tint = Color(0xFF2196F3),
                     modifier = Modifier.size(22.dp)
@@ -1027,9 +1027,9 @@ private fun CheckForUpdateItem(context: android.content.Context) {
             icon = {
                 Icon(
                     imageVector = if (result.isUpdateAvailable) 
-                        Icons.Default.Info 
+                        Icons.Rounded.Info 
                     else 
-                        Icons.Default.Star,
+                        Icons.Rounded.Star,
                     contentDescription = null,
                     tint = if (result.isUpdateAvailable) 
                         MaterialTheme.colorScheme.primary 
