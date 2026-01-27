@@ -195,4 +195,15 @@ fun AddEditNoteDialogs(
             }
         )
     }
+
+    if (state.showLabelDialog) {
+        com.suvojeet.notenext.ui.components.LabelDialog(
+            labels = state.labels,
+            onDismiss = { onEvent(NotesEvent.DismissLabelDialog) },
+            onConfirm = { label ->
+                onEvent(NotesEvent.OnLabelChange(label))
+                onEvent(NotesEvent.DismissLabelDialog)
+            }
+        )
+    }
 }
