@@ -6,10 +6,10 @@ targetSdk = "36"
 
 # Plugins
 agp = "9.1.0"
-kotlin = "2.3.0"
-ksp = "2.3.0"
-hilt = "2.57.1"
-kotlin-serialization = "2.3.0"
+kotlin = "2.3.10"
+ksp = "2.3.10"
+hilt = "2.59.2"
+kotlin-serialization = "2.3.10"
 
 # Libraries
 core-ktx = "1.17.0"
