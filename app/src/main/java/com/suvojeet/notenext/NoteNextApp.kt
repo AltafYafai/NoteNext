@@ -10,6 +10,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.suvojeet.notenext.worker.AutoDeleteWorker
 import dagger.hilt.android.HiltAndroidApp
+import org.acra.config.httpSender
+import org.acra.config.toast
 import org.acra.data.StringFormat
 import org.acra.ktx.initAcra
 import org.acra.sender.HttpSender
