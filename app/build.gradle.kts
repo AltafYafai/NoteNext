@@ -170,8 +170,11 @@ dependencies {
     
     // ACRA
     implementation(libs.acra.core)
+    implementation(libs.acra.javacore)
     implementation(libs.acra.http)
     implementation(libs.acra.toast)
+    implementation(libs.acra.ktx)
+    ksp(libs.acra.javacore)
 }
 
 android {
