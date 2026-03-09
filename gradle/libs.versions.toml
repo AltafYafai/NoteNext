@@ -47,11 +47,11 @@ acra = "5.13.1"
 
 [libraries]
 # ACRA
-acra-core = { group = "ch.acra", name = "acra-core", version.ref = "acra" }
-acra-javacore = { group = "ch.acra", name = "acra-javacore", version.ref = "acra" }
 acra-http = { group = "ch.acra", name = "acra-http", version.ref = "acra" }
 acra-toast = { group = "ch.acra", name = "acra-toast", version.ref = "acra" }
-acra-ktx = { group = "ch.acra", name = "acra-ktx", version.ref = "acra" }
+acra-notification = { group = "ch.acra", name = "acra-notification", version.ref = "acra" }
+acra-dialog = { group = "ch.acra", name = "acra-dialog", version.ref = "acra" }
+acra-core = { group = "ch.acra", name = "acra-core", version.ref = "acra" }
 
 # AndroidX
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
