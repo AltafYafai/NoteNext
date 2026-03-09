@@ -18,5 +18,6 @@
     <string name="image_content_description">Image</string>
     <string name="history">History</string>
     <string name="unlock_with_biometrics">Unlock with Biometrics</string>
-    <string name="biometric_setup_required">Biometric setup is required to use App Lock</string>
-</resources>
+    <string name="biometric_setup_required">Biometric setup is required to enable app lock.</string>
+    <string name="crash_toast_text">NoteNext crashed. A report has been sent to the developer.</string>
+    </resources>

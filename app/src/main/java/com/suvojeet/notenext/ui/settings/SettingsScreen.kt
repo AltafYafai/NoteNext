@@ -92,14 +92,12 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.util.findActivity
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-
-
-// ... (previous imports)
+import androidx.compose.material.icons.rounded.BugReport
+import com.suvojeet.notenext.core.util.LogCollector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
-    // ... (state setup remains same)
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) }
     val scope = rememberCoroutineScope()
@@ -123,6 +121,11 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     var showRateDialog by remember { mutableStateOf(false) }
     var showContactUsDialog by remember { mutableStateOf(false) }
     var showChangelogDialog by remember { mutableStateOf(false) }
+
+    // -- Logging Feature State --
+    var isLoggingActive by remember { mutableStateOf(false) }
+    var showLoggingDialog by remember { mutableStateOf(false) }
+    var issueDescription by remember { mutableStateOf("") }
     
     // -- Import Logic --
     // We need BackupRestoreViewModel for import logic
@@ -302,6 +305,95 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                             subtitle = "From Google Keep, etc.",
                             iconColor = Color(0xFFE91E63),
                             onClick = { showImportSourceDialog = true }
+                        )
+                    }
+                }
+            }
+
+            // --- Socials Section ---
+            item {
+                SettingsSection(
+                    title = "Socials",
+                    color = Color(0xFF00BCD4) // Cyan
+                ) {
+                    SettingsGroupCard {
+                        SettingsItem(
+                            icon = Icons.Rounded.Language,
+                            title = "Website",
+                            subtitle = "Visit our official website",
+                            iconColor = Color(0xFF00BCD4),
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://suvojeet-sengupta.github.io/NoteNext/"))
+                                context.startActivity(intent)
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        SettingsItem(
+                            icon = Icons.Rounded.Language,
+                            title = "Telegram",
+                            subtitle = "Join our community",
+                            iconColor = Color(0xFF2196F3),
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/notenext"))
+                                context.startActivity(intent)
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        SettingsItem(
+                            icon = Icons.Rounded.Description,
+                            title = "Pasty",
+                            subtitle = "Paste and share notes",
+                            iconColor = Color(0xFF607D8B),
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://pasty.suvmusic.in"))
+                                context.startActivity(intent)
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        SettingsItem(
+                            icon = Icons.Rounded.Star,
+                            title = "Credits",
+                            subtitle = "Thanks to everyone",
+                            iconColor = Color(0xFFFFC107),
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/suvojeet-sengupta/NoteNext#credits"))
+                                context.startActivity(intent)
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                        SettingsItem(
+                            icon = Icons.Rounded.BugReport,
+                            title = "Logging",
+                            subtitle = if (isLoggingActive) "Logging in progress... Click to stop" else "Debug and report issues",
+                            iconColor = if (isLoggingActive) Color.Red else Color(0xFFE91E63),
+                            onClick = {
+                                if (isLoggingActive) {
+                                    val deviceInfo = LogCollector.collectDeviceInfo(context)
+                                    val logs = LogCollector.collectLogs()
+                                    val reportText = """
+                                        Issue Description: $issueDescription
+                                        
+                                        $deviceInfo
+                                        
+                                        --- Logs ---
+                                        $logs
+                                    """.trimIndent()
+                                    
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_SUBJECT, "NoteNext Debug Logs")
+                                        putExtra(Intent.EXTRA_TEXT, reportText)
+                                    }
+                                    
+                                    // Use chooser for system share sheet
+                                    val chooser = Intent.createChooser(intent, "Share Debug Logs")
+                                    context.startActivity(chooser)
+                                    
+                                    isLoggingActive = false
+                                } else {
+                                    showLoggingDialog = true
+                                }
+                            }
                         )
                     }
                 }
@@ -571,6 +663,40 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
 
     if (showChangelogDialog) {
         ChangelogDialog(onDismiss = { showChangelogDialog = false })
+    }
+
+    if (showLoggingDialog) {
+        AlertDialog(
+            onDismissRequest = { showLoggingDialog = false },
+            title = { Text("Start Logging") },
+            text = {
+                Column {
+                    Text("Describe the issue you're facing:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = issueDescription,
+                        onValueChange = { issueDescription = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("e.g., App crashes when...") }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isLoggingActive = true
+                        showLoggingDialog = false
+                    }
+                ) {
+                    Text("Start")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLoggingDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
