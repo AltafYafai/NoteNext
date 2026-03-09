@@ -80,7 +80,7 @@ dependencies {
     
     // Compose Text
     implementation(libs.androidx.ui.text)
-    implementation(libs.androidx.ui.text.google-fonts)
+    implementation(libs.androidx.ui.text.google.fonts)
 
     // Google Drive Backup
     implementation(libs.play.services.auth)
