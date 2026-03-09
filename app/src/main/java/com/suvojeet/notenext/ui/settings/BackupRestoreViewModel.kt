@@ -4,8 +4,6 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.suvojeet.notenext.data.*
 import com.suvojeet.notenext.data.backup.GoogleDriveManager
 import com.suvojeet.notenext.data.backup.KeepNote
@@ -17,6 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
@@ -75,6 +75,12 @@ class BackupRestoreViewModel @Inject constructor(
     private val _state = MutableStateFlow(BackupRestoreState())
     val state = _state.asStateFlow()
 
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        coerceInputValues = true
+    }
+
     init {
         val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
         val enabled = sharedPrefs.getBoolean("auto_backup_enabled", false)
@@ -125,9 +131,9 @@ class BackupRestoreViewModel @Inject constructor(
                 val projects = repository.getProjects().first()
                 val attachments = notes.flatMap { it.attachments }
 
-                val notesJson = Gson().toJson(notes)
-                val labelsJson = Gson().toJson(labels)
-                val projectsJson = Gson().toJson(projects)
+                val notesJson = json.encodeToString(notes)
+                val labelsJson = json.encodeToString(labels)
+                val projectsJson = json.encodeToString(projects)
 
                 var attachmentsSize = 0L
                 attachments.forEach { attachment ->
@@ -351,8 +357,7 @@ class BackupRestoreViewModel @Inject constructor(
         }
 
         projectsJson?.let {
-            val projectsType = object : TypeToken<List<Project>>() {}.type
-            val projects: List<Project> = Gson().fromJson(it, projectsType)
+            val projects: List<Project> = json.decodeFromString(it)
             projects.forEach { project ->
                 val oldId = project.id
                 val newId = repository.insertProject(project.copy(id = 0)).toInt()
@@ -361,14 +366,12 @@ class BackupRestoreViewModel @Inject constructor(
         }
 
         labelsJson?.let {
-            val labelsType = object : TypeToken<List<Label>>() {}.type
-            val labels: List<Label> = Gson().fromJson(it, labelsType)
+            val labels: List<Label> = json.decodeFromString(it)
             labels.forEach { repository.insertLabel(it) }
         }
 
         notesJson?.let {
-            val notesType = object : TypeToken<List<NoteWithAttachments>>() {}.type
-            val notesWithAttachments: List<NoteWithAttachments> = Gson().fromJson(it, notesType)
+            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(it)
             notesWithAttachments.forEach { noteWithAttachments ->
                 val oldProjectId = noteWithAttachments.note.projectId
                 val newProjectId = oldToNewProjectIds[oldProjectId]
@@ -397,14 +400,13 @@ class BackupRestoreViewModel @Inject constructor(
                         ZipInputStream(inputStream).use { zis ->
                             var zipEntry = zis.nextEntry
                             var importedCount = 0
-                            val gson = Gson()
                             
                             while (zipEntry != null) {
                                 if (!zipEntry.isDirectory && zipEntry.name.endsWith(".json")) {
                                     try {
                                         val jsonString = readZipEntryText(zis)
-                                        val keepNote = gson.fromJson(jsonString, KeepNote::class.java)
-                                        if (keepNote != null && !keepNote.isTrashed) {
+                                        val keepNote: KeepNote = json.decodeFromString(jsonString)
+                                        if (!keepNote.isTrashed) {
                                             saveKeepNote(keepNote)
                                             importedCount++
                                         }

@@ -1,16 +1,16 @@
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "com.suvojeet.notenext.data"
-    compileSdk = 36
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = 24
+        minSdk = libs.versions.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -45,46 +45,46 @@ android {
 dependencies {
     implementation(project(":core"))
 
-    implementation("androidx.core:core-ktx:1.17.0")
+    implementation(libs.androidx.core.ktx)
 
     // Room
-    implementation("androidx.room:room-runtime:2.8.2")
-    implementation("androidx.room:room-ktx:2.8.2")
-    ksp("androidx.room:room-compiler:2.8.2")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
-    implementation("androidx.datastore:datastore-core:1.1.7")
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.core)
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.57.1")
-    ksp("com.google.dagger:hilt-android-compiler:2.57.1")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android-compiler)
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.11.0")
+    implementation(libs.androidx.work.runtime-ktx)
     
     // Hilt Worker
-    implementation("androidx.hilt:hilt-work:1.3.0")
-    ksp("androidx.hilt:hilt-compiler:1.3.0")
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
     
     // Gson
-    implementation("com.google.code.gson:gson:2.13.2")
+    implementation(libs.gson)
     
     // Jsoup for HTML parsing
-    implementation("org.jsoup:jsoup:1.21.2")
+    implementation(libs.jsoup)
     
-    // Compose Text (AnnotatedString)
-    implementation("androidx.compose.ui:ui-text:1.7.6")
+    // Compose Text
+    implementation(libs.androidx.ui.text.google-fonts) // Reusing this or could add separate ui-text
 
     // Google Drive Backup
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
-    implementation("com.google.api-client:google-api-client-android:2.8.1")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20251210-2.0.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.30.1")
+    implementation(libs.play.services-auth)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.api.services.drive)
+    implementation(libs.google.auth.library.oauth2.http)
     
     // DocumentFile
-    implementation("androidx.documentfile:documentfile:1.1.0")
+    implementation(libs.androidx.documentfile)
 
-    // Kotlinx Serialization (Explicitly added to fix build error with 1.6.3)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0")
+    // Kotlinx Serialization
+    implementation(libs.kotlinx.serialization.json)
 }

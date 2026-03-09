@@ -12,8 +12,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.LabelDao

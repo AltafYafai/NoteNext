@@ -136,20 +136,19 @@ abstract class NoteDatabase : RoomDatabase() {
                 // Data Migration
                 val cursor = db.query("SELECT id, content FROM notes WHERE noteType = 'CHECKLIST'")
                 if (cursor.moveToFirst()) {
-                    val gson = com.google.gson.Gson()
-                    val type = object : com.google.gson.reflect.TypeToken<List<Map<String, Any>>>() {}.type
+                    val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
                     
                     do {
                         val noteId = cursor.getInt(cursor.getColumnIndexOrThrow("id"))
                         val content = cursor.getString(cursor.getColumnIndexOrThrow("content"))
                         
                         try {
-                            val oldItems: List<Map<String, Any>>? = gson.fromJson(content, type)
+                            val oldItems: List<kotlinx.serialization.json.JsonObject>? = json.decodeFromString(content)
                             
                             oldItems?.forEachIndexed { index, itemMap ->
-                                val id = itemMap["id"] as? String ?: java.util.UUID.randomUUID().toString()
-                                val text = itemMap["text"] as? String ?: ""
-                                val isChecked = (itemMap["isChecked"] as? Boolean) == true
+                                val id = itemMap["id"]?.let { it as? kotlinx.serialization.json.JsonPrimitive }?.content ?: java.util.UUID.randomUUID().toString()
+                                val text = itemMap["text"]?.let { it as? kotlinx.serialization.json.JsonPrimitive }?.content ?: ""
+                                val isChecked = (itemMap["isChecked"]?.let { it as? kotlinx.serialization.json.JsonPrimitive }?.content?.toBoolean()) == true
                                 
                                 db.execSQL("INSERT INTO checklist_items (id, noteId, text, isChecked, position) VALUES (?, ?, ?, ?, ?)",
                                     arrayOf<Any>(id, noteId, text, if (isChecked) 1 else 0, index))

@@ -1,8 +1,7 @@
-
 package com.suvojeet.notenext
 
 import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,11 +30,16 @@ import com.suvojeet.notenext.ui.lock.LockScreen
 import androidx.compose.runtime.LaunchedEffect
 import com.suvojeet.notenext.ui.setup.SetupScreen
 import java.util.Locale
-import android.content.res.Configuration
 import android.content.Intent
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
 
     private val _startNoteIdFlow = MutableStateFlow(-1)
 
@@ -43,8 +47,6 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
-        val settingsRepository = SettingsRepository(this)
 
         val initialNoteId = intent.getIntExtra("NOTE_ID", -1)
         _startNoteIdFlow.value = initialNoteId
@@ -73,6 +75,16 @@ class MainActivity : FragmentActivity() {
             }
         }
 
+        // Apply Locale on start (if needed, though Android 13+ handles this via its own service)
+        lifecycleScope.launch {
+            settingsRepository.language.collect { languageCode ->
+                val appLocales = LocaleListCompat.forLanguageTags(languageCode)
+                if (AppCompatDelegate.getApplicationLocales() != appLocales) {
+                    AppCompatDelegate.setApplicationLocales(appLocales)
+                }
+            }
+        }
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
                 this,
@@ -88,17 +100,6 @@ class MainActivity : FragmentActivity() {
         }
 
         setContent {
-            val languageCode by settingsRepository.language.collectAsState(initial = "en")
-            LaunchedEffect(languageCode) {
-                val locale = Locale(languageCode)
-                Locale.setDefault(locale)
-                val config = Configuration(resources.configuration)
-                config.setLocale(locale)
-                resources.updateConfiguration(config, resources.displayMetrics)
-            }
-
-
-
             val windowSizeClass = calculateWindowSizeClass(this)
             val themeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
             val shapeFamily by settingsRepository.shapeFamily.collectAsState(initial = ShapeFamily.EXPRESSIVE)
@@ -115,9 +116,6 @@ class MainActivity : FragmentActivity() {
 
             var unlocked by remember { mutableStateOf(false) }
 
-
-
-
             // In-App Update Logic
             var showUpdateDialog by remember { mutableStateOf(false) }
             val appUpdateManager = com.google.android.play.core.appupdate.AppUpdateManagerFactory.create(this)
@@ -127,7 +125,6 @@ class MainActivity : FragmentActivity() {
                 val appUpdateInfoTask = appUpdateManager.appUpdateInfo
                 appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
                     if (appUpdateInfo.updateAvailability() == com.google.android.play.core.install.model.UpdateAvailability.UPDATE_AVAILABLE) {
-                         // Check for Flexible update (or Immediate if preferred, but Flexible allows background download)
                          if (appUpdateInfo.isUpdateTypeAllowed(com.google.android.play.core.install.model.AppUpdateType.FLEXIBLE)) {
                              showUpdateDialog = true
                          }
@@ -138,16 +135,15 @@ class MainActivity : FragmentActivity() {
             if (showUpdateDialog) {
                 com.suvojeet.notenext.ui.components.UpdateAvailableDialog(
                     onUpdateClick = {
-                        showUpdateDialog = false // Dismiss our dialog
+                        showUpdateDialog = false
                         try {
                             appUpdateManager.startUpdateFlowForResult(
                                 appUpdateInfoTask.result,
                                 com.google.android.play.core.install.model.AppUpdateType.FLEXIBLE,
                                 this,
-                                500 // Result code constant
+                                500
                             )
                         } catch (e: Exception) {
-                            // Verify if result is ready
                             appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
                                 appUpdateManager.startUpdateFlowForResult(
                                     info,
@@ -163,16 +159,14 @@ class MainActivity : FragmentActivity() {
             }
 
             NoteNextTheme(themeMode = themeMode, shapeFamily = shapeFamily) {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (enableAppLockLoaded == null || isSetupCompleteLoaded == null) {
-                        // Show a blank screen or splash screen while settings are loading
                         Surface(modifier = Modifier.fillMaxSize()) {}
                     } else if (isSetupCompleteLoaded == false) {
-                        SetupScreen { /* Setup is complete, UI will recompose based on isSetupComplete */ }
+                        SetupScreen { }
                     } else if (enableAppLockLoaded!! && !unlocked) {
                         LockScreen(onUnlock = { unlocked = true })
                     } else {
@@ -184,7 +178,6 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    // Need to declare this locally or use the property if captured
     private val appUpdateInfoTask by lazy { 
         com.google.android.play.core.appupdate.AppUpdateManagerFactory.create(this).appUpdateInfo 
     }
@@ -197,8 +190,6 @@ class MainActivity : FragmentActivity() {
              _startNoteIdFlow.value = noteId
         }
     }
-
-    // Removed manual state variable
 
     override fun onActionModeStarted(mode: android.view.ActionMode?) {
         val menu = mode?.menu

@@ -1,21 +1,21 @@
 package com.suvojeet.notenext.data
 
 import androidx.room.TypeConverter
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class Converters {
     @TypeConverter
     fun fromLinkPreviewList(value: List<LinkPreview>): String {
-        val gson = Gson()
-        val type = object : TypeToken<List<LinkPreview>>() {}.type
-        return gson.toJson(value, type)
+        return Json.encodeToString(value)
     }
 
     @TypeConverter
     fun toLinkPreviewList(value: String): List<LinkPreview> {
-        val gson = Gson()
-        val type = object : TypeToken<List<LinkPreview>>() {}.type
-        return gson.fromJson(value, type)
+        return try {
+            Json.decodeFromString(value)
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 }

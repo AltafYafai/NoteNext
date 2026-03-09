@@ -438,8 +438,9 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
             onLanguageSelected = { language ->
                 scope.launch {
                     settingsRepository.saveLanguage(language)
-                    val activity = context.findActivity()
-                    activity?.recreate()
+                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                        androidx.core.os.LocaleListCompat.forLanguageTags(language)
+                    )
                     showLanguageDialog = false
                 }
             },

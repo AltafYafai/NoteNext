@@ -1,15 +1,15 @@
 plugins {
-    id("com.android.library")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.suvojeet.notenext.core"
-    compileSdk = 36
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        minSdk = 24
+        minSdk = libs.versions.minSdk.get().toInt()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -36,27 +36,23 @@ android {
     buildFeatures {
         compose = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "2.2.20"
-    }
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.17.0")
-    val composeBom = platform("androidx.compose:compose-bom:2025.12.00")
-    implementation(composeBom)
+    implementation(libs.androidx.core.ktx)
+    implementation(platform(libs.androidx.compose.bom))
     
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling-preview)
+    implementation(libs.androidx.material3)
     
     // Biometric
-    implementation("androidx.biometric:biometric:1.4.0-alpha02")
+    implementation(libs.androidx.biometric)
     
     // Google Fonts
-    implementation("androidx.compose.ui:ui-text-google-fonts")
+    implementation(libs.androidx.ui.text.google-fonts)
     
-    // Gson (Might be used in utils)
-    implementation("com.google.code.gson:gson:2.13.2")
+    // Gson
+    implementation(libs.gson)
 }

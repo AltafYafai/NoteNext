@@ -2,12 +2,12 @@ package com.suvojeet.notenext.data.backup
 
 import android.content.Context
 import android.net.Uri
-import com.google.gson.Gson
 import com.suvojeet.notenext.data.NoteRepository
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.NoteWithAttachments
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.InputStreamReader
 import java.util.zip.ZipInputStream
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,6 +27,11 @@ class BackupRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val googleDriveManager: GoogleDriveManager
 ) {
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        coerceInputValues = true
+    }
 
     suspend fun createBackupZip(targetFile: File, includeAttachments: Boolean = true) {
         FileOutputStream(targetFile).use { fos ->
@@ -118,50 +123,6 @@ class BackupRepository @Inject constructor(
             false
         }
     }
-
-    suspend fun restoreFromEncryptedUri(uri: Uri, password: String) {
-        // 1. Decrypt to temp ZIP
-        val tempZipFile = File(context.cacheDir, "temp_decrypted_restore.zip")
-        
-        try {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                EncryptionUtils.decryptFile(inputStream, tempZipFile, password)
-            }
-        } catch (e: Exception) {
-            tempZipFile.delete() // Ensure cleanup on failure
-            throw Exception("Decryption failed. Incorrect password or corrupted file.")
-        }
-        
-        // 2. Restore from temp ZIP
-        try {
-            java.io.FileInputStream(tempZipFile).use { inputStream ->
-                ZipInputStream(inputStream).use { zis ->
-                    // Reuse the existing restoration logic by reading from the ZIS
-                    // Ideally we'd call a shared "restoreFromZipInputStream" but here we have logic inside restoreSelectedProjects
-                    // or we need to extract the "restore all" logic.
-                    // IMPORTANT: The original implementation didn't have a clean "restoreAll" function in Repository, 
-                    // it was inside ViewModel's `restoreBackup`. 
-                    // However, `readProjectsFromZip` is here. 
-                    // Wait, the ViewModel calls `readBackupFromZip` (private in VM). 
-                    // We need to move `readBackupFromZip` FROM ViewModel TO Repository or make it public/shared.
-                    // For now, let's keep the pattern: Logic is in ViewModel. 
-                    // Repository just handles Data operations.
-                    // BUT: Integration requires me to return a Stream or handle it here.
-                    
-                    // Actually, ViewModel calls `application.contentResolver.openInputStream(uri)` then ZipInputStream.
-                    // So `restoreFromEncryptedUri` in Repo might be wrong place for FULL restore logic if logic is in VM.
-                    // BUT, if I implement `restoreFromEncryptedUri` here, I can return the decrypted File or handle it.
-                    
-                    // BETTER DESIGN:
-                    // Repository provides `decryptBackup(uri, password): File` (returns temp file)
-                    // ViewModel calls this, gets temp file, opens Stream, calls its own `readBackupFromZip`, then deletes temp file.
-                }
-            }
-        } finally {
-            // tempZipFile.delete() // VM should handle cleanup if we return the file? 
-            // OR we execute restore content HERE.
-        }
-    }
     
     // Helper to decrypt and provide a temp file (caller must delete)
     suspend fun decryptBackupToTempFile(uri: Uri, password: String): File {
@@ -216,21 +177,21 @@ class BackupRepository @Inject constructor(
     private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean) {
         // Backup notes
         val notes = repository.getNotes().first()
-        val notesJson = Gson().toJson(notes)
+        val notesJson = json.encodeToString(notes)
         zos.putNextEntry(ZipEntry("notes.json"))
         zos.write(notesJson.toByteArray())
         zos.closeEntry()
 
         // Backup labels
         val labels = repository.getLabels().first()
-        val labelsJson = Gson().toJson(labels)
+        val labelsJson = json.encodeToString(labels)
         zos.putNextEntry(ZipEntry("labels.json"))
         zos.write(labelsJson.toByteArray())
         zos.closeEntry()
 
         // Backup projects
         val projects = repository.getProjects().first()
-        val projectsJson = Gson().toJson(projects)
+        val projectsJson = json.encodeToString(projects)
         zos.putNextEntry(ZipEntry("projects.json"))
         zos.write(projectsJson.toByteArray())
         zos.closeEntry()
@@ -263,8 +224,7 @@ class BackupRepository @Inject constructor(
                 while (zipEntry != null) {
                     if (zipEntry.name == "projects.json") {
                         val projectsJson = InputStreamReader(zis).readText()
-                        val projectsType = object : TypeToken<List<Project>>() {}.type
-                        projects = Gson().fromJson(projectsJson, projectsType)
+                        projects = json.decodeFromString(projectsJson)
                         break
                     }
                     zipEntry = zis.nextEntry
@@ -297,15 +257,13 @@ class BackupRepository @Inject constructor(
 
         // 1. Restore Labels (All)
         labelsJson?.let {
-            val labelsType = object : TypeToken<List<Label>>() {}.type
-            val labels: List<Label> = Gson().fromJson(it, labelsType)
+            val labels: List<Label> = json.decodeFromString(it)
             labels.forEach { repository.insertLabel(it) }
         }
 
         // 2. Restore Selected Projects
         projectsJson?.let {
-            val projectsType = object : TypeToken<List<Project>>() {}.type
-            val allProjects: List<Project> = Gson().fromJson(it, projectsType)
+            val allProjects: List<Project> = json.decodeFromString(it)
             val selectedProjects = allProjects.filter { project -> selectedProjectIds.contains(project.id) }
             
             selectedProjects.forEach { project ->
@@ -319,8 +277,7 @@ class BackupRepository @Inject constructor(
         val attachmentsToExtract = mutableListOf<Pair<String, File>>() // ZipEntryName -> TargetFile
 
         notesJson?.let {
-            val notesType = object : TypeToken<List<NoteWithAttachments>>() {}.type
-            val notesWithAttachments: List<NoteWithAttachments> = Gson().fromJson(it, notesType)
+            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(it)
             
             notesWithAttachments.forEach { noteWithAttachments ->
                 val oldProjectId = noteWithAttachments.note.projectId
@@ -339,7 +296,6 @@ class BackupRepository @Inject constructor(
                             val zipEntryName = "attachments/$fileName"
                             
                             // Create target file in internal storage
-                            // Use a timestamp to avoid overwriting existing files with same name but different content
                             val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
                             val attachmentsDir = File(context.filesDir, "attachments")
                             if (!attachmentsDir.exists()) attachmentsDir.mkdirs()

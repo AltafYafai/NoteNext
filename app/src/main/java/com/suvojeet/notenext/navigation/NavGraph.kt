@@ -89,6 +89,7 @@ import com.suvojeet.notenext.util.BiometricAuthManager
 import com.suvojeet.notenext.util.findActivity
 import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
+import androidx.navigation.toRoute
 
 @Composable
 fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId: Int = -1, startAddNote: Boolean = false, sharedText: String? = null) {
@@ -116,8 +117,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 biometricAuthManager?.showBiometricPrompt(
                     onAuthSuccess = {
                         notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
-                        navController.navigate("notes") {
-                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                        navController.navigate(Destination.Notes()) {
+                            popUpTo<Destination.Notes> { inclusive = true }
                             launchSingleTop = true
                         }
                     },
@@ -127,8 +128,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
             } else {
                 notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
-                navController.navigate("notes") {
-                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                navController.navigate(Destination.Notes()) {
+                    popUpTo<Destination.Notes> { inclusive = true }
                     launchSingleTop = true
                 }
             }
@@ -160,17 +161,17 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
+                    val currentDestination = navBackStackEntry?.destination
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) },
                         label = { Text(stringResource(id = R.string.notes)) },
-                        selected = currentRoute == "notes" && notesState.filteredLabel == null,
+                        selected = currentDestination?.route?.contains("Notes") == true && notesState.filteredLabel == null,
                         onClick = {
-                            if (currentRoute != "notes" || notesState.filteredLabel != null) {
+                            if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != null) {
                                 notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
-                                navController.navigate("notes") {
-                                    popUpTo("notes") { inclusive = true }
+                                navController.navigate(Destination.Notes()) {
+                                    popUpTo<Destination.Notes> { inclusive = true }
                                     launchSingleTop = true
                                 }
                             }
@@ -181,9 +182,9 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) },
                         label = { Text(stringResource(id = R.string.projects)) },
-                        selected = currentRoute == "projects",
+                        selected = currentDestination?.route?.contains("Projects") == true,
                         onClick = {
-                            navController.navigate("projects")
+                            navController.navigate(Destination.Projects)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -191,10 +192,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) },
                         label = { Text(stringResource(id = R.string.archive)) },
-                        selected = currentRoute == "archive",
+                        selected = currentDestination?.route?.contains("Archive") == true,
                         onClick = {
-                            navController.navigate("archive") {
-                                popUpTo(navController.graph.startDestinationId)
+                            navController.navigate(Destination.Archive) {
+                                popUpTo<Destination.Notes>()
                                 launchSingleTop = true
                             }
                         },
@@ -204,10 +205,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) },
                         label = { Text(stringResource(id = R.string.bin)) },
-                        selected = currentRoute == "bin",
+                        selected = currentDestination?.route?.contains("Bin") == true,
                         onClick = {
-                            navController.navigate("bin") {
-                                popUpTo(navController.graph.startDestinationId)
+                            navController.navigate(Destination.Bin) {
+                                popUpTo<Destination.Notes>()
                                 launchSingleTop = true
                             }
                         },
@@ -217,9 +218,9 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) },
                         label = { Text(stringResource(id = R.string.settings)) },
-                        selected = currentRoute == "settings",
+                        selected = currentDestination?.route?.contains("Settings") == true,
                         onClick = {
-                            navController.navigate("settings")
+                            navController.navigate(Destination.Settings)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -227,9 +228,9 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
                         label = { Text(stringResource(id = R.string.reminders)) },
-                        selected = currentRoute == "reminder",
+                        selected = currentDestination?.route?.contains("Reminder") == true,
                         onClick = {
-                            navController.navigate("reminder")
+                            navController.navigate(Destination.Reminder)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -242,7 +243,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                             label = { Text(stringResource(id = R.string.create_new_label)) },
                             selected = false,
                             onClick = {
-                                navController.navigate("edit_labels")
+                                navController.navigate(Destination.EditLabels)
                             },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
@@ -260,7 +261,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             IconButton(onClick = {
-                                navController.navigate("edit_labels")
+                                navController.navigate(Destination.EditLabels)
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -277,9 +278,9 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 selected = notesState.filteredLabel == label,
                                 onClick = {
                                     notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
-                                    if (currentRoute != "notes" || notesState.filteredLabel != label) {
-                                        navController.navigate("notes") {
-                                            popUpTo("notes") { inclusive = true }
+                                    if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != label) {
+                                        navController.navigate(Destination.Notes()) {
+                                            popUpTo<Destination.Notes> { inclusive = true }
                                             launchSingleTop = true
                                         }
                                     }
@@ -291,39 +292,42 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
             }
         ) {
-            NavHost(navController = navController, startDestination = "notes", modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-                composable(
-                    route = "notes",
+            NavHost(navController = navController, startDestination = Destination.Notes(), modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+                composable<Destination.Notes>(
                     enterTransition = { fadeIn(animationSpec = tween(300)) },
                     exitTransition = { fadeOut(animationSpec = tween(300)) }
                 ) {
                     NotesScreen(
                         viewModel = notesViewModel,
-                        onSettingsClick = { navController.navigate("settings") },
-                        onArchiveClick = { navController.navigate("archive") },
-                        onEditLabelsClick = { navController.navigate("edit_labels") },
-                        onBinClick = { navController.navigate("bin") },
+                        onSettingsClick = { navController.navigate(Destination.Settings) },
+                        onArchiveClick = { navController.navigate(Destination.Archive) },
+                        onEditLabelsClick = { navController.navigate(Destination.EditLabels) },
+                        onBinClick = { navController.navigate(Destination.Bin) },
                         themeMode = themeMode,
                         settingsRepository = settingsRepository,
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onScanQrClick = { navController.navigate("qr_scanner") },
-                        onTodoClick = { navController.navigate("todo") },
+                        onScanQrClick = { navController.navigate(Destination.QrScanner) },
+                        onTodoClick = { navController.navigate(Destination.Todo) },
                         events = notesViewModel.events
                     )
                 }
 
-                composable(
-                    route = "settings",
+                composable<Destination.Settings>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
                     SettingsScreen(
                         onBackClick = { navController.popBackStack() },
-                        onNavigate = { route -> navController.navigate(route) }
+                        onNavigate = { route -> 
+                             when(route) {
+                                 "backup" -> navController.navigate(Destination.Backup)
+                                 "about" -> navController.navigate(Destination.About)
+                                 else -> {}
+                             }
+                        }
                     )
                 }
-                composable(
-                    route = "backup",
+                composable<Destination.Backup>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -332,10 +336,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-
-
-                composable(
-                    route = "archive",
+                composable<Destination.Archive>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -344,8 +345,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-                composable(
-                    route = "edit_labels",
+                composable<Destination.EditLabels>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -354,8 +354,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-                composable(
-                    route = "bin",
+                composable<Destination.Bin>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -366,24 +365,20 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-
-                composable(
-                    route = "reminder",
+                composable<Destination.Reminder>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
                     ReminderScreen(
                         onBackClick = { navController.popBackStack() },
                         onNoteClick = { note ->
-                             navController.navigate("notes?noteId=${note.id}") {
-                                popUpTo("notes") { inclusive = true }
-                                launchSingleTop = true
+                            navController.navigate(Destination.Notes(noteId = note.id)) {
+                                popUpTo<Destination.Notes> { inclusive = true }
                             }
                         }
                     )
                 }
-                composable(
-                    route = "add_edit_reminder",
+                composable<Destination.AddEditReminder>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -391,22 +386,20 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = "projects",
+                composable<Destination.Projects>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
                     ProjectScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onProjectClick = { projectId ->
-                            navController.navigate("project_notes/$projectId")
+                            navController.navigate(Destination.ProjectNotes(projectId))
                         },
                         navController = navController,
                         settingsRepository = settingsRepository
                     )
                 }
-                composable(
-                    route = "about",
+                composable<Destination.About>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -414,8 +407,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = "qr_scanner",
+                composable<Destination.QrScanner>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -427,8 +419,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         }
                     )
                 }
-                composable(
-                    route = "todo",
+                composable<Destination.Todo>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -436,8 +427,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = "project_notes/{projectId}",
+                composable<Destination.ProjectNotes>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -447,13 +437,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         settingsRepository = settingsRepository
                     )
                 }
-                composable(
-                    route = "add_edit_note?projectId={projectId}&noteType={noteType}",
-                    arguments = listOf(
-                        androidx.navigation.navArgument("projectId") { type = androidx.navigation.NavType.IntType; defaultValue = -1 },
-                        androidx.navigation.navArgument("noteType") { type = androidx.navigation.NavType.StringType; defaultValue = "TEXT" }
-                    )
-                ) {
+                composable<Destination.AddEditNote> {
                     val viewModel: ProjectNotesViewModel = hiltViewModel()
                     AddEditNoteScreen(
                         state = viewModel.state.collectAsState().value.toNotesState(),
@@ -479,19 +463,18 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route
+                    val currentDestination = navBackStackEntry?.destination
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) },
                         label = { Text(stringResource(id = R.string.notes)) },
-                        selected = currentRoute == "notes" && notesState.filteredLabel == null,
+                        selected = currentDestination?.route?.contains("Notes") == true && notesState.filteredLabel == null,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            if (currentRoute != "notes" || notesState.filteredLabel != null) {
+                            if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != null) {
                                 notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
-                                notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
-                                navController.navigate("notes") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                navController.navigate(Destination.Notes()) {
+                                    popUpTo<Destination.Notes> { inclusive = true }
                                     launchSingleTop = true
                                 }
                             }
@@ -501,10 +484,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) },
                         label = { Text(stringResource(id = R.string.projects)) },
-                        selected = currentRoute == "projects",
+                        selected = currentDestination?.route?.contains("Projects") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("projects")
+                            navController.navigate(Destination.Projects)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -512,11 +495,11 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) },
                         label = { Text(stringResource(id = R.string.archive)) },
-                        selected = currentRoute == "archive",
+                        selected = currentDestination?.route?.contains("Archive") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("archive") {
-                                popUpTo(navController.graph.startDestinationId)
+                            navController.navigate(Destination.Archive) {
+                                popUpTo<Destination.Notes>()
                                 launchSingleTop = true
                             }
                         },
@@ -526,11 +509,11 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) },
                         label = { Text(stringResource(id = R.string.bin)) },
-                        selected = currentRoute == "bin",
+                        selected = currentDestination?.route?.contains("Bin") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("bin") {
-                                popUpTo(navController.graph.startDestinationId)
+                            navController.navigate(Destination.Bin) {
+                                popUpTo<Destination.Notes>()
                                 launchSingleTop = true
                             }
                         },
@@ -540,10 +523,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) },
                         label = { Text(stringResource(id = R.string.settings)) },
-                        selected = currentRoute == "settings",
+                        selected = currentDestination?.route?.contains("Settings") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("settings")
+                            navController.navigate(Destination.Settings)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -551,10 +534,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
                         label = { Text(stringResource(id = R.string.reminders)) },
-                        selected = currentRoute == "reminder",
+                        selected = currentDestination?.route?.contains("Reminder") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            navController.navigate("reminder")
+                            navController.navigate(Destination.Reminder)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -568,7 +551,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
-                                navController.navigate("edit_labels")
+                                navController.navigate(Destination.EditLabels)
                             },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                         )
@@ -587,7 +570,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                             )
                             IconButton(onClick = {
                                 scope.launch { drawerState.close() }
-                                navController.navigate("edit_labels")
+                                navController.navigate(Destination.EditLabels)
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -605,9 +588,9 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 onClick = {
                                     scope.launch { drawerState.close() }
                                     notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
-                                    if (currentRoute != "notes" || notesState.filteredLabel != label) {
-                                        navController.navigate("notes") {
-                                            popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                    if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != label) {
+                                        navController.navigate(Destination.Notes()) {
+                                            popUpTo<Destination.Notes> { inclusive = true }
                                             launchSingleTop = true
                                         }
                                     }
@@ -619,19 +602,13 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
             }
         ) {
-            NavHost(navController = navController, startDestination = "notes", modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
-                composable(
-                    route = "notes?noteId={noteId}",
-                    arguments = listOf(
-                        androidx.navigation.navArgument("noteId") {
-                            type = androidx.navigation.NavType.IntType
-                            defaultValue = -1
-                        }
-                    ),
+            NavHost(navController = navController, startDestination = Destination.Notes(), modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+                composable<Destination.Notes>(
                     enterTransition = { fadeIn(animationSpec = tween(300)) },
                     exitTransition = { fadeOut(animationSpec = tween(300)) }
                 ) { backStackEntry ->
-                    val noteId = backStackEntry.arguments?.getInt("noteId") ?: -1
+                    val route: Destination.Notes = backStackEntry.toRoute()
+                    val noteId = route.noteId
                     LaunchedEffect(noteId) {
                         if (noteId != -1) {
                             notesViewModel.onEvent(NotesEvent.ExpandNote(noteId))
@@ -639,31 +616,35 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     }
                     NotesScreen(
                         viewModel = notesViewModel,
-                        onSettingsClick = { navController.navigate("settings") },
-                        onArchiveClick = { navController.navigate("archive") },
-                        onEditLabelsClick = { navController.navigate("edit_labels") },
-                        onBinClick = { navController.navigate("bin") },
+                        onSettingsClick = { navController.navigate(Destination.Settings) },
+                        onArchiveClick = { navController.navigate(Destination.Archive) },
+                        onEditLabelsClick = { navController.navigate(Destination.EditLabels) },
+                        onBinClick = { navController.navigate(Destination.Bin) },
                         themeMode = themeMode,
                         settingsRepository = settingsRepository,
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onScanQrClick = { navController.navigate("qr_scanner") },
-                        onTodoClick = { navController.navigate("todo") },
+                        onScanQrClick = { navController.navigate(Destination.QrScanner) },
+                        onTodoClick = { navController.navigate(Destination.Todo) },
                         events = notesViewModel.events
                     )
                 }
 
-                composable(
-                    route = "settings",
+                composable<Destination.Settings>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
                     SettingsScreen(
                         onBackClick = { navController.popBackStack() },
-                        onNavigate = { route -> navController.navigate(route) }
+                        onNavigate = { route -> 
+                            when(route) {
+                                 "backup" -> navController.navigate(Destination.Backup)
+                                 "about" -> navController.navigate(Destination.About)
+                                 else -> {}
+                             }
+                        }
                     )
                 }
-                composable(
-                    route = "backup",
+                composable<Destination.Backup>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -672,10 +653,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-
-
-                composable(
-                    route = "archive",
+                composable<Destination.Archive>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -684,8 +662,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-                composable(
-                    route = "edit_labels",
+                composable<Destination.EditLabels>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -694,8 +671,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-                composable(
-                    route = "bin",
+                composable<Destination.Bin>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -706,62 +682,20 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
 
-
-                composable(
-                    route = "reminder",
+                composable<Destination.Reminder>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
                     ReminderScreen(
                         onBackClick = { navController.popBackStack() },
                         onNoteClick = { note ->
-                            // Navigate to notes screen and request expansion (simulated via viewmodel event if possible or navigating with ID)
-                            // Since NotesScreen is the home, we can navigate there.
-                            // However, NotesScreen logic to expand a note relies on NotesViewModel.
-                            // We can use the viewModel from this scope since it's hiltViewModel() and scoped to graph, 
-                            // but NotesViewModel is scoped to its composable block above.
-                            // We need to trigger expansion in NotesViewModel.
-                            // Option: Navigate to "notes" and let NotesScreen handle it if we pass an argument,
-                            // OR, since we are in the same NavGraph, we can just pop back to notes and expand.
-                            // But "ReminderScreen" is a separate route.
-                            // We should probably instantiate NotesViewModel at a higher level or use hiltViewModel() which gives a scoped instance.
-                            // Wait, hiltViewModel() in different composables gives different instances unless scoped to a navigation graph route.
-                            // Here implementation uses simple hiltViewModel() at composable level.
-                            
-                            // Let's assume we can navigate to "notes" and pass noteId as argument if we modify "notes" route,
-                            // OR we can rely on shared ViewModel if we scope it to NavGraph (nesting).
-                            // Currently, standard Hilt nav isn't scoped to entire graph unless we make a nested graph.
-                            
-                            // Workaround: We will use the 'notes' route but we need to trigger the event.
-                            // Ideally, `notesViewModel` should be lifted if we want to share it, or we use a deep link.
-                            
-                            // Let's modify the "notes" route to accept an optional noteId for expansion.
-                            // But first, let's just fix the compilation error by matching the signature.
-                            // For now we will just pop back to notes (home) and maybe try to expand? 
-                            // Actually, I can navigate to "notes" and set a side effect? No.
-                            
-                            // Let's use the `add_edit_note` route that ProjectNotes uses?
-                            // That route is: "add_edit_note?projectId={projectId}&noteType={noteType}"
-                            // It uses ProjectNotesViewModel, which might not be what we want for main notes.
-                            // Main notes are handled in NotesScreen with a bottom sheet or similar overlay (ExpandedNote).
-                            
-                            // Let's simply navigate to "notes" for now, and I will fix the expansion logic by passing a global argument or using a shared view model later if needed.
-                            // But wait, the previous code had `startNoteId` in NavGraph.
-                            // I can't easily change `startNoteId` of the composable itself.
-                            
-                            // Alternative: Modify NotesScreen route to accept `noteId`.
-                            // route = "notes?noteId={noteId}"
-                            // And in NotesScreen, `val noteId = backStackEntry.arguments?.getInt("noteId")`
-                            // if noteId != -1, trigger ExpandNote.
-                            
-                            navController.navigate("notes?noteId=${note.id}") {
-                                popUpTo("notes") { inclusive = true }
+                            navController.navigate(Destination.Notes(noteId = note.id)) {
+                                popUpTo<Destination.Notes> { inclusive = true }
                             }
                         }
                     )
                 }
-                composable(
-                    route = "add_edit_reminder",
+                composable<Destination.AddEditReminder>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -769,22 +703,20 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = "projects",
+                composable<Destination.Projects>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
                     ProjectScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onProjectClick = { projectId ->
-                            navController.navigate("project_notes/$projectId")
+                            navController.navigate(Destination.ProjectNotes(projectId))
                         },
                         navController = navController,
                         settingsRepository = settingsRepository
                     )
                 }
-                composable(
-                    route = "about",
+                composable<Destination.About>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -792,8 +724,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = "qr_scanner",
+                composable<Destination.QrScanner>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -805,8 +736,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         }
                     )
                 }
-                composable(
-                    route = "todo",
+                composable<Destination.Todo>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -814,8 +744,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable(
-                    route = "project_notes/{projectId}",
+                composable<Destination.ProjectNotes>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
                 ) {
@@ -825,13 +754,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         settingsRepository = settingsRepository
                     )
                 }
-                composable(
-                    route = "add_edit_note?projectId={projectId}&noteType={noteType}",
-                    arguments = listOf(
-                        androidx.navigation.navArgument("projectId") { type = androidx.navigation.NavType.IntType; defaultValue = -1 },
-                        androidx.navigation.navArgument("noteType") { type = androidx.navigation.NavType.StringType; defaultValue = "TEXT" }
-                    )
-                ) {
+                composable<Destination.AddEditNote> {
                     val viewModel: ProjectNotesViewModel = hiltViewModel()
                     AddEditNoteScreen(
                         state = viewModel.state.collectAsState().value.toNotesState(),

@@ -27,8 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.data.NoteWithAttachments

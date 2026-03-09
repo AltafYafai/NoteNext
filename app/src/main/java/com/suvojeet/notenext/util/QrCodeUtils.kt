@@ -5,11 +5,13 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
-import com.google.gson.Gson
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 import java.util.zip.GZIPInputStream
@@ -21,7 +23,7 @@ import java.util.zip.GZIPOutputStream
  */
 object QrCodeUtils {
 
-    private val gson = Gson()
+    private val json = Json { ignoreUnknownKeys = true }
 
     // Maximum characters before compression warning (QR code limit ~2KB after encoding)
     private const val MAX_CONTENT_LENGTH = 1500
@@ -30,6 +32,7 @@ object QrCodeUtils {
     /**
      * Data class representing note data for QR encoding.
      */
+    @Serializable
     data class NoteQrData(
         val t: String, // title
         val c: String  // content
@@ -52,7 +55,7 @@ object QrCodeUtils {
     ): Bitmap? {
         return try {
             val noteData = NoteQrData(t = title, c = content)
-            val jsonData = gson.toJson(noteData)
+            val jsonData = json.encodeToString(noteData)
             val compressedData = compressData(jsonData)
 
             // Use High error correction if logo is present to ensure readability
@@ -161,11 +164,11 @@ object QrCodeUtils {
     fun decodeQrData(data: String): NoteQrData? {
         return try {
             val decompressedJson = decompressData(data)
-            gson.fromJson(decompressedJson, NoteQrData::class.java)
+            json.decodeFromString<NoteQrData>(decompressedJson)
         } catch (e: Exception) {
             // Try parsing as plain JSON (for older/simple QR codes)
             try {
-                gson.fromJson(data, NoteQrData::class.java)
+                json.decodeFromString<NoteQrData>(data)
             } catch (e2: Exception) {
                 e2.printStackTrace()
                 null

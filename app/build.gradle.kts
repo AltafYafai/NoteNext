@@ -1,20 +1,20 @@
-
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("com.google.devtools.ksp")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.dagger.hilt.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
 }
 
 android {
     namespace = "com.suvojeet.notenext"
-    compileSdk = 36
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.suvojeet.notenext"
-        minSdk = 24
-        targetSdk = 36
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 16
         versionName = "1.2.6"
 
@@ -60,9 +60,7 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "2.2.20"
+        buildConfig = true
     }
     packaging {
         resources {
@@ -74,111 +72,106 @@ android {
 }
 
 dependencies {
-
     implementation(project(":core"))
     implementation(project(":data"))
 
-    implementation("androidx.core:core-ktx:1.17.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
-    implementation("androidx.activity:activity-compose:1.11.0")
-    val composeBom = platform("androidx.compose:compose-bom:2025.12.00")
-    implementation(composeBom)
-    testImplementation(composeBom)
-    androidTestImplementation(composeBom)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime-ktx)
+    implementation(libs.androidx.activity-compose)
+    implementation(platform(libs.androidx.compose.bom))
+    testImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
     
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material3.adaptive:adaptive")
-    implementation("androidx.compose.material3.adaptive:adaptive-layout")
-    implementation("androidx.compose.material3.adaptive:adaptive-navigation")
-    implementation("androidx.compose.material3:material3-window-size-class")
-    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling-preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3.adaptive)
+    implementation(libs.androidx.material3.adaptive.layout)
+    implementation(libs.androidx.material3.adaptive.navigation)
+    implementation(libs.androidx.material3.window-size-class)
+    implementation(libs.androidx.material.icons-extended)
 
     // Room
-    implementation("androidx.room:room-runtime:2.8.2")
-    implementation("androidx.room:room-ktx:2.8.2")
-    ksp("androidx.room:room-compiler:2.8.2")
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+    implementation(libs.androidx.lifecycle.viewmodel-compose)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.9.5")
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
 
     // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.7")
-    implementation("androidx.datastore:datastore-core:1.1.7")
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.datastore.core)
 
     // Coil
-    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(libs.coil-compose)
 
     // Jsoup for HTML parsing
-    implementation("org.jsoup:jsoup:1.21.2")
+    implementation(libs.jsoup)
 
     // Gson for JSON serialization/deserialization
-    implementation("com.google.code.gson:gson:2.13.2")
+    implementation(libs.gson)
 
     // Google Fonts
-    implementation("androidx.compose.ui:ui-text-google-fonts")
+    implementation(libs.androidx.ui.text.google-fonts)
 
     // Biometric
-    implementation("androidx.biometric:biometric:1.4.0-alpha02")
+    implementation(libs.androidx.biometric)
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.11.0")
+    implementation(libs.androidx.work.runtime-ktx)
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.57.1")
-    ksp("com.google.dagger:hilt-android-compiler:2.57.1")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation("androidx.hilt:hilt-work:1.2.0")
-    ksp("androidx.hilt:hilt-compiler:1.2.0")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android-compiler)
+    implementation(libs.androidx.hilt.navigation-compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso-core)
+    androidTestImplementation(libs.androidx.ui.test-junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test-manifest)
 
     // Google Drive Backup
-    implementation("com.google.android.gms:play-services-auth:21.3.0")
-    implementation("com.google.api-client:google-api-client-android:2.8.1")
-    implementation("com.google.apis:google-api-services-drive:v3-rev20251210-2.0.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.30.1")
+    implementation(libs.play.services-auth)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.api.services.drive)
+    implementation(libs.google.auth.library.oauth2.http)
 
     // Retrofit & OkHttp
-    implementation("com.squareup.retrofit2:retrofit:3.0.0")
-    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
-    implementation("com.squareup.okhttp3:okhttp:5.3.2")
-    implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter-gson)
+    implementation(libs.retrofit.kotlinx-serialization-json)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
 
     // In-App Update
-    implementation("com.google.android.play:app-update:2.1.0")
-    implementation("com.google.android.play:app-update-ktx:2.1.0")
+    implementation(libs.app-update)
+    implementation(libs.app-update-ktx)
 
     // QR Code Generation (ZXing)
-    implementation("com.google.zxing:core:3.5.4")
+    implementation(libs.zxing-core)
 
     // ML Kit Barcode Scanning
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation(libs.mlkit-barcode-scanning)
 
     // CameraX
-    val cameraxVersion = "1.5.2"
-    implementation("androidx.camera:camera-core:$cameraxVersion")
-    implementation("androidx.camera:camera-camera2:$cameraxVersion")
-    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    implementation("androidx.camera:camera-view:$cameraxVersion")
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 }
 
 android {
-    buildFeatures {
-        buildConfig = true
-    }
     defaultConfig {
         buildConfigField("String", "GROQ_API_KEY", "\"${System.getenv("GROQ_API_1") ?: ""}\"")
     }
 }
-

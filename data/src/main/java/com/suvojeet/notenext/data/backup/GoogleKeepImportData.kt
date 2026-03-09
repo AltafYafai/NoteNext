@@ -1,31 +1,36 @@
 package com.suvojeet.notenext.data.backup
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
+@Serializable
 data class KeepNote(
-    @SerializedName("color") val color: String? = null,
-    @SerializedName("isTrashed") val isTrashed: Boolean = false,
-    @SerializedName("isPinned") val isPinned: Boolean = false,
-    @SerializedName("isArchived") val isArchived: Boolean = false,
-    @SerializedName("textContent") val textContent: String? = null,
-    @SerializedName("title") val title: String? = null,
-    @SerializedName("userEditedTimestampUsec") val userEditedTimestampUsec: Long = 0,
-    @SerializedName("createdTimestampUsec") val createdTimestampUsec: Long = 0,
-    @SerializedName("labels") val labels: List<KeepLabel>? = null,
-    @SerializedName("listContent") val listContent: List<KeepListItem>? = null,
-    @SerializedName("attachments") val attachments: List<KeepAttachment>? = null
+    @SerialName("color") val color: String? = null,
+    @SerialName("isTrashed") val isTrashed: Boolean = false,
+    @SerialName("isPinned") val isPinned: Boolean = false,
+    @SerialName("isArchived") val isArchived: Boolean = false,
+    @SerialName("textContent") val textContent: String? = null,
+    @SerialName("title") val title: String? = null,
+    @SerialName("userEditedTimestampUsec") val userEditedTimestampUsec: Long = 0,
+    @SerialName("createdTimestampUsec") val createdTimestampUsec: Long = 0,
+    @SerialName("labels") val labels: List<KeepLabel>? = null,
+    @SerialName("listContent") val listContent: List<KeepListItem>? = null,
+    @SerialName("attachments") val attachments: List<KeepAttachment>? = null
 )
 
+@Serializable
 data class KeepLabel(
-    @SerializedName("name") val name: String
+    @SerialName("name") val name: String
 )
 
+@Serializable
 data class KeepListItem(
-    @SerializedName("text") val text: String,
-    @SerializedName("isChecked") val isChecked: Boolean
+    @SerialName("text") val text: String,
+    @SerialName("isChecked") val isChecked: Boolean
 )
 
+@Serializable
 data class KeepAttachment(
-    @SerializedName("filePath") val filePath: String,
-    @SerializedName("mimetype") val mimetype: String
+    @SerialName("filePath") val filePath: String,
+    @SerialName("mimetype") val mimetype: String
 )

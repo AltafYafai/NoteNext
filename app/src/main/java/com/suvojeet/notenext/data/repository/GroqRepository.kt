@@ -5,6 +5,8 @@ import com.suvojeet.notenext.data.remote.GroqApiService
 import com.suvojeet.notenext.data.remote.Message
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,6 +14,8 @@ import javax.inject.Singleton
 class GroqRepository @Inject constructor(
     private val apiService: GroqApiService
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
+
     fun summarizeNote(content: String): Flow<Result<String>> = flow {
         // Word count logic to select model list
         val wordCount = content.split("\\s+".toRegex()).size
@@ -85,12 +89,17 @@ class GroqRepository @Inject constructor(
             val content = response.choices.firstOrNull()?.message?.content
             
             if (content != null) {
-                // Try to parse JSON array manually or via Gson if available
-                // Simplistic parsing for now: remove brackets and split
+                // Try to parse JSON array manually or via Kotlinx Serialization
                 val cleaned = content.replace("```json", "").replace("```", "").trim()
                 if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
-                    val items = com.google.gson.Gson().fromJson(cleaned, Array<String>::class.java).toList()
-                    emit(Result.success(items))
+                    try {
+                        val items: List<String> = json.decodeFromString(cleaned)
+                        emit(Result.success(items))
+                    } catch (e: Exception) {
+                        // Fallback if not JSON: split by newlines
+                        val items = content.lines().filter { it.isNotBlank() }.map { it.trim().removePrefix("- ").removePrefix("* ") }
+                        emit(Result.success(items))
+                    }
                 } else {
                     // Fallback if not JSON: split by newlines
                     val items = content.lines().filter { it.isNotBlank() }.map { it.trim().removePrefix("- ").removePrefix("* ") }
