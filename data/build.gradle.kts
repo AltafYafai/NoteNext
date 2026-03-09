@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -34,6 +35,9 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
+    buildFeatures {
+        compose = true
+    }
     packaging {
         resources {
             excludes += "META-INF/INDEX.LIST"
@@ -46,6 +50,7 @@ dependencies {
     implementation(project(":core"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(platform(libs.androidx.compose.bom))
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -74,7 +79,8 @@ dependencies {
     implementation(libs.jsoup)
     
     // Compose Text
-    implementation(libs.androidx.ui.text.google.fonts) // Reusing this or could add separate ui-text
+    implementation(libs.androidx.ui.text)
+    implementation(libs.androidx.ui.text.google-fonts)
 
     // Google Drive Backup
     implementation(libs.play.services.auth)
