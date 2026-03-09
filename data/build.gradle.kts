@@ -97,6 +97,7 @@ dependencies {
     
     // ACRA
     implementation(libs.acra.core)
+    implementation(libs.acra.ktx)
     implementation(libs.acra.http)
     implementation(libs.acra.toast)
     implementation(libs.acra.notification)
