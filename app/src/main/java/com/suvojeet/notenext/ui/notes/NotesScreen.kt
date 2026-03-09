@@ -44,7 +44,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.RadioButton
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -211,7 +214,9 @@ fun NotesScreen(
         ) { expandedId ->
             if (expandedId == null) {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
                     Scaffold(
+                        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                         topBar = {
                             AnimatedContent(
                                 targetState = isSelectionModeActive,
@@ -265,7 +270,7 @@ fun NotesScreen(
                                                 Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
                                             }
                                         },
-                                        colors = TopAppBarDefaults.largeTopAppBarColors(
+                                        colors = androidx.compose.material3.TopAppBarDefaults.largeTopAppBarColors(
                                             containerColor = Color.Transparent,
                                             scrolledContainerColor = MaterialTheme.colorScheme.surface
                                         )

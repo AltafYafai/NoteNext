@@ -34,6 +34,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -76,7 +79,7 @@ fun BinScreen(
                     )
                 } else {
                     LargeTopAppBar(
-                        title = { Text(stringResource(id = R.string.bin_title)) },
+                        title = { Text(text = stringResource(id = R.string.bin_title)) },
                         navigationIcon = {
                             IconButton(onClick = onMenuClick) {
                                 Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
@@ -85,7 +88,7 @@ fun BinScreen(
                         actions = {
                             if (state.notes.isNotEmpty()) {
                                 IconButton(onClick = { showEmptyBinDialog = true }) {
-                                    Icon(Icons.Default.DeleteForever, contentDescription = "Empty Bin")
+                                    Icon(imageVector = Icons.Default.DeleteForever, contentDescription = "Empty Bin")
                                 }
                             }
                         },

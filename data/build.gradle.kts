@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     
     // ACRA
+    implementation(libs.acra.core)
     implementation(libs.acra.http)
     implementation(libs.acra.toast)
 }

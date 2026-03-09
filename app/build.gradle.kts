@@ -169,6 +169,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     
     // ACRA
+    implementation(libs.acra.core)
     implementation(libs.acra.http)
     implementation(libs.acra.toast)
 }

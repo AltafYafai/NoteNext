@@ -47,6 +47,7 @@ acra = "5.13.1"
 
 [libraries]
 # ACRA
+acra-core = { group = "ch.acra", name = "acra-core", version.ref = "acra" }
 acra-http = { group = "ch.acra", name = "acra-http", version.ref = "acra" }
 acra-toast = { group = "ch.acra", name = "acra-toast", version.ref = "acra" }
 
