@@ -242,7 +242,7 @@ fun NotesScreen(
                                         onSelectAllClick = { viewModel.onEvent(NotesEvent.SelectAllNotes) }
                                     )
                                 } else {
-                                    LargeTopAppBar(
+                                    TopAppBar(
                                         title = {
                                             SearchBar(
                                                 searchQuery = state.searchQuery,
@@ -270,7 +270,7 @@ fun NotesScreen(
                                                 Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
                                             }
                                         },
-                                        colors = androidx.compose.material3.TopAppBarDefaults.largeTopAppBarColors(
+                                        colors = TopAppBarDefaults.topAppBarColors(
                                             containerColor = Color.Transparent,
                                             scrolledContainerColor = MaterialTheme.colorScheme.surface
                                         )
