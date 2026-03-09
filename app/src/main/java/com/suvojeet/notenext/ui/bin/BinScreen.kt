@@ -61,8 +61,11 @@ fun BinScreen(
     val isSelectionModeActive = state.selectedNoteIds.isNotEmpty()
     var showEmptyBinDialog by remember { mutableStateOf(false) }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 if (isSelectionModeActive) {
                     BinContextualTopAppBar(
@@ -72,7 +75,7 @@ fun BinScreen(
                         onDeletePermanentlyClick = { viewModel.onEvent(BinEvent.DeleteSelectedNotesPermanently) }
                     )
                 } else {
-                    TopAppBar(
+                    LargeTopAppBar(
                         title = { Text(stringResource(id = R.string.bin_title)) },
                         navigationIcon = {
                             IconButton(onClick = onMenuClick) {
@@ -85,7 +88,8 @@ fun BinScreen(
                                     Icon(Icons.Default.DeleteForever, contentDescription = "Empty Bin")
                                 }
                             }
-                        }
+                        },
+                        scrollBehavior = scrollBehavior
                     )
                 }
             }

@@ -98,7 +98,7 @@ fun TodoItemCard(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(color, RoundedCornerShape(16.dp))
+                    .background(color, MaterialTheme.shapes.medium)
                     .padding(horizontal = 20.dp),
                 contentAlignment = alignment
             ) {
@@ -121,7 +121,7 @@ fun TodoItemCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(12.dp),
+            shape = MaterialTheme.shapes.large,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),

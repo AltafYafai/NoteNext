@@ -20,11 +20,11 @@ val RoundedShapes = Shapes(
 )
 
 val ExpressiveShapes = Shapes(
-    extraSmall = RoundedCornerShape(topStart = 8.dp, topEnd = 0.dp, bottomStart = 8.dp, bottomEnd = 0.dp),
-    small = RoundedCornerShape(topStart = 12.dp, bottomEnd = 12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(topStart = 24.dp, bottomEnd = 24.dp),
-    extraLarge = RoundedCornerShape(topStart = 32.dp, bottomEnd = 32.dp)
+    extraSmall = RoundedCornerShape(topStart = 12.dp, bottomEnd = 12.dp),
+    small = RoundedCornerShape(topStart = 16.dp, bottomEnd = 16.dp),
+    medium = RoundedCornerShape(topStart = 24.dp, bottomEnd = 24.dp, topEnd = 4.dp, bottomStart = 4.dp),
+    large = RoundedCornerShape(topStart = 32.dp, bottomEnd = 32.dp, topEnd = 8.dp, bottomStart = 8.dp),
+    extraLarge = RoundedCornerShape(topStart = 40.dp, bottomEnd = 40.dp, topEnd = 12.dp, bottomStart = 12.dp)
 )
 
 val CutShapes = Shapes(

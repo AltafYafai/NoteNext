@@ -94,7 +94,7 @@ fun NoteItem(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
             ),
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             // If default, use standard Surface color. If custom, make transparent to show gradient Box.
             containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
@@ -158,7 +158,7 @@ fun NoteItem(
 
                     Text(
                         text = titleText,
-                        fontSize = 17.sp,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = contentColor,
                         maxLines = 2,
@@ -185,7 +185,7 @@ fun NoteItem(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Content is locked",
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = contentColor.copy(alpha = 0.7f)
                         )
@@ -198,10 +198,10 @@ fun NoteItem(
                             val rawContentLength = note.note.content.length
                             
                             // Stable sizing based on raw HTML length (approximate)
-                            val (fontSize, lineHeight, maxLines) = when {
-                                rawContentLength < 100 -> Triple(22.sp, 28.sp, 6)
-                                rawContentLength < 250 -> Triple(16.sp, 22.sp, 8)
-                                else -> Triple(14.sp, 20.sp, 10)
+                            val (textStyle, maxLines) = when {
+                                rawContentLength < 100 -> MaterialTheme.typography.headlineSmall to 6
+                                rawContentLength < 250 -> MaterialTheme.typography.bodyLarge to 8
+                                else -> MaterialTheme.typography.bodyMedium to 10
                             }
     
                             val fontWeight = if (note.note.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
@@ -241,9 +241,7 @@ fun NoteItem(
 
                             Text(
                                 text = highlightedContent,
-                                style = androidx.compose.ui.text.TextStyle(
-                                    fontSize = fontSize,
-                                    lineHeight = lineHeight,
+                                style = textStyle.copy(
                                     fontWeight = fontWeight,
                                     color = if (isDefaultColor) MaterialTheme.colorScheme.onSurfaceVariant else contentColor.copy(alpha = 0.9f)
                                 ),

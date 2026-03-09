@@ -27,9 +27,12 @@ fun TodoScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = {
                     Column {
                         Text(
@@ -61,7 +64,8 @@ fun TodoScreen(
                             )
                         }
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {

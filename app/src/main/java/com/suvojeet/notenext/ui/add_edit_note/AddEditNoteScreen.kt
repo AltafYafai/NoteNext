@@ -407,7 +407,7 @@ fun AddEditNoteScreen(
         ) {
             Surface(
                 shadowElevation = 8.dp,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 color = MaterialTheme.colorScheme.surfaceContainer,
                 modifier = Modifier.padding(horizontal = 16.dp)
             ) {
