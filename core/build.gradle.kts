@@ -44,14 +44,14 @@ dependencies {
     
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling-preview)
+    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     
     // Biometric
     implementation(libs.androidx.biometric)
     
     // Google Fonts
-    implementation(libs.androidx.ui.text.google-fonts)
+    implementation(libs.androidx.ui.text.google.fonts)
     
     // Gson
     implementation(libs.gson)

@@ -61,7 +61,7 @@ dependencies {
     ksp(libs.hilt.android-compiler)
 
     // WorkManager
-    implementation(libs.androidx.work.runtime-ktx)
+    implementation(libs.androidx.work.runtime.ktx)
     
     // Hilt Worker
     implementation(libs.androidx.hilt.work)
@@ -74,10 +74,10 @@ dependencies {
     implementation(libs.jsoup)
     
     // Compose Text
-    implementation(libs.androidx.ui.text.google-fonts) // Reusing this or could add separate ui-text
+    implementation(libs.androidx.ui.text.google.fonts) // Reusing this or could add separate ui-text
 
     // Google Drive Backup
-    implementation(libs.play.services-auth)
+    implementation(libs.play.services.auth)
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.drive)
     implementation(libs.google.auth.library.oauth2.http)

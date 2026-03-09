@@ -76,21 +76,21 @@ dependencies {
     implementation(project(":data"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime-ktx)
-    implementation(libs.androidx.activity-compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     testImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling-preview)
+    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material3.adaptive)
     implementation(libs.androidx.material3.adaptive.layout)
     implementation(libs.androidx.material3.adaptive.navigation)
     implementation(libs.androidx.material3.window.size)
-    implementation(libs.androidx.material.icons-extended)
+    implementation(libs.androidx.material.icons.extended)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -98,7 +98,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     // ViewModel
-    implementation(libs.androidx.lifecycle.viewmodel-compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -109,7 +109,7 @@ dependencies {
     implementation(libs.androidx.datastore.core)
 
     // Coil
-    implementation(libs.coil-compose)
+    implementation(libs.coil.compose)
 
     // Jsoup for HTML parsing
     implementation(libs.jsoup)
@@ -118,50 +118,50 @@ dependencies {
     implementation(libs.gson)
 
     // Google Fonts
-    implementation(libs.androidx.ui.text.google-fonts)
+    implementation(libs.androidx.ui.text.google.fonts)
 
     // Biometric
     implementation(libs.androidx.biometric)
 
     // WorkManager
-    implementation(libs.androidx.work.runtime-ktx)
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android-compiler)
-    implementation(libs.androidx.hilt.navigation-compose)
+    implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso-core)
-    androidTestImplementation(libs.androidx.ui.test-junit4)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test-manifest)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
     // Google Drive Backup
-    implementation(libs.play.services-auth)
+    implementation(libs.play.services.auth)
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.drive)
     implementation(libs.google.auth.library.oauth2.http)
 
     // Retrofit & OkHttp
     implementation(libs.retrofit)
-    implementation(libs.retrofit.converter-gson)
-    implementation(libs.retrofit.kotlinx-serialization-json)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.retrofit.kotlinx.serialization.json)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
 
     // In-App Update
-    implementation(libs.app-update)
-    implementation(libs.app-update-ktx)
+    implementation(libs.app.update)
+    implementation(libs.app.update.ktx)
 
     // QR Code Generation (ZXing)
-    implementation(libs.zxing-core)
+    implementation(libs.zxing.core)
 
     // ML Kit Barcode Scanning
-    implementation(libs.mlkit-barcode-scanning)
+    implementation(libs.mlkit.barcode.scanning)
 
     // CameraX
     implementation(libs.androidx.camera.core)
