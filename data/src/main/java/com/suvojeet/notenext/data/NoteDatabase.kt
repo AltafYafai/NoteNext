@@ -8,6 +8,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import kotlinx.serialization.builtins.ListSerializer
 
 @Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 20, exportSchema = false)
 @TypeConverters(Converters::class)
@@ -143,7 +144,7 @@ abstract class NoteDatabase : RoomDatabase() {
                         val content = cursor.getString(cursor.getColumnIndexOrThrow("content"))
                         
                         try {
-                            val oldItems: List<kotlinx.serialization.json.JsonObject>? = json.decodeFromString(content)
+                            val oldItems: List<kotlinx.serialization.json.JsonObject>? = json.decodeFromString(ListSerializer(kotlinx.serialization.json.JsonObject.serializer()), content)
                             
                             oldItems?.forEachIndexed { index, itemMap ->
                                 val id = itemMap["id"]?.let { it as? kotlinx.serialization.json.JsonPrimitive }?.content ?: java.util.UUID.randomUUID().toString()

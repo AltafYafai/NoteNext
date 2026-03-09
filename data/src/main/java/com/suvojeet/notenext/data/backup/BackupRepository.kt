@@ -6,6 +6,7 @@ import com.suvojeet.notenext.data.NoteRepository
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.NoteWithAttachments
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.InputStreamReader
@@ -177,21 +178,21 @@ class BackupRepository @Inject constructor(
     private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean) {
         // Backup notes
         val notes = repository.getNotes().first()
-        val notesJson = json.encodeToString(notes)
+        val notesJson = json.encodeToString(ListSerializer(NoteWithAttachments.serializer()), notes)
         zos.putNextEntry(ZipEntry("notes.json"))
         zos.write(notesJson.toByteArray())
         zos.closeEntry()
 
         // Backup labels
         val labels = repository.getLabels().first()
-        val labelsJson = json.encodeToString(labels)
+        val labelsJson = json.encodeToString(ListSerializer(Label.serializer()), labels)
         zos.putNextEntry(ZipEntry("labels.json"))
         zos.write(labelsJson.toByteArray())
         zos.closeEntry()
 
         // Backup projects
         val projects = repository.getProjects().first()
-        val projectsJson = json.encodeToString(projects)
+        val projectsJson = json.encodeToString(ListSerializer(Project.serializer()), projects)
         zos.putNextEntry(ZipEntry("projects.json"))
         zos.write(projectsJson.toByteArray())
         zos.closeEntry()
@@ -224,7 +225,7 @@ class BackupRepository @Inject constructor(
                 while (zipEntry != null) {
                     if (zipEntry.name == "projects.json") {
                         val projectsJson = InputStreamReader(zis).readText()
-                        projects = json.decodeFromString(projectsJson)
+                        projects = json.decodeFromString(ListSerializer(Project.serializer()), projectsJson)
                         break
                     }
                     zipEntry = zis.nextEntry
@@ -257,13 +258,13 @@ class BackupRepository @Inject constructor(
 
         // 1. Restore Labels (All)
         labelsJson?.let {
-            val labels: List<Label> = json.decodeFromString(it)
+            val labels: List<Label> = json.decodeFromString(ListSerializer(Label.serializer()), it)
             labels.forEach { repository.insertLabel(it) }
         }
 
         // 2. Restore Selected Projects
         projectsJson?.let {
-            val allProjects: List<Project> = json.decodeFromString(it)
+            val allProjects: List<Project> = json.decodeFromString(ListSerializer(Project.serializer()), it)
             val selectedProjects = allProjects.filter { project -> selectedProjectIds.contains(project.id) }
             
             selectedProjects.forEach { project ->
@@ -277,7 +278,7 @@ class BackupRepository @Inject constructor(
         val attachmentsToExtract = mutableListOf<Pair<String, File>>() // ZipEntryName -> TargetFile
 
         notesJson?.let {
-            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(it)
+            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), it)
             
             notesWithAttachments.forEach { noteWithAttachments ->
                 val oldProjectId = noteWithAttachments.note.projectId

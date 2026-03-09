@@ -55,7 +55,7 @@ object QrCodeUtils {
     ): Bitmap? {
         return try {
             val noteData = NoteQrData(t = title, c = content)
-            val jsonData = json.encodeToString(noteData)
+            val jsonData = json.encodeToString(NoteQrData.serializer(), noteData)
             val compressedData = compressData(jsonData)
 
             // Use High error correction if logo is present to ensure readability
@@ -164,11 +164,11 @@ object QrCodeUtils {
     fun decodeQrData(data: String): NoteQrData? {
         return try {
             val decompressedJson = decompressData(data)
-            json.decodeFromString<NoteQrData>(decompressedJson)
+            json.decodeFromString(NoteQrData.serializer(), decompressedJson)
         } catch (e: Exception) {
             // Try parsing as plain JSON (for older/simple QR codes)
             try {
-                json.decodeFromString<NoteQrData>(data)
+                json.decodeFromString(NoteQrData.serializer(), data)
             } catch (e2: Exception) {
                 e2.printStackTrace()
                 null

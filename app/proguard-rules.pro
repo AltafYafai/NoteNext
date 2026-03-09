@@ -19,8 +19,22 @@
 -dontwarn org.apache.http.**
 -dontwarn org.apache.commons.**
 
-# Keep data classes for Gson serialization
+# Keep data classes for Gson and Kotlin Serialization
 -keep class com.suvojeet.notenext.data.** { *; }
+-keep class com.suvojeet.notenext.data.remote.** { *; }
+
+# Kotlinx Serialization
+-keepattributes *Annotation*, InnerClasses, EnclosingMethod, Signature
+-keepclassmembers class * {
+    @kotlinx.serialization.Serializable *;
+}
+-keep class kotlinx.serialization.** { *; }
+-keep class **$$serializer { *; }
+-keepclassmembers class * {
+    public static ** Companion;
+    public static ** serializer(...);
+}
+-dontwarn kotlinx.serialization.internal.**
 
 # Suppress R8/Kotlin metadata warnings (Kotlin 2.3.0 vs AGP 8.13.0)
 -keep class kotlin.Metadata { *; }

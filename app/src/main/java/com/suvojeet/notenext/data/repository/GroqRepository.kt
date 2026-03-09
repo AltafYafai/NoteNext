@@ -5,6 +5,8 @@ import com.suvojeet.notenext.data.remote.GroqApiService
 import com.suvojeet.notenext.data.remote.Message
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
 import javax.inject.Inject
@@ -93,7 +95,7 @@ class GroqRepository @Inject constructor(
                 val cleaned = content.replace("```json", "").replace("```", "").trim()
                 if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
                     try {
-                        val items: List<String> = json.decodeFromString(cleaned)
+                        val items: List<String> = json.decodeFromString(ListSerializer(String.serializer()), cleaned)
                         emit(Result.success(items))
                     } catch (e: Exception) {
                         // Fallback if not JSON: split by newlines

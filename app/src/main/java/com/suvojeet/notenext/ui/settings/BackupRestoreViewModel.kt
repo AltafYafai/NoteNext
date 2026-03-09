@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -131,9 +132,9 @@ class BackupRestoreViewModel @Inject constructor(
                 val projects = repository.getProjects().first()
                 val attachments = notes.flatMap { it.attachments }
 
-                val notesJson = json.encodeToString(notes)
-                val labelsJson = json.encodeToString(labels)
-                val projectsJson = json.encodeToString(projects)
+                val notesJson = json.encodeToString(ListSerializer(NoteWithAttachments.serializer()), notes)
+                val labelsJson = json.encodeToString(ListSerializer(Label.serializer()), labels)
+                val projectsJson = json.encodeToString(ListSerializer(Project.serializer()), projects)
 
                 var attachmentsSize = 0L
                 attachments.forEach { attachment ->
@@ -357,7 +358,7 @@ class BackupRestoreViewModel @Inject constructor(
         }
 
         projectsJson?.let {
-            val projects: List<Project> = json.decodeFromString(it)
+            val projects: List<Project> = json.decodeFromString(ListSerializer(Project.serializer()), it)
             projects.forEach { project ->
                 val oldId = project.id
                 val newId = repository.insertProject(project.copy(id = 0)).toInt()
@@ -366,12 +367,12 @@ class BackupRestoreViewModel @Inject constructor(
         }
 
         labelsJson?.let {
-            val labels: List<Label> = json.decodeFromString(it)
+            val labels: List<Label> = json.decodeFromString(ListSerializer(Label.serializer()), it)
             labels.forEach { repository.insertLabel(it) }
         }
 
         notesJson?.let {
-            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(it)
+            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), it)
             notesWithAttachments.forEach { noteWithAttachments ->
                 val oldProjectId = noteWithAttachments.note.projectId
                 val newProjectId = oldToNewProjectIds[oldProjectId]
@@ -405,7 +406,7 @@ class BackupRestoreViewModel @Inject constructor(
                                 if (!zipEntry.isDirectory && zipEntry.name.endsWith(".json")) {
                                     try {
                                         val jsonString = readZipEntryText(zis)
-                                        val keepNote: KeepNote = json.decodeFromString(jsonString)
+                                        val keepNote: KeepNote = json.decodeFromString(KeepNote.serializer(), jsonString)
                                         if (!keepNote.isTrashed) {
                                             saveKeepNote(keepNote)
                                             importedCount++
