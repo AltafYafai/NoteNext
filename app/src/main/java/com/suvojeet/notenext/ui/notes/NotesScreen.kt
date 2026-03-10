@@ -129,7 +129,7 @@ fun NotesScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val currentVersion = 13 // Matches app/build.gradle.kts versionCode
+        val currentVersion = 16 // Matches app/build.gradle.kts versionCode
         settingsRepository.lastSeenVersion.collect { lastSeen ->
             if (currentVersion > lastSeen) {
                 showWhatsNewDialog = true

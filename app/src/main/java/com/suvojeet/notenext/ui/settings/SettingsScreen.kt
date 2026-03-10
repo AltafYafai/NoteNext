@@ -144,11 +144,41 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         onCheckedChange = { isChecked ->
                             if (isChecked) {
                                 val biometricManager = BiometricManager.from(context)
-                                val canAuthenticate = biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-                                if (canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS) {
-                                    scope.launch { settingsRepository.saveEnableAppLock(true) }
-                                } else {
-                                    android.widget.Toast.makeText(context, context.getString(R.string.biometric_setup_required), android.widget.Toast.LENGTH_LONG).show()
+                                val canAuthenticate = biometricManager.canAuthenticate(
+                                    BiometricManager.Authenticators.BIOMETRIC_STRONG or 
+                                    BiometricManager.Authenticators.BIOMETRIC_WEAK or 
+                                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                                )
+                                
+                                when (canAuthenticate) {
+                                    BiometricManager.BIOMETRIC_SUCCESS -> {
+                                        scope.launch { settingsRepository.saveEnableAppLock(true) }
+                                    }
+                                    BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
+                                        // Open enrollment settings for Android 11+
+                                        val enrollIntent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                                            android.content.Intent(android.provider.Settings.ACTION_BIOMETRIC_ENROLL).apply {
+                                                putExtra(
+                                                    android.provider.Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                                                    BiometricManager.Authenticators.BIOMETRIC_STRONG or 
+                                                    BiometricManager.Authenticators.BIOMETRIC_WEAK or 
+                                                    BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                                                )
+                                            }
+                                        } else {
+                                            android.content.Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS)
+                                        }
+                                        
+                                        try {
+                                            context.startActivity(enrollIntent)
+                                            android.widget.Toast.makeText(context, context.getString(R.string.biometric_setup_required), android.widget.Toast.LENGTH_LONG).show()
+                                        } catch (e: Exception) {
+                                            android.widget.Toast.makeText(context, "Please enable a screen lock or biometrics in system settings.", android.widget.Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                    else -> {
+                                        android.widget.Toast.makeText(context, "Biometric authentication is not available on this device.", android.widget.Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             } else {
                                 scope.launch { settingsRepository.saveEnableAppLock(false) }

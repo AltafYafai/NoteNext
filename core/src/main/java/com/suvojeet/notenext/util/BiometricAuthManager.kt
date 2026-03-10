@@ -15,7 +15,11 @@ class BiometricAuthManager(
     private val biometricManager = BiometricManager.from(context)
 
     fun canAuthenticate(): Int {
-        return biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+        return biometricManager.canAuthenticate(
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or 
+            BiometricManager.Authenticators.BIOMETRIC_WEAK or 
+            BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        )
     }
 
     fun showBiometricPrompt(
@@ -26,7 +30,11 @@ class BiometricAuthManager(
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("Biometric login for NoteNext")
             .setSubtitle("Log in using your biometric credential")
-            .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
+            .setAllowedAuthenticators(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or 
+                BiometricManager.Authenticators.BIOMETRIC_WEAK or 
+                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            )
             .build()
 
         val biometricPrompt = BiometricPrompt(activity, executor,
