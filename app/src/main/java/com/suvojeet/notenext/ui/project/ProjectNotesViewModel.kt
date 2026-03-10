@@ -53,7 +53,7 @@ class ProjectNotesViewModel @Inject constructor(
 
     private var recentlyDeletedNote: Note? = null
 
-    private val projectId: Int = savedStateHandle.get<String>("projectId")?.toIntOrNull() ?: -1
+    private val projectId: Int = savedStateHandle.get<Int>("projectId") ?: -1
 
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
 
@@ -139,7 +139,7 @@ class ProjectNotesViewModel @Inject constructor(
                     val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
                     val areNotesBeingPinned = selectedNotes.firstOrNull()?.note?.isPinned == false
                     for (note in selectedNotes) {
-                        repository.insertNote(note.note.copy(isPinned = areNotesBeingPinned))
+                        repository.updateNote(note.note.copy(isPinned = areNotesBeingPinned))
                     }
                     _state.value = state.value.copy(selectedNoteIds = emptyList())
                     val message = if (areNotesBeingPinned) {
@@ -155,7 +155,7 @@ class ProjectNotesViewModel @Inject constructor(
                     val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
                      val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
                     for (note in selectedNotes) {
-                        repository.insertNote(note.note.copy(isLocked = areNotesBeingLocked))
+                        repository.updateNote(note.note.copy(isLocked = areNotesBeingLocked))
                     }
                     _state.value = state.value.copy(selectedNoteIds = emptyList())
                     val message = if (areNotesBeingLocked) {
@@ -180,7 +180,7 @@ class ProjectNotesViewModel @Inject constructor(
                 viewModelScope.launch {
                     val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
-                        repository.insertNote(note.note.copy(isArchived = !note.note.isArchived))
+                        repository.updateNote(note.note.copy(isArchived = !note.note.isArchived))
                     }
                     _state.value = state.value.copy(selectedNoteIds = emptyList())
                 }
@@ -189,7 +189,7 @@ class ProjectNotesViewModel @Inject constructor(
                 viewModelScope.launch {
                     val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
-                        repository.insertNote(note.note.copy(isImportant = !note.note.isImportant))
+                        repository.updateNote(note.note.copy(isImportant = !note.note.isImportant))
                     }
                     _state.value = state.value.copy(selectedNoteIds = emptyList())
                 }
@@ -259,7 +259,7 @@ class ProjectNotesViewModel @Inject constructor(
                     }
                     val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
-                        repository.insertNote(note.note.copy(label = event.label))
+                        repository.updateNote(note.note.copy(label = event.label))
                     }
                     _state.value = state.value.copy(selectedNoteIds = emptyList())
                 }
@@ -564,7 +564,7 @@ class ProjectNotesViewModel @Inject constructor(
                     state.value.expandedNoteId?.let { noteId ->
                         repository.getNoteById(noteId)?.let { note ->
                             val updatedNote = note.note.copy(isPinned = !note.note.isPinned)
-                            repository.insertNote(updatedNote)
+                            repository.updateNote(updatedNote)
                             val updatedNotesList = state.value.notes.map { if (it.note.id == updatedNote.id) it.copy(note = updatedNote) else it }
                             _state.value = state.value.copy(
                                 isPinned = updatedNote.isPinned,
@@ -584,7 +584,7 @@ class ProjectNotesViewModel @Inject constructor(
                     state.value.expandedNoteId?.let { noteId ->
                          if (noteId != -1) {
                              repository.getNoteById(noteId)?.let { note ->
-                                 repository.insertNote(note.note.copy(isLocked = !currentLockState))
+                                 repository.updateNote(note.note.copy(isLocked = !currentLockState))
                              }
                              // Update list locally
                              val updatedNotesList = state.value.notes.map { if (it.note.id == noteId) it.copy(note = it.note.copy(isLocked = !currentLockState)) else it }
@@ -599,7 +599,7 @@ class ProjectNotesViewModel @Inject constructor(
                     state.value.expandedNoteId?.let { noteId ->
                         repository.getNoteById(noteId)?.let { note ->
                             val updatedNote = note.note.copy(isArchived = !note.note.isArchived)
-                            repository.insertNote(updatedNote)
+                            repository.updateNote(updatedNote)
                             val updatedNotesList = state.value.notes.map { if (it.note.id == updatedNote.id) it.copy(note = updatedNote) else it }
                             _state.value = state.value.copy(
                                 isArchived = updatedNote.isArchived,

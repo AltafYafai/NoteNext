@@ -1,7 +1,7 @@
 package com.suvojeet.notenext
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,7 +43,7 @@ import com.suvojeet.notenext.util.UpdateChecker
 import androidx.compose.ui.res.stringResource
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var settingsRepository: SettingsRepository

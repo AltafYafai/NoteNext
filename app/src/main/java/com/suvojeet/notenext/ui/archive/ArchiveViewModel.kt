@@ -26,7 +26,7 @@ class ArchiveViewModel @Inject constructor(private val repository: com.suvojeet.
         when (event) {
             is ArchiveEvent.UnarchiveNote -> {
                 viewModelScope.launch {
-                    repository.insertNote(event.note.copy(isArchived = false))
+                    repository.updateNote(event.note.copy(isArchived = false))
                 }
             }
         }
