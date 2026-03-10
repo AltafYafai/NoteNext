@@ -58,7 +58,7 @@ fun ChangelogDialog(onDismiss: () -> Unit) {
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Version 1.2.6",
+                            text = "Version 1.2.7",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                         )

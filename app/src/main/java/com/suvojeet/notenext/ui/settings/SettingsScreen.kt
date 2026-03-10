@@ -224,7 +224,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     SettingsItemData(
                         icon = Icons.Rounded.Info,
                         title = "App Info",
-                        subtitle = "v1.2.6 Stable Build",
+                        subtitle = "v1.2.7 Stable Build",
                         iconColor = Color(0xFF9C27B0),
                         onClick = { onNavigate("about") }
                     ),

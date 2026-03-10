@@ -21,8 +21,6 @@ import com.suvojeet.notenext.util.CrashReportSenderFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-import org.acra.ReportingInteractionMode
-
 @HiltAndroidApp
 class NoteNextApp : Application(), Configuration.Provider {
 
@@ -40,7 +38,6 @@ class NoteNextApp : Application(), Configuration.Provider {
         val builder = CoreConfigurationBuilder()
             .withBuildConfigClass(BuildConfig::class.java)
             .withReportFormat(StringFormat.JSON)
-            .withInteractionMode(ReportingInteractionMode.NOTIFICATION)
             .withPluginConfigurations(
                 ToastConfigurationBuilder()
                     .withText(getString(R.string.crash_toast_text))
