@@ -10,11 +10,12 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.suvojeet.notenext.worker.AutoDeleteWorker
 import dagger.hilt.android.HiltAndroidApp
-import org.acra.config.httpSender
-import org.acra.config.toast
-import org.acra.config.logcat
+import org.acra.ACRA
+import org.acra.config.CoreConfigurationBuilder
+import org.acra.config.HttpSenderConfigurationBuilder
+import org.acra.config.LogcatConfigurationBuilder
+import org.acra.config.ToastConfigurationBuilder
 import org.acra.data.StringFormat
-import org.acra.ktx.initAcra
 import org.acra.sender.HttpSender
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -32,24 +33,25 @@ class NoteNextApp : Application(), Configuration.Provider {
 
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
-        initAcra {
-            buildConfigClass = BuildConfig::class.java
-            reportFormat = StringFormat.JSON
-            
-            logcat {
-                enabled = true
-                logcatArguments = listOf("-t", "200", "-v", "time")
-            }
-            
-            toast {
-                text = getString(R.string.crash_toast_text)
-            }
-            
-            httpSender {
-                uri = "https://collector.tracepot.com/00000000" // Placeholder URL
-                httpMethod = HttpSender.Method.POST
-            }
-        }
+        
+        val builder = CoreConfigurationBuilder(this)
+            .withBuildConfigClass(BuildConfig::class.java)
+            .withReportFormat(StringFormat.JSON)
+
+        builder.getPluginConfigurationBuilder(LogcatConfigurationBuilder::class.java)
+            .withEnabled(true)
+            .withLogcatArguments("-t", "200", "-v", "time")
+
+        builder.getPluginConfigurationBuilder(ToastConfigurationBuilder::class.java)
+            .withText(getString(R.string.crash_toast_text))
+            .withEnabled(true)
+
+        builder.getPluginConfigurationBuilder(HttpSenderConfigurationBuilder::class.java)
+            .withUri("https://collector.tracepot.com/00000000")
+            .withHttpMethod(HttpSender.Method.POST)
+            .withEnabled(true)
+
+        ACRA.init(this, builder)
     }
 
     override fun onCreate() {

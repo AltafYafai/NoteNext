@@ -174,7 +174,6 @@ dependencies {
     implementation(libs.acra.toast)
     implementation(libs.acra.notification)
     implementation(libs.acra.dialog)
-    implementation(libs.acra.ktx)
 }
 
 android {
