@@ -418,66 +418,75 @@ private fun CameraPreviewView(
         camera?.cameraControl?.enableTorch(isFlashOn)
     }
 
-    AndroidView(
-        factory = { ctx ->
-            val previewView = PreviewView(ctx)
-            val executor = Executors.newSingleThreadExecutor()
-            val barcodeScanner = BarcodeScanning.getClient()
+    val previewView = remember { 
+        PreviewView(context).apply {
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }
+    }
 
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
+    DisposableEffect(lifecycleOwner) {
+        val executor = Executors.newSingleThreadExecutor()
+        val barcodeScanner = BarcodeScanning.getClient()
 
-                val preview = Preview.Builder().build().also {
-                    it.surfaceProvider = previewView.surfaceProvider
-                }
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
 
-                val imageAnalysis = ImageAnalysis.Builder()
-                    .setTargetResolution(Size(1280, 720))
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
+            val preview = Preview.Builder().build().also {
+                it.surfaceProvider = previewView.surfaceProvider
+            }
 
-                imageAnalysis.setAnalyzer(executor) { imageProxy ->
-                    @androidx.camera.core.ExperimentalGetImage
-                    val mediaImage = imageProxy.image
-                    if (mediaImage != null && scanningState.value) {
-                        val inputImage = InputImage.fromMediaImage(
-                            mediaImage,
-                            imageProxy.imageInfo.rotationDegrees
-                        )
+            val imageAnalysis = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
 
-                        barcodeScanner.process(inputImage)
-                            .addOnSuccessListener { barcodes ->
-                                for (barcode in barcodes) {
-                                    if (barcode.format == Barcode.FORMAT_QR_CODE) {
-                                        barcode.rawValue?.let { onQrScannedState.value(it) }
-                                    }
+            @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
+            imageAnalysis.setAnalyzer(executor) { imageProxy ->
+                val mediaImage = imageProxy.image
+                if (mediaImage != null && scanningState.value) {
+                    val inputImage = InputImage.fromMediaImage(
+                        mediaImage,
+                        imageProxy.imageInfo.rotationDegrees
+                    )
+
+                    barcodeScanner.process(inputImage)
+                        .addOnSuccessListener { barcodes ->
+                            for (barcode in barcodes) {
+                                if (barcode.format == Barcode.FORMAT_QR_CODE) {
+                                    barcode.rawValue?.let { onQrScannedState.value(it) }
                                 }
                             }
-                            .addOnCompleteListener {
-                                imageProxy.close()
-                            }
-                    } else {
-                        imageProxy.close()
-                    }
+                        }
+                        .addOnCompleteListener {
+                            imageProxy.close()
+                        }
+                } else {
+                    imageProxy.close()
                 }
+            }
 
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-                try {
-                    cameraProvider.unbindAll()
-                    camera = cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        imageAnalysis
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }, ContextCompat.getMainExecutor(ctx))
+            try {
+                cameraProvider.unbindAll()
+                camera = cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageAnalysis
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }, ContextCompat.getMainExecutor(context))
 
-            previewView
-        },
+        onDispose {
+            cameraProviderFuture.get().unbindAll()
+            executor.shutdown()
+        }
+    }
+
+    AndroidView(
+        factory = { previewView },
         modifier = Modifier.fillMaxSize()
     )
 }
