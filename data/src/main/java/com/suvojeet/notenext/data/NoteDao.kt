@@ -22,15 +22,16 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE id = :id")
     suspend fun getNoteById(id: Int): NoteWithAttachments?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertNote(note: Note): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAttachment(attachment: Attachment)
 
     @Update
     suspend fun updateNote(note: Note)
 
+    @Transaction
     @Delete
     suspend fun deleteNote(note: Note)
 

@@ -15,6 +15,7 @@ import com.suvojeet.notenext.core.util.LogCollector
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -56,6 +57,7 @@ class LoggingService : Service() {
 
     override fun onDestroy() {
         serviceJob?.cancel()
+        serviceScope.cancel() // Cancel the entire scope
         super.onDestroy()
     }
 

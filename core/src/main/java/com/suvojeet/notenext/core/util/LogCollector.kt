@@ -29,23 +29,24 @@ object LogCollector {
     fun appendLogs(context: Context) {
         val file = getLogFile(context)
         try {
-            // Get current logcat output (incremental would be better but logcat -d is simple)
-            // For continuous, we'd ideally use a process that stays open, 
-            // but here we can just dump the current buffer to the file periodically.
-            val process = Runtime.getRuntime().exec("logcat -d")
+            // Get last few hundred lines of logcat. 
+            // Since we're calling this every 5s, 100 lines should be plenty to avoid gaps.
+            val process = Runtime.getRuntime().exec("logcat -d -t 100")
             val bufferedReader = BufferedReader(InputStreamReader(process.inputStream))
             
+            val currentLogs = bufferedReader.readLines()
+            
+            // Read existing file to check for duplicates (basic check)
+            val existingLines = if (file.exists()) file.readLines().takeLast(100) else emptyList()
+            
             val writer = PrintWriter(FileOutputStream(file, true))
-            var line: String? = bufferedReader.readLine()
-            while (line != null) {
-                writer.println(line)
-                line = bufferedReader.readLine()
+            currentLogs.forEach { line ->
+                if (!existingLines.contains(line)) {
+                    writer.println(line)
+                }
             }
             writer.flush()
             writer.close()
-            
-            // Clear logcat buffer after dumping to avoid duplicates in next append
-            Runtime.getRuntime().exec("logcat -c")
         } catch (e: Exception) {
             e.printStackTrace()
         }

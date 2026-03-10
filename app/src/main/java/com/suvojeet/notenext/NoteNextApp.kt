@@ -48,7 +48,22 @@ class NoteNextApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        createNotificationChannels()
         setupAutoDeleteWorker()
+    }
+
+    private fun createNotificationChannels() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                "logging_service_channel",
+                "Logging Service Channel",
+                android.app.NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Used for continuous log collection for bug reproduction"
+            }
+            val manager = getSystemService(android.app.NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
+        }
     }
 
     private fun setupAutoDeleteWorker() {
