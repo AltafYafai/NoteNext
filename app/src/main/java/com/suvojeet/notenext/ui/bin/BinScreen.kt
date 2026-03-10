@@ -54,6 +54,10 @@ import com.suvojeet.notenext.data.NoteWithAttachments
 
 import androidx.compose.material.icons.filled.Menu
 
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.EmptyState
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun BinScreen(
@@ -79,7 +83,13 @@ fun BinScreen(
                     )
                 } else {
                     LargeTopAppBar(
-                        title = { Text(text = stringResource(id = R.string.bin_title)) },
+                        title = { 
+                            Text(
+                                text = stringResource(id = R.string.bin_title),
+                                style = MaterialTheme.typography.headlineLarge,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                            ) 
+                        },
                         navigationIcon = {
                             IconButton(onClick = onMenuClick) {
                                 Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
@@ -92,7 +102,11 @@ fun BinScreen(
                                 }
                             }
                         },
-                        scrollBehavior = scrollBehavior
+                        scrollBehavior = scrollBehavior,
+                        colors = TopAppBarDefaults.largeTopAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background,
+                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                        )
                     )
                 }
             }
@@ -103,63 +117,50 @@ fun BinScreen(
                     .padding(paddingValues)
             ) {
                 if (state.notes.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(96.dp),
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = stringResource(id = R.string.bin_empty_message),
-                                textAlign = TextAlign.Center,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(horizontal = 32.dp)
-                            )
-                        }
-                    }
+                    EmptyState(
+                        icon = Icons.Default.Delete,
+                        message = stringResource(id = R.string.bin_empty_message)
+                    )
                 } else {
-                    LazyVerticalStaggeredGrid(
-                        columns = StaggeredGridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalItemSpacing = 8.dp
+                    ExpressiveSection(
+                        title = "Deleted Notes",
+                        description = "Notes in the bin will be automatically deleted after ${state.autoDeleteDays} days"
                     ) {
-                        items(
-                            items = state.notes,
-                            key = { it.note.id }
-                        ) { noteWithAttachments ->
-                            NoteItem(
-                                note = noteWithAttachments,
-                                onNoteClick = {
-                                    if (isSelectionModeActive) {
-                                        viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id))
-                                    } else {
-                                        viewModel.onEvent(BinEvent.ExpandNote(noteWithAttachments.note.id))
-                                    }
-                                },
-                                onNoteLongClick = { viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id)) },
-                                isSelected = state.selectedNoteIds.contains(noteWithAttachments.note.id),
-                                binnedDaysRemaining = if (noteWithAttachments.note.isBinned) {
-                                    val binnedOn = noteWithAttachments.note.binnedOn
-                                    if (binnedOn != null) {
-                                        val daysSinceBinned = (System.currentTimeMillis() - binnedOn) / (1000 * 60 * 60 * 24)
-                                        (state.autoDeleteDays - daysSinceBinned).toInt().coerceAtLeast(0)
+                        LazyVerticalStaggeredGrid(
+                            columns = StaggeredGridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalItemSpacing = 8.dp
+                        ) {
+                            items(
+                                items = state.notes,
+                                key = { it.note.id }
+                            ) { noteWithAttachments ->
+                                NoteItem(
+                                    note = noteWithAttachments,
+                                    onNoteClick = {
+                                        if (isSelectionModeActive) {
+                                            viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id))
+                                        } else {
+                                            viewModel.onEvent(BinEvent.ExpandNote(noteWithAttachments.note.id))
+                                        }
+                                    },
+                                    onNoteLongClick = { viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id)) },
+                                    isSelected = state.selectedNoteIds.contains(noteWithAttachments.note.id),
+                                    binnedDaysRemaining = if (noteWithAttachments.note.isBinned) {
+                                        val binnedOn = noteWithAttachments.note.binnedOn
+                                        if (binnedOn != null) {
+                                            val daysSinceBinned = (System.currentTimeMillis() - binnedOn) / (1000 * 60 * 60 * 24)
+                                            (state.autoDeleteDays - daysSinceBinned).toInt().coerceAtLeast(0)
+                                        } else {
+                                            null
+                                        }
                                     } else {
                                         null
                                     }
-                                } else {
-                                    null
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }

@@ -18,6 +18,11 @@ import com.suvojeet.notenext.data.Label
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.EmptyState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditLabelsScreen(
@@ -26,29 +31,70 @@ fun EditLabelsScreen(
     val viewModel: EditLabelsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.edit_labels)) },
+            LargeTopAppBar(
+                title = { 
+                    Text(
+                        stringResource(id = R.string.edit_labels),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.onEvent(EditLabelsEvent.ShowAddLabelDialog) }) {
+            FloatingActionButton(
+                onClick = { viewModel.onEvent(EditLabelsEvent.ShowAddLabelDialog) },
+                shape = FloatingActionButtonDefaults.largeShape,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.add_label))
             }
         }
     ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(state.labels) { label ->
-                LabelItem(
-                    label = label,
-                    onEditClick = { viewModel.onEvent(EditLabelsEvent.ShowEditLabelDialog(label)) }
+        Column(modifier = Modifier.padding(padding)) {
+            if (state.labels.isEmpty()) {
+                EmptyState(
+                    icon = Icons.AutoMirrored.Filled.Label,
+                    message = "No labels yet. Create one to organize your notes."
                 )
+            } else {
+                ExpressiveSection(
+                    title = "Organization",
+                    description = "Manage labels to categorize your thoughts"
+                ) {
+                    SettingsGroupCard {
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            items(state.labels) { label ->
+                                LabelItem(
+                                    label = label,
+                                    onEditClick = { viewModel.onEvent(EditLabelsEvent.ShowEditLabelDialog(label)) }
+                                )
+                                if (state.labels.last() != label) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -83,16 +129,33 @@ fun LabelItem(
     label: Label,
     onEditClick: () -> Unit
 ) {
-    Row(
+    ListItem(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onEditClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label.name, modifier = Modifier.weight(1f))
-        Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit_labels))
-    }
+            .clickable(onClick = onEditClick),
+        headlineContent = { 
+            Text(
+                text = label.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+            ) 
+        },
+        leadingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Label,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+            )
+        },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                contentDescription = stringResource(id = R.string.edit_labels),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        },
+        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+    )
 }
 
 @Composable

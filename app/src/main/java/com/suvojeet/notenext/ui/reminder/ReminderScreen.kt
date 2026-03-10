@@ -23,6 +23,10 @@ import com.suvojeet.notenext.data.Note
 import java.text.SimpleDateFormat
 import java.util.*
 
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.EmptyState
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderScreen(
@@ -43,13 +47,17 @@ fun ReminderScreen(
         else -> allReminders
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { 
                     Text(
                         stringResource(id = R.string.reminders_title),
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
                     ) 
                 },
                 navigationIcon = {
@@ -60,10 +68,10 @@ fun ReminderScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         }
@@ -83,58 +91,53 @@ fun ReminderScreen(
                 FilterChip(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    label = { Text("All") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    label = { Text("All") }
                 )
                 FilterChip(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    label = { Text("Upcoming") },
-                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    label = { Text("Upcoming") }
                 )
                 FilterChip(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    label = { Text("Elapsed") },
-                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    label = { Text("Elapsed") }
                 )
             }
 
             if (currentList.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                   Text(
-                       text = "No reminders found",
-                       style = MaterialTheme.typography.bodyLarge,
-                       color = MaterialTheme.colorScheme.onSurfaceVariant
-                   )
-                }
+                EmptyState(
+                    icon = Icons.Outlined.Notifications,
+                    message = "No reminders found"
+                )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                ExpressiveSection(
+                    title = when(selectedTab) {
+                        0 -> "All Reminders"
+                        1 -> "Upcoming"
+                        2 -> "Elapsed"
+                        else -> "Reminders"
+                    },
+                    description = "Manage your time-sensitive notes"
                 ) {
-                    items(currentList) { note ->
-                        ReminderItem(
-                            note = note, 
-                            onClick = { onNoteClick(note) },
-                            onDeleteClick = { reminderViewModel.deleteReminder(note) }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
+                    SettingsGroupCard {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(currentList) { note ->
+                                ReminderItem(
+                                    note = note, 
+                                    onClick = { onNoteClick(note) },
+                                    onDeleteClick = { reminderViewModel.deleteReminder(note) }
+                                )
+                                if (currentList.last() != note) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

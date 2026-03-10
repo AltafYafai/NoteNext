@@ -20,6 +20,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.EmptyState
 
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoScreen(
@@ -35,20 +38,11 @@ fun TodoScreen(
         topBar = {
             LargeTopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = stringResource(id = R.string.todos),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        if (state.activeCount > 0) {
-                            Text(
-                                text = "${state.activeCount} active • ${state.completedCount} completed",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    Text(
+                        text = stringResource(id = R.string.todos),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -66,7 +60,11 @@ fun TodoScreen(
                         }
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         floatingActionButton = {
@@ -74,7 +72,9 @@ fun TodoScreen(
                 onClick = { viewModel.onEvent(TodoEvent.ShowAddDialog) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text(stringResource(id = R.string.add_todo)) },
-                containerColor = MaterialTheme.colorScheme.primary
+                shape = FloatingActionButtonDefaults.largeShape,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     ) { padding ->
@@ -113,22 +113,27 @@ fun TodoScreen(
                     }
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ExpressiveSection(
+                    title = when(state.filter) {
+                        is TodoFilter.All -> "Tasks"
+                        is TodoFilter.Active -> "Active Tasks"
+                        is TodoFilter.Completed -> "Completed"
+                    },
+                    description = if (state.activeCount > 0) "${state.activeCount} tasks remaining to crush it" else "All caught up!"
                 ) {
-                    items(state.todos, key = { it.id }) { todo ->
-                        TodoItemCard(
-                            todo = todo,
-                            onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todo)) },
-                            onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todo)) },
-                            onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todo)) }
-                        )
-                    }
-                    // Bottom spacer for FAB
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(state.todos, key = { it.id }) { todo ->
+                            TodoItemCard(
+                                todo = todo,
+                                onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todo)) },
+                                onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todo)) },
+                                onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todo)) }
+                            )
+                        }
                     }
                 }
             }

@@ -39,6 +39,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.util.UpdateChecker
 import kotlinx.coroutines.launch
@@ -422,29 +424,6 @@ private data class SettingsItemData(
 // --- Expressive Components ---
 
 @Composable
-private fun ExpressiveSection(
-    title: String,
-    description: String,
-    content: @Composable () -> Unit
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-        content()
-    }
-}
-
-@Composable
 private fun FeaturedCard(
     title: String,
     subtitle: String,
@@ -476,20 +455,6 @@ private fun FeaturedCard(
                 Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(text = subtitle, style = MaterialTheme.typography.bodySmall, modifier = Modifier.alpha(0.8f))
             }
-        }
-    }
-}
-
-@Composable
-private fun SettingsGroupCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        elevation = CardDefaults.cardElevation(0.dp)
-    ) {
-        Column(modifier = Modifier.padding(vertical = 4.dp)) {
-            content()
         }
     }
 }

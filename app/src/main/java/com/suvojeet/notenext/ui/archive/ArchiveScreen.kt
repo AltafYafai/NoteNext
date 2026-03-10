@@ -19,6 +19,9 @@ import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.NoteItem
 
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArchiveScreen(
@@ -35,7 +38,13 @@ fun ArchiveScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text(stringResource(id = R.string.archive)) },
+                title = { 
+                    Text(
+                        stringResource(id = R.string.archive),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick) {
                         Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
@@ -43,38 +52,42 @@ fun ArchiveScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         }
     ) { padding ->
-        if (state.notes.isEmpty()) {
-            EmptyState(
-                icon = Icons.Default.Archive,
-                message = stringResource(id = R.string.no_archived_notes),
-                modifier = Modifier.padding(padding)
-            )
-        } else {
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalItemSpacing = 8.dp
-            ) {
-                items(state.notes) { noteWithAttachments ->
-                    NoteItem(
-                        note = noteWithAttachments,
-                        isSelected = false,
-                        onNoteClick = {
-                            noteToRestore = noteWithAttachments.note
-                            showRestoreDialog = true
-                        },
-                        onNoteLongClick = { /* TODO: Handle long click if needed */ }
-                    )
+        Column(modifier = Modifier.padding(padding)) {
+            if (state.notes.isEmpty()) {
+                EmptyState(
+                    icon = Icons.Default.Archive,
+                    message = stringResource(id = R.string.no_archived_notes)
+                )
+            } else {
+                ExpressiveSection(
+                    title = "Archived Notes",
+                    description = "Notes you've put away for safekeeping"
+                ) {
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 8.dp
+                    ) {
+                        items(state.notes) { noteWithAttachments ->
+                            NoteItem(
+                                note = noteWithAttachments,
+                                isSelected = false,
+                                onNoteClick = {
+                                    noteToRestore = noteWithAttachments.note
+                                    showRestoreDialog = true
+                                },
+                                onNoteLongClick = { /* TODO: Handle long click if needed */ }
+                            )
+                        }
+                    }
                 }
             }
         }
