@@ -6,54 +6,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.CloudSync
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -68,26 +37,25 @@ import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.util.NetworkUtils
 
- @OptIn(ExperimentalMaterial3Api::class)
- @Composable
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun AboutScreen(onBackClick: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) }
-    val themeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val isInternetAvailable = NetworkUtils.isInternetAvailable(context)
     
-    // Scroll Behavior for Large Top Bar
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            MediumTopAppBar(
                 title = {
                     Text(
                         text = stringResource(id = R.string.about_screen_title),
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.headlineMedium
                     )
                 },
                 navigationIcon = {
@@ -96,9 +64,9 @@ fun AboutScreen(onBackClick: () -> Unit) {
                     }
                 },
                 scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         }
@@ -107,7 +75,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // --- Hero Section ---
@@ -117,73 +85,99 @@ fun AboutScreen(onBackClick: () -> Unit) {
 
             // --- Features Section ---
             item {
-                SectionHeader(title = stringResource(id = R.string.what_makes_us_different))
-                AboutGroupCard {
-                    FeatureItem(
+                Text(
+                    text = stringResource(id = R.string.what_makes_us_different),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+                )
+                
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    FeatureCard(
                         icon = Icons.Default.Storage,
                         title = stringResource(id = R.string.local_storage_title),
                         description = stringResource(id = R.string.local_storage_description),
-                        iconColor = Color(0xFFFFA726) // Orange
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    FeatureItem(
-                        icon = Icons.Default.CloudSync, // Or Backup
+                    FeatureCard(
+                        icon = Icons.Default.CloudSync,
                         title = "Cloud Backup",
                         description = "Securely backup your notes to Google Drive. Your data, your control.",
-                        iconColor = Color(0xFF7E57C2) // Deep Purple
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     )
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    FeatureItem(
-                        icon = Icons.Default.Lock, // Was Shield
-                        title = "Secure & Private",
+                    FeatureCard(
+                        icon = Icons.Default.Lock,
+                        title = "Privacy First",
                         description = "Biometric App Lock and strict privacy. No tracking, no ads.",
-                        iconColor = Color(0xFF66BB6A) // Green
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     )
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    FeatureItem(
-                        icon = androidx.compose.material.icons.Icons.Filled.AutoAwesome,
-                        title = "Powered by AI",
-                        description = "Smart summarization and grammar correction powered by Groq API service.",
-                        iconColor = Color(0xFFE91E63) // Pink
-                    )
-                    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    FeatureItem(
-                        icon = Icons.Default.Code,
-                        title = stringResource(id = R.string.open_source_title),
-                        description = stringResource(id = R.string.open_source_description),
-                        iconColor = Color(0xFF42A5F5) // Blue
+                    FeatureCard(
+                        icon = Icons.Default.AutoAwesome,
+                        title = "AI Powered",
+                        description = "Smart summarization and grammar correction powered by Groq AI.",
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // --- About App Text ---
+            // --- About App ---
             item {
-                SectionHeader(title = stringResource(id = R.string.about_the_app_title))
-                AboutGroupCard {
-                    Text(
-                        text = stringResource(id = R.string.about_the_app_description),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 24.sp,
-                        modifier = Modifier.padding(20.dp)
+                OutlinedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    border = CardDefaults.outlinedCardBorder().copy(
+                        brush = Brush.linearGradient(
+                            listOf(MaterialTheme.colorScheme.primary.copy(0.5f), MaterialTheme.colorScheme.secondary.copy(0.5f))
+                        )
                     )
+                ) {
+                    Column(modifier = Modifier.padding(24.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(id = R.string.about_the_app_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = stringResource(id = R.string.about_the_app_description),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 26.sp
+                        )
+                    }
                 }
             }
 
             // --- Team Section ---
             item {
-                SectionHeader(title = stringResource(id = R.string.meet_the_team))
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TeamMemberCard(
+                Text(
+                    text = stringResource(id = R.string.meet_the_team),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ModernTeamMemberCard(
                         name = "Suvojeet Sengupta",
                         role = stringResource(id = R.string.core_developer),
-                        avatarUrl = "https://avatars.githubusercontent.com/u/107928380?s=400&u=6e6351e1a09a6c473133a46e28f4b005a2345a57&v=4",
+                        avatarUrl = "https://avatars.githubusercontent.com/u/107928380?v=4",
                         githubUrl = "https://github.com/suvojeet-sengupta",
                         isInternetAvailable = isInternetAvailable,
                         uriHandler = uriHandler
                     )
                     
-                    TeamMemberCard(
+                    ModernTeamMemberCard(
                         name = "Jendermine",
                         role = stringResource(id = R.string.feedback_provider),
                         avatarUrl = "https://avatars.githubusercontent.com/u/92355621",
@@ -194,138 +188,162 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 }
             }
 
+            // --- Open Source ---
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    onClick = { uriHandler.openUri("https://github.com/suvojeet-sengupta/notenext") }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.open_source_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "View source code on GitHub",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.OpenInNew, 
+                            contentDescription = null, 
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
             // --- Footer ---
             item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    stringResource(id = R.string.made_with_love),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            stringResource(id = R.string.made_with_love),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary.copy(0.7f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Version 1.2.0 (Stable)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
 }
 
-// --- Custom Components ---
-
- @Composable
+@Composable
 private fun HeroSection() {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary // Bolder look
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(Brush.linearGradient(listOf(primaryColor, secondaryColor)))
+                .padding(32.dp)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.background,
-                modifier = Modifier.size(80.dp),
-                shadowElevation = 4.dp
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = stringResource(id = R.string.notenext_logo),
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(0.9f),
+                    modifier = Modifier.size(100.dp),
+                    tonalElevation = 8.dp
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = stringResource(id = R.string.notenext_logo),
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    stringResource(id = R.string.notenext),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
                 )
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Color.White.copy(0.2f),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text(
+                        stringResource(id = R.string.about_subtitle),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                stringResource(id = R.string.notenext),
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onPrimary // Adjusted for Primary background
-            )
-            Text(
-                stringResource(id = R.string.about_subtitle),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), // Adjusted transparency and color
-                textAlign = TextAlign.Center
-            )
         }
     }
 }
 
-// SectionHeader using shared definition
-
- @Composable
-private fun AboutGroupCard(
-    content: @Composable () -> Unit
+@Composable
+private fun FeatureCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    containerColor: Color,
+    contentColor: Color
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
-        Column {
-            content()
-        }
-    }
-}
-
- @Composable
-private fun FeatureItem(
-    icon: ImageVector,
-    title: String,
-    description: String,
-    iconColor: Color
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(iconColor.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 20.sp
-            )
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(contentColor.copy(0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = contentColor, modifier = Modifier.size(28.dp))
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = contentColor)
+                Text(description, style = MaterialTheme.typography.bodyMedium, color = contentColor.copy(0.8f))
+            }
         }
     }
 }
 
- @Composable
-fun TeamMemberCard(
+@Composable
+private fun ModernTeamMemberCard(
     name: String,
     role: String,
     avatarUrl: String,
@@ -335,10 +353,7 @@ fun TeamMemberCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        label = "scale"
-    )
+    val scale by animateFloatAsState(if (isPressed) 0.96f else 1f, label = "scale")
 
     Card(
         modifier = Modifier
@@ -349,73 +364,40 @@ fun TeamMemberCard(
                 indication = null,
                 onClick = { uriHandler.openUri(githubUrl) }
             ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             if (isInternetAvailable) {
-                Surface(
-                    shape = CircleShape,
-                    modifier = Modifier.size(60.dp),
-                    shadowElevation = 2.dp,
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    AsyncImage(
-                        model = avatarUrl,
-                        contentDescription = stringResource(id = R.string.profile_picture),
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                )
             } else {
                 Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = role,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(30.dp)
-                    )
+                    Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
             }
-            
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
-                    )
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = role,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Text(name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(role, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
             }
-            
-            // External Link Indicator
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(24.dp), // Standard size
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            )
+            IconButton(
+                onClick = { uriHandler.openUri(githubUrl) },
+                colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Icon(Icons.Default.ArrowOutward, null, modifier = Modifier.size(18.dp))
+            }
         }
     }
 }

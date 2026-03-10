@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
@@ -168,14 +169,15 @@ class MainActivity : ComponentActivity() {
             NoteNextTheme(themeMode = themeMode) {
                 Scaffold(
                     snackbarHost = { SnackbarHost(snackbarHostState) },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0)
                 ) { paddingValues ->
                     Surface(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(paddingValues),
+                            .fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
+                        val unusedPadding = paddingValues
                         if (enableAppLockLoaded == null || isSetupCompleteLoaded == null) {
                             Surface(modifier = Modifier.fillMaxSize()) {}
                         } else if (isSetupCompleteLoaded == false) {
