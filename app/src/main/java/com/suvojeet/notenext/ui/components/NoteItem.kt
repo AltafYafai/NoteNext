@@ -47,6 +47,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextLayoutResult
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import com.suvojeet.notenext.ui.theme.Motion
+import com.suvojeet.notenext.ui.theme.HeroShapes
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NoteItem(
@@ -78,31 +85,50 @@ fun NoteItem(
         contentColor.copy(alpha = 0.7f)
     }
 
+    // Motion: Animate scale and elevation for selection
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 0.98f else 1f,
+        animationSpec = Motion.snappy(),
+        label = "Scale"
+    )
+    
+    val elevation by animateDpAsState(
+        targetValue = if (isSelected) 8.dp else (if (isDefaultColor) 1.dp else 0.dp),
+        animationSpec = Motion.emphasis(),
+        label = "Elevation"
+    )
+
+    // Shape: Use expressive shape for pinned notes, standard for others
+    val cardShape = if (note.note.isPinned) {
+        MaterialTheme.shapes.extraLarge // Asymmetric expressive shape
+    } else {
+        MaterialTheme.shapes.large
+    }
+
     // Determine border stroke
     val borderStroke = if (isSelected) {
-        BorderStroke(3.dp, MaterialTheme.colorScheme.primary) // Thick primary border when selected
+        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     } else if (isDefaultColor) {
-        BorderStroke(3.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)) // Thicker but lighter border for uncolored notes to match size
+        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
     } else {
-        BorderStroke(3.dp, Color.Transparent) // Transparent thick border to maintain size
+        null
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer(scaleX = scale, scaleY = scale)
             .combinedClickable(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
-            ),
-        shape = MaterialTheme.shapes.large,
+            )
+            .animateContentSize(animationSpec = Motion.emphasis()),
+        shape = cardShape,
         colors = CardDefaults.cardColors(
-            // If default, use standard Surface color. If custom, make transparent to show gradient Box.
-            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
+            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent
         ),
         border = borderStroke,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isDefaultColor) 2.dp else 0.dp // Elevation only for default flat cards
-        )
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Box(
             modifier = Modifier

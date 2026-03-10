@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.suvojeet.notenext.ui.theme.Motion
+import com.suvojeet.notenext.ui.theme.HeroShapes
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
 import androidx.compose.material.icons.filled.ViewModule
@@ -76,27 +78,19 @@ fun SearchBar(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(60.dp)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(28.dp),
+            .height(64.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        shape = HeroShapes.Squircle,
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSearchFocused) 6.dp else 2.dp
+            defaultElevation = if (isSearchFocused) 8.dp else 2.dp
         ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
         )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            MaterialTheme.colorScheme.surfaceContainer
-                        )
-                    )
-                )
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -104,10 +98,10 @@ fun SearchBar(
             AnimatedContent(
                 targetState = isSearchActive,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(200)) +
-                            scaleIn(initialScale = 0.8f) togetherWith
-                            fadeOut(animationSpec = tween(200)) +
-                            scaleOut(targetScale = 0.8f)
+                    fadeIn(animationSpec = Motion.emphasis()) +
+                            scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()) togetherWith
+                            fadeOut(animationSpec = Motion.snappy()) +
+                            scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
                 },
                 label = "SearchIconTransition"
             ) { active ->
@@ -131,11 +125,8 @@ fun SearchBar(
                 } else {
                     // Search icon and text when search is inactive.
                     val iconScale by animateFloatAsState(
-                        targetValue = if (isSearchFocused) 1.15f else 1f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
+                        targetValue = if (isSearchFocused) 1.2f else 1f,
+                        animationSpec = Motion.snappy(),
                         label = "SearchIconScale"
                     )
 
@@ -144,7 +135,7 @@ fun SearchBar(
                             .clickable { onSearchActiveChange(true) }
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -156,7 +147,8 @@ fun SearchBar(
                         )
                         Text(
                             text = stringResource(id = R.string.search),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -239,12 +231,12 @@ fun SearchBar(
                 visible = !isSearchActive,
                 enter = slideInHorizontally(
                     initialOffsetX = { it / 2 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeIn(),
+                    animationSpec = Motion.emphasis()
+                ) + fadeIn(Motion.emphasis()),
                 exit = slideOutHorizontally(
                     targetOffsetX = { it / 2 },
-                    animationSpec = tween(200)
-                ) + fadeOut()
+                    animationSpec = Motion.snappy()
+                ) + fadeOut(Motion.snappy())
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

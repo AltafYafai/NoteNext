@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import androidx.compose.ui.res.stringResource
@@ -63,7 +65,14 @@ fun NoteTitleEditor(
         TextField(
             value = state.editingTitle,
             onValueChange = { newTitle: String -> onEvent(NotesEvent.OnTitleChange(newTitle)) },
-            placeholder = { Text(stringResource(id = R.string.title), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
+            placeholder = { 
+                Text(
+                    stringResource(id = R.string.title), 
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                ) 
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -77,7 +86,11 @@ fun NoteTitleEditor(
                     backgroundColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                 )
             ),
-            textStyle = MaterialTheme.typography.headlineMedium.copy(color = titleTextColor),
+            textStyle = MaterialTheme.typography.headlineLarge.copy(
+                color = titleTextColor,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-0.5).sp
+            ),
             singleLine = true,
             maxLines = 1
         )

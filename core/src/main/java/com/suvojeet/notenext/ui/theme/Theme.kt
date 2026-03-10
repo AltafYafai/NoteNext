@@ -15,10 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
-import com.suvojeet.notenext.ui.theme.ShapeFamily
-import com.suvojeet.notenext.ui.theme.RoundedShapes
 import com.suvojeet.notenext.ui.theme.ExpressiveShapes
-import com.suvojeet.notenext.ui.theme.CutShapes
 
 private val LightColorScheme = lightColorScheme(
     primary = md_theme_light_primary,
@@ -120,7 +117,6 @@ private val AmoledColorScheme = darkColorScheme(
  @Composable
 fun NoteNextTheme(
     themeMode: ThemeMode,
-    shapeFamily: ShapeFamily,
     content: @Composable () -> Unit
 ) {
     val systemInDarkTheme = isSystemInDarkTheme()
@@ -163,16 +159,10 @@ fun NoteNextTheme(
         }
     }
 
-    val shapes = when (shapeFamily) {
-        ShapeFamily.ROUNDED -> RoundedShapes
-        ShapeFamily.EXPRESSIVE -> ExpressiveShapes
-        ShapeFamily.CUT -> CutShapes
-    }
-
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        shapes = shapes,
+        shapes = ExpressiveShapes,
         content = content
     )
 }

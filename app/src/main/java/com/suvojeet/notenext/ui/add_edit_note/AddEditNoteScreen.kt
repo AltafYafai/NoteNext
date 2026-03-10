@@ -47,6 +47,8 @@ import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
+import com.suvojeet.notenext.ui.theme.Motion
+import com.suvojeet.notenext.ui.theme.HeroShapes
 import com.suvojeet.notenext.ui.reminder.ReminderSheetContent
 import com.suvojeet.notenext.data.RepeatOption
 import java.time.LocalDate
@@ -222,8 +224,8 @@ fun AddEditNoteScreen(
             topBar = {
                 AnimatedVisibility(
                     visible = !isFocusMode,
-                    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+                    enter = slideInVertically(initialOffsetY = { -it }, animationSpec = Motion.emphasis()) + fadeIn(Motion.emphasis()),
+                    exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = Motion.snappy()) + fadeOut(Motion.snappy())
                 ) {
                     AddEditNoteTopAppBar(
                         state = state,
@@ -242,30 +244,40 @@ fun AddEditNoteScreen(
             bottomBar = {
                 AnimatedVisibility(
                     visible = !isFocusMode,
-                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+                    enter = slideInVertically(initialOffsetY = { it }, animationSpec = Motion.emphasis()) + fadeIn(Motion.emphasis()),
+                    exit = slideOutVertically(targetOffsetY = { it }, animationSpec = Motion.snappy()) + fadeOut(Motion.snappy())
                 ) {
-                    AddEditNoteBottomAppBar(
-                        state = state,
-                        onEvent = onEvent,
-                        showColorPicker = { showColorPicker = !showColorPicker },
-                        showFormatBar = { showFormatBar = !showFormatBar },
-                        showReminderDialog = { 
-                            if (it) checkAndRequestReminderPermissions() else showReminderDialog = false 
-                        },
-                        showMoreOptions = { showMoreOptions = it },
-                        onImageClick = { getContent.launch("image/*") },
-                        onTakePhotoClick = {
-                            val uri = com.suvojeet.notenext.ui.add_edit_note.createImageFile(context)
-                            photoUri = uri
-                            takePictureLauncher.launch(uri)
-                        },
-                        onAudioClick = {
-                            Toast.makeText(context, "Audio recording not implemented yet", Toast.LENGTH_SHORT).show()
-                        },
-                        themeMode = themeMode,
-                        backgroundColor = backgroundColor
-                    )
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        shape = HeroShapes.Squircle,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+                        tonalElevation = 3.dp,
+                        shadowElevation = 8.dp
+                    ) {
+                        AddEditNoteBottomAppBar(
+                            state = state,
+                            onEvent = onEvent,
+                            showColorPicker = { showColorPicker = !showColorPicker },
+                            showFormatBar = { showFormatBar = !showFormatBar },
+                            showReminderDialog = { 
+                                if (it) checkAndRequestReminderPermissions() else showReminderDialog = false 
+                            },
+                            showMoreOptions = { showMoreOptions = it },
+                            onImageClick = { getContent.launch("image/*") },
+                            onTakePhotoClick = {
+                                val uri = com.suvojeet.notenext.ui.add_edit_note.createImageFile(context)
+                                photoUri = uri
+                                takePictureLauncher.launch(uri)
+                            },
+                            onAudioClick = {
+                                Toast.makeText(context, "Audio recording not implemented yet", Toast.LENGTH_SHORT).show()
+                            },
+                            themeMode = themeMode,
+                            backgroundColor = Color.Transparent
+                        )
+                    }
                 }
             }
         ) { padding ->
@@ -398,18 +410,18 @@ fun AddEditNoteScreen(
         // Formatting Toolbar
         AnimatedVisibility(
             visible = showFormatBar && (state.editingNoteType == "TEXT" || state.editingNoteType == "CHECKLIST"),
-            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+            enter = slideInVertically(initialOffsetY = { it }, animationSpec = Motion.emphasis()) + fadeIn(Motion.emphasis()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = Motion.emphasis()),
+            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = Motion.snappy()) + fadeOut(Motion.snappy()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = Motion.snappy()),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .imePadding()
-                .padding(bottom = 60.dp)
+                .padding(bottom = 120.dp)
         ) {
             Surface(
-                shadowElevation = 8.dp,
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                shadowElevation = 12.dp,
+                shape = HeroShapes.Squircle,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                modifier = Modifier.padding(horizontal = 24.dp)
             ) {
                 FormatToolbar(
                     state = state, 
@@ -418,7 +430,7 @@ fun AddEditNoteScreen(
                     onGrammarFixClick = { onEvent(NotesEvent.FixGrammar) },
                     isFixingGrammar = state.isFixingGrammar,
                     themeMode = themeMode,
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier.padding(12.dp)
                 )
             }
         }
@@ -430,13 +442,15 @@ fun AddEditNoteScreen(
                            
         AnimatedVisibility(
             visible = showAiButton && !isFocusMode,
-            enter = fadeIn() + slideInVertically { it },
-            exit = fadeOut() + slideOutVertically { it },
+            enter = fadeIn(Motion.emphasis()) + slideInVertically(animationSpec = Motion.emphasis()) { it } + androidx.compose.animation.scaleIn(animationSpec = Motion.emphasis(), initialScale = 0.8f),
+            exit = fadeOut(Motion.snappy()) + slideOutVertically(animationSpec = Motion.snappy()) { it } + androidx.compose.animation.scaleOut(animationSpec = Motion.snappy(), targetScale = 0.8f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 85.dp, end = 16.dp) 
+                .padding(bottom = 120.dp, end = 20.dp) 
         ) {
-            AiAssistantButton(onClick = { showAiChecklistSheet = true })
+            AiAssistantButton(
+                onClick = { showAiChecklistSheet = true }
+            )
         }
 
         // Grammar Fix Dialog

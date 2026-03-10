@@ -20,39 +20,41 @@ val MontserratFont = GoogleFont("Inter")
 val MontserratFontFamily = FontFamily(
     Font(googleFont = MontserratFont, fontProvider = provider),
     Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.SemiBold),
     Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Bold),
-    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.ExtraBold)
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.ExtraBold),
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Black)
 )
 
 // Set of Material typography styles to start with
 val Typography = Typography(
     displayLarge = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Black,
         fontSize = 64.sp,
         lineHeight = 72.sp,
-        letterSpacing = (-1.0).sp
+        letterSpacing = (-1.5).sp
     ),
     displayMedium = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.ExtraBold,
+        fontWeight = FontWeight.Black,
         fontSize = 52.sp,
         lineHeight = 60.sp,
-        letterSpacing = (-0.5).sp
+        letterSpacing = (-1.0).sp
     ),
     displaySmall = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 44.sp,
         lineHeight = 52.sp,
-        letterSpacing = 0.sp
+        letterSpacing = (-0.5).sp
     ),
     headlineLarge = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 36.sp,
         lineHeight = 44.sp,
-        letterSpacing = 0.sp
+        letterSpacing = (-0.5).sp
     ),
     headlineMedium = TextStyle(
         fontFamily = MontserratFontFamily,
@@ -63,21 +65,21 @@ val Typography = Typography(
     ),
     headlineSmall = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 24.sp,
         lineHeight = 32.sp,
         letterSpacing = 0.sp
     ),
     titleLarge = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 22.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
     titleMedium = TextStyle(
         fontFamily = MontserratFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.1.sp

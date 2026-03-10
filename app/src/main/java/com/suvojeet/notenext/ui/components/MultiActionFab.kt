@@ -9,6 +9,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +27,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -42,24 +47,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import com.suvojeet.notenext.R
-
-import androidx.compose.material.icons.filled.CreateNewFolder
-
 import com.suvojeet.notenext.ui.theme.ThemeMode
+import com.suvojeet.notenext.ui.theme.Motion
+import com.suvojeet.notenext.ui.theme.HeroShapes
 
-/**
- * A Floating Action Button (FAB) that expands to reveal multiple action items (Note, Checklist, Project).
- * Each action item appears with a staggered animation.
- *
- * @param isExpanded Boolean state indicating whether the FAB is expanded.
- * @param onExpandedChange Lambda to be invoked when the expansion state changes.
- * @param onNoteClick Lambda to be invoked when the "Note" action item is clicked.
- * @param onChecklistClick Lambda to be invoked when the "Checklist" action item is clicked.
- * @param onProjectClick Lambda to be invoked when the "Project" action item is clicked.
- * @param showProjectButton Boolean to control the visibility of the "Project" action item.
- * @param themeMode The current theme mode, used for styling the action items.
- */
 @Composable
 fun MultiActionFab(
     isExpanded: Boolean,
@@ -71,173 +64,170 @@ fun MultiActionFab(
     onTodoClick: () -> Unit = {},
     showProjectButton: Boolean = true,
     themeMode: ThemeMode,
-    isScrollExpanded: Boolean = true // New parameter for scroll awareness
+    isScrollExpanded: Boolean = true
 ) {
-    // Animate the rotation of the main FAB icon (Add/Close).
     val rotation by animateFloatAsState(
-        targetValue = if (isExpanded) 45f else 0f,
-        animationSpec = tween(durationMillis = 300), label = "FabIconRotation"
+        targetValue = if (isExpanded) 135f else 0f,
+        animationSpec = Motion.emphasis(),
+        label = "FabIconRotation"
     )
 
-    // State variables to control the staggered visibility of action items.
     var showProject by remember { mutableStateOf(false) }
     var showTodo by remember { mutableStateOf(false) }
     var showScanQr by remember { mutableStateOf(false) }
     var showChecklist by remember { mutableStateOf(false) }
     var showNote by remember { mutableStateOf(false) }
 
-    // LaunchedEffect to manage the staggered appearance/disappearance of action items.
     LaunchedEffect(isExpanded) {
         if (isExpanded) {
-            // When expanding, show items with a slight delay between each.
             showNote = true
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(40)
             showChecklist = true
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(40)
             showTodo = true
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(40)
             showScanQr = true
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(40)
             showProject = true
         } else {
-            // When collapsing, hide items with a slight delay in reverse order.
             showProject = false
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(30)
             showScanQr = false
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(30)
             showTodo = false
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(30)
             showChecklist = false
-            kotlinx.coroutines.delay(50)
+            kotlinx.coroutines.delay(30)
             showNote = false
         }
     }
 
-    // State and animation for the main FAB's press effect.
     var pressed by remember { mutableStateOf(false) }
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        targetValue = if (pressed) 0.92f else 1f,
+        animationSpec = Motion.snappy(),
         label = "MainFabPressScale"
     )
 
     Column(
         horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Project action item.
+        // Items in reverse order (top to bottom)
         AnimatedVisibility(
             visible = showProject && showProjectButton,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
+            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
         ) {
             FabItem(
                 icon = Icons.Default.CreateNewFolder,
                 label = stringResource(id = R.string.projects),
                 onClick = {
                     onProjectClick()
-                    onExpandedChange(false) // Collapse FAB after action.
+                    onExpandedChange(false)
                 },
                 themeMode = themeMode
             )
         }
 
-        // Scan QR action item.
         AnimatedVisibility(
             visible = showScanQr,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
+            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
         ) {
             FabItem(
                 icon = Icons.Default.QrCodeScanner,
                 label = stringResource(id = R.string.scan_qr),
                 onClick = {
                     onScanQrClick()
-                    onExpandedChange(false) // Collapse FAB after action.
+                    onExpandedChange(false)
                 },
                 themeMode = themeMode
             )
         }
 
-        // To-Do action item.
         AnimatedVisibility(
             visible = showTodo,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
+            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
         ) {
             FabItem(
                 icon = Icons.Default.TaskAlt,
                 label = stringResource(id = R.string.todo),
                 onClick = {
                     onTodoClick()
-                    onExpandedChange(false) // Collapse FAB after action.
+                    onExpandedChange(false)
                 },
                 themeMode = themeMode
             )
         }
 
-        // Checklist action item.
         AnimatedVisibility(
             visible = showChecklist,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
+            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
         ) {
             FabItem(
                 icon = Icons.Default.CheckBox,
                 label = stringResource(id = R.string.checklist),
                 onClick = {
                     onChecklistClick()
-                    onExpandedChange(false) // Collapse FAB after action.
+                    onExpandedChange(false)
                 },
                 themeMode = themeMode
             )
         }
 
-        // Note action item.
         AnimatedVisibility(
             visible = showNote,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
+            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
         ) {
             FabItem(
                 icon = Icons.Default.Note,
                 label = stringResource(id = R.string.note),
                 onClick = {
                     onNoteClick()
-                    onExpandedChange(false) // Collapse FAB after action.
+                    onExpandedChange(false)
                 },
                 themeMode = themeMode
             )
         }
 
-        // Main Floating Action Button (Extended or Regular)
+        // Main FAB
         androidx.compose.material3.ExtendedFloatingActionButton(
             text = { 
-                 AnimatedVisibility(visible = isScrollExpanded && !isExpanded) {
-                     Text(text = stringResource(id = R.string.add))
+                 AnimatedVisibility(
+                     visible = isScrollExpanded && !isExpanded,
+                     enter = fadeIn() + expandHorizontally(),
+                     exit = fadeOut() + shrinkHorizontally()
+                 ) {
+                     Text(
+                         text = stringResource(id = R.string.add),
+                         style = MaterialTheme.typography.labelLarge,
+                         fontWeight = FontWeight.ExtraBold
+                     )
                  }
             },
             icon = {
                 Icon(
-                    imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.Add,
+                    imageVector = Icons.Default.Add,
                     contentDescription = stringResource(id = R.string.add),
-                    modifier = Modifier.rotate(rotation) // Apply rotation animation.
+                    modifier = Modifier.rotate(rotation)
                 )
             },
             onClick = {
                 pressed = true
                 onExpandedChange(!isExpanded)
             },
-            expanded = isScrollExpanded && !isExpanded, // Only expand if scrolled up AND menu is closed
-            containerColor = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.scale(pressScale) // Apply press animation.
+            expanded = isScrollExpanded && !isExpanded,
+            containerColor = if (isExpanded) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primary,
+            contentColor = if (isExpanded) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.scale(pressScale),
+            shape = if (isExpanded) HeroShapes.Squircle else MaterialTheme.shapes.extraLarge
         )
     }
 
-    // Reset the press state after a short delay to create a 'pop' effect.
     LaunchedEffect(pressed) {
         if (pressed) {
             kotlinx.coroutines.delay(100)
@@ -246,14 +236,6 @@ fun MultiActionFab(
     }
 }
 
-/**
- * A single item displayed within the [MultiActionFab] when expanded.
- *
- * @param icon The icon to display for the action item.
- * @param label The text label for the action item.
- * @param onClick Lambda to be invoked when the item is clicked.
- * @param themeMode The current theme mode, used to determine the card's background and border.
- */
 @Composable
 private fun FabItem(
     icon: ImageVector,
@@ -261,13 +243,12 @@ private fun FabItem(
     onClick: () -> Unit,
     themeMode: ThemeMode
 ) {
-    // Determine card color based on theme mode.
     val cardColor = if (themeMode == ThemeMode.AMOLED) {
         MaterialTheme.colorScheme.surface
     } else {
-        MaterialTheme.colorScheme.surfaceVariant
+        MaterialTheme.colorScheme.secondaryContainer
     }
-    // Determine border style based on theme mode.
+    
     val border = if (themeMode == ThemeMode.AMOLED) {
         BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
     } else {
@@ -276,20 +257,28 @@ private fun FabItem(
 
     Card(
         modifier = Modifier.clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
+        shape = HeroShapes.Leaf,
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor,
+            contentColor = if (themeMode == ThemeMode.AMOLED) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSecondaryContainer
+        ),
         border = border,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Icon(imageVector = icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                imageVector = icon, 
+                contentDescription = label, 
+                tint = if (themeMode == ThemeMode.AMOLED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary
+            )
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.Bold
             )
         }
     }

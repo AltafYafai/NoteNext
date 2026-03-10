@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.suvojeet.notenext.ui.theme.ShapeFamily
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -19,7 +18,6 @@ object PreferencesKeys {
     val THEME_MODE = stringPreferencesKey("theme_mode")
     val AUTO_DELETE_DAYS = intPreferencesKey("auto_delete_days")
     val ENABLE_RICH_LINK_PREVIEW = booleanPreferencesKey("enable_rich_link_preview")
-    val SHAPE_FAMILY = stringPreferencesKey("shape_family")
     val ENABLE_APP_LOCK = booleanPreferencesKey("enable_app_lock")
     val APP_LOCK_PIN = stringPreferencesKey("app_lock_pin")
     val IS_SETUP_COMPLETE = booleanPreferencesKey("is_setup_complete")
@@ -77,17 +75,6 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit {
             preferences ->
             preferences[PreferencesKeys.ENABLE_RICH_LINK_PREVIEW] = enable
-        }
-    }
-
-    val shapeFamily: Flow<ShapeFamily> = context.dataStore.data
-        .map { preferences ->
-            ShapeFamily.valueOf(preferences[PreferencesKeys.SHAPE_FAMILY] ?: ShapeFamily.ROUNDED.name)
-        }
-
-    suspend fun saveShapeFamily(shapeFamily: ShapeFamily) {
-        context.dataStore.edit { preferences ->
-            preferences[PreferencesKeys.SHAPE_FAMILY] = shapeFamily.name
         }
     }
 

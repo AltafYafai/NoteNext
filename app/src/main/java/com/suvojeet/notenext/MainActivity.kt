@@ -22,7 +22,6 @@ import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSiz
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.ui.theme.ShapeFamily
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -102,7 +101,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val windowSizeClass = calculateWindowSizeClass(this)
             val themeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-            val shapeFamily by settingsRepository.shapeFamily.collectAsState(initial = ShapeFamily.EXPRESSIVE)
 
             var enableAppLockLoaded by remember { mutableStateOf<Boolean?>(null) }
             var isSetupCompleteLoaded by remember { mutableStateOf<Boolean?>(null) }
@@ -158,7 +156,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            NoteNextTheme(themeMode = themeMode, shapeFamily = shapeFamily) {
+            NoteNextTheme(themeMode = themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
