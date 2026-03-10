@@ -52,9 +52,9 @@ RICH MEDIA
 * Smart Links: Paste a URL to generate a rich preview card automatically.
 
 CUSTOMIZABLE DESIGN
+* Material 3 Expressive: A modern, tactile interface with fluid spring-based animations and premium aesthetics.
 * Material You: Adapts to your wallpaper's colors (Android 12+).
-* Light & Dark Mode: Eye-friendly themes for any time of day.
-* Shape Styles: Customize button shapes to match your style.
+* Light & Dark Mode: Eye-friendly themes for any time of day, including Pure Black (AMOLED) support.
 
 WHY CHOOSE NOTENEXT?
 
