@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -40,7 +41,11 @@ class LoggingService : Service() {
         }
 
         val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
 
         if (serviceJob == null) {
             LogCollector.startLogging(this)
@@ -57,7 +62,7 @@ class LoggingService : Service() {
 
     override fun onDestroy() {
         serviceJob?.cancel()
-        serviceScope.cancel() // Cancel the entire scope
+        serviceScope.cancel()
         super.onDestroy()
     }
 

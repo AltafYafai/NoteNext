@@ -112,7 +112,7 @@
             android:name=".service.LoggingService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse"
+            android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
         <provider
