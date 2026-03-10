@@ -1,7 +1,9 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.todo
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,17 +26,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.TodoItem
+import com.suvojeet.notenext.ui.components.springPress
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Priority colors with good contrast
 object TodoPriorityColors {
-    val High = Color(0xFFE53935) // Red
-    val Medium = Color(0xFFFF9800) // Orange
-    val Low = Color(0xFF4CAF50) // Green
-    val HighLight = Color(0xFFFFEBEE) // Light Red background
-    val MediumLight = Color(0xFFFFF3E0) // Light Orange background
-    val LowLight = Color(0xFFE8F5E9) // Light Green background
+    val High = Color(0xFFE53935)
+    val Medium = Color(0xFFFF9800)
+    val Low = Color(0xFF4CAF50)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +60,7 @@ fun TodoItemCard(
                 }
                 SwipeToDismissBoxValue.StartToEnd -> {
                     onToggleComplete()
-                    false // Don't dismiss, just toggle
+                    false
                 }
                 else -> false
             }
@@ -78,6 +77,7 @@ fun TodoItemCard(
                     SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
                     else -> Color.Transparent
                 },
+                animationSpec = spring(),
                 label = "SwipeBackgroundColor"
             )
             val icon = when (direction) {
@@ -91,15 +91,16 @@ fun TodoItemCard(
                 else -> Alignment.Center
             }
             val scale by animateFloatAsState(
-                if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f,
+                if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1.1f,
+                animationSpec = spring(dampingRatio = 0.5f),
                 label = "SwipeIconScale"
             )
 
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(color, MaterialTheme.shapes.medium)
-                    .padding(horizontal = 20.dp),
+                    .background(color, MaterialTheme.shapes.extraLarge)
+                    .padding(horizontal = 24.dp),
                 contentAlignment = alignment
             ) {
                 icon?.let {
@@ -115,52 +116,49 @@ fun TodoItemCard(
                 }
             }
         },
-        modifier = modifier
+        modifier = modifier.clip(MaterialTheme.shapes.extraLarge)
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .springPress()
                 .clickable(onClick = onClick),
-            shape = MaterialTheme.shapes.large,
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = MaterialTheme.colorScheme.surfaceContainer
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Priority color strip on left
                 Box(
                     modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .defaultMinSize(minHeight = 72.dp)
+                        .width(6.dp)
+                        .height(80.dp)
                         .background(priorityColor)
                 )
                 
-                // Checkbox
                 Checkbox(
                     checked = todo.isCompleted,
                     onCheckedChange = { onToggleComplete() },
-                    modifier = Modifier.padding(start = 8.dp),
+                    modifier = Modifier.padding(start = 12.dp).springPress(),
                     colors = CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
                         uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 
-                // Content
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(vertical = 12.dp, horizontal = 4.dp)
+                        .padding(vertical = 16.dp, horizontal = 8.dp)
                 ) {
                     Text(
                         text = todo.title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         textDecoration = if (todo.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                         color = if (todo.isCompleted) 
                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) 
@@ -173,47 +171,57 @@ fun TodoItemCard(
                     if (todo.description.isNotBlank()) {
                         Text(
                             text = todo.description,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(
                                 alpha = if (todo.isCompleted) 0.5f else 1f
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                    
-                    // Due date chip
-                    todo.dueDate?.let { dueDate ->
-                        val isOverdue = dueDate < System.currentTimeMillis() && !todo.isCompleted
-                        val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
-                        
-                        Text(
-                            text = if (isOverdue) "⚠️ ${dateFormat.format(Date(dueDate))}" else "📅 ${dateFormat.format(Date(dueDate))}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isOverdue) 
-                                MaterialTheme.colorScheme.error 
-                            else 
-                                MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
+                    
+                    todo.dueDate?.let { dueDate ->
+                        val isOverdue = dueDate < System.currentTimeMillis() && !todo.isCompleted
+                        val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                        
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            color = if (isOverdue) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text(
+                                text = if (isOverdue) "⚠️ Overdue: ${dateFormat.format(Date(dueDate))}" else "📅 ${dateFormat.format(Date(dueDate))}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isOverdue) 
+                                    MaterialTheme.colorScheme.onErrorContainer 
+                                else 
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
                 
-                // Priority label on right
-                Text(
-                    text = when (todo.priority) {
-                        2 -> "HIGH"
-                        1 -> "MED"
-                        else -> "LOW"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = priorityColor,
+                Surface(
+                    shape = CircleShape,
+                    color = priorityColor.copy(alpha = 0.1f),
                     modifier = Modifier.padding(end = 16.dp)
-                )
+                ) {
+                    Text(
+                        text = when (todo.priority) {
+                            2 -> "HIGH"
+                            1 -> "MED"
+                            else -> "LOW"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Black,
+                        color = priorityColor,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
     }
 }
-

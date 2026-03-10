@@ -1,6 +1,8 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.settings
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.repository.SettingsRepository
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.util.NetworkUtils
 
@@ -42,7 +45,6 @@ import com.suvojeet.notenext.util.NetworkUtils
 fun AboutScreen(onBackClick: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
-    val settingsRepository = remember { SettingsRepository(context) }
     val isInternetAvailable = NetworkUtils.isInternetAvailable(context)
     
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -54,12 +56,12 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 title = {
                     Text(
                         text = stringResource(id = R.string.about_screen_title),
-                        fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.headlineMedium
+                        fontWeight = FontWeight.Black,
+                        style = MaterialTheme.typography.headlineLarge
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
@@ -75,19 +77,17 @@ fun AboutScreen(onBackClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // --- Hero Section ---
             item {
                 HeroSection()
             }
 
-            // --- Features Section ---
             item {
                 Text(
                     text = stringResource(id = R.string.what_makes_us_different),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
                 )
@@ -118,17 +118,16 @@ fun AboutScreen(onBackClick: () -> Unit) {
                         icon = Icons.Default.AutoAwesome,
                         title = "AI Powered",
                         description = "Smart summarization and grammar correction powered by Groq AI.",
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            // --- About App ---
             item {
                 OutlinedCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.outlinedCardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
@@ -141,7 +140,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
                     Column(modifier = Modifier.padding(24.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 text = stringResource(id = R.string.about_the_app_title),
                                 style = MaterialTheme.typography.titleLarge,
@@ -159,11 +158,10 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 }
             }
 
-            // --- Team Section ---
             item {
                 Text(
                     text = stringResource(id = R.string.meet_the_team),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
                 )
@@ -188,11 +186,10 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 }
             }
 
-            // --- Open Source ---
             item {
                 ElevatedCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.fillMaxWidth().springPress(),
+                    shape = MaterialTheme.shapes.extraLarge,
                     onClick = { uriHandler.openUri("https://github.com/suvojeet-sengupta/notenext") }
                 ) {
                     Row(
@@ -230,7 +227,6 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 }
             }
 
-            // --- Footer ---
             item {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -260,7 +256,7 @@ private fun HeroSection() {
     
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(32.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
         Box(
@@ -272,7 +268,7 @@ private fun HeroSection() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
+                    shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surface.copy(0.9f),
                     modifier = Modifier.size(100.dp),
                     tonalElevation = 8.dp
@@ -316,8 +312,8 @@ private fun FeatureCard(
     contentColor: Color
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth().springPress(),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Row(
@@ -327,8 +323,7 @@ private fun FeatureCard(
             Box(
                 modifier = Modifier
                     .size(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(contentColor.copy(0.1f)),
+                    .background(contentColor.copy(0.1f), MaterialTheme.shapes.medium),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, tint = contentColor, modifier = Modifier.size(28.dp))
@@ -351,20 +346,12 @@ private fun ModernTeamMemberCard(
     isInternetAvailable: Boolean,
     uriHandler: androidx.compose.ui.platform.UriHandler
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (isPressed) 0.96f else 1f, label = "scale")
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = { uriHandler.openUri(githubUrl) }
-            ),
-        shape = RoundedCornerShape(28.dp),
+            .springPress()
+            .clickable(onClick = { uriHandler.openUri(githubUrl) }),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
     ) {
         Row(
@@ -381,7 +368,7 @@ private fun ModernTeamMemberCard(
                 )
             } else {
                 Box(
-                    modifier = Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+                    modifier = Modifier.size(64.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -394,7 +381,8 @@ private fun ModernTeamMemberCard(
             }
             IconButton(
                 onClick = { uriHandler.openUri(githubUrl) },
-                colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.springPress()
             ) {
                 Icon(Icons.Default.ArrowOutward, null, modifier = Modifier.size(18.dp))
             }

@@ -2,17 +2,9 @@ package com.suvojeet.notenext.ui.add_edit_note.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.TextSelectionColors
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -29,33 +21,29 @@ import com.suvojeet.notenext.R
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
-
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
+import com.suvojeet.notenext.ui.components.springPress
+import com.suvojeet.notenext.ui.theme.*
 
-/**
- * Enhanced title editor with parallax effect based on scroll position.
- * @param scrollOffset The current scroll offset for parallax calculation
- */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NoteTitleEditor(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onReminderClick: () -> Unit,
-    scrollOffset: Float = 0f  // For parallax effect
+    scrollOffset: Float = 0f
 ) {
-    // Parallax factor - title moves slower than content
-    val parallaxOffset = (-scrollOffset * 0.3f).coerceIn(-30f, 30f)
+    val parallaxOffset = (-scrollOffset * 0.2f).coerceIn(-20f, 20f)
     
     Column(
         modifier = Modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 24.dp, vertical = 8.dp)
             .graphicsLayer {
                 translationY = parallaxOffset
             }
@@ -68,9 +56,8 @@ fun NoteTitleEditor(
             placeholder = { 
                 Text(
                     stringResource(id = R.string.title), 
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                 ) 
             },
             modifier = Modifier.fillMaxWidth(),
@@ -86,7 +73,7 @@ fun NoteTitleEditor(
                     backgroundColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                 )
             ),
-            textStyle = MaterialTheme.typography.headlineLarge.copy(
+            textStyle = MaterialTheme.typography.displaySmall.copy(
                 color = titleTextColor,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-0.5).sp
@@ -103,27 +90,23 @@ fun NoteTitleEditor(
     }
 }
 
-/**
- * Enhanced content editor with animated cursor glow effect.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NoteContentEditor(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
-    onSlashCommand: () -> Unit // New callback
+    onSlashCommand: () -> Unit
 ) {
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     val interactionSource = remember { MutableInteractionSource() }
     
-    // Cursor glow animation
     val infiniteTransition = rememberInfiniteTransition(label = "cursor_glow")
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.6f,
+        initialValue = 0.1f,
+        targetValue = 0.4f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOutSine),
+            animation = tween(1200),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glow_alpha"
@@ -133,31 +116,30 @@ fun NoteContentEditor(
     val glowBrush = Brush.radialGradient(
         colors = listOf(
             cursorColor.copy(alpha = glowAlpha),
-            cursorColor.copy(alpha = glowAlpha * 0.5f),
+            cursorColor.copy(alpha = glowAlpha * 0.4f),
             Color.Transparent
         ),
-        radius = 40f
+        radius = 60f
     )
 
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier.padding(horizontal = 24.dp)
     ) {
         val contentTextColor = MaterialTheme.colorScheme.onSurface
         val contentTextStyle = when (state.activeHeadingStyle) {
-            1 -> MaterialTheme.typography.headlineLarge.copy(color = contentTextColor)
-            2 -> MaterialTheme.typography.headlineMedium.copy(color = contentTextColor)
-            3 -> MaterialTheme.typography.headlineSmall.copy(color = contentTextColor)
-            4 -> MaterialTheme.typography.titleLarge.copy(color = contentTextColor)
-            5 -> MaterialTheme.typography.titleMedium.copy(color = contentTextColor)
-            6 -> MaterialTheme.typography.titleSmall.copy(color = contentTextColor)
-            else -> MaterialTheme.typography.bodyLarge.copy(color = contentTextColor)
+            1 -> MaterialTheme.typography.headlineLarge.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+            2 -> MaterialTheme.typography.headlineMedium.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+            3 -> MaterialTheme.typography.headlineSmall.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+            4 -> MaterialTheme.typography.titleLarge.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+            5 -> MaterialTheme.typography.titleMedium.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+            6 -> MaterialTheme.typography.titleSmall.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+            else -> MaterialTheme.typography.bodyLarge.copy(color = contentTextColor, lineHeight = 28.sp)
         }
 
         BasicTextField(
             value = state.editingContent,
             onValueChange = { newContent -> 
                 onEvent(NotesEvent.OnContentChange(newContent))
-                // Detect Slash Command
                 val cursor = newContent.selection.start
                 if (cursor > 0 && newContent.text.isNotEmpty() && cursor <= newContent.text.length) {
                     val lastChar = newContent.text[cursor - 1]
@@ -172,7 +154,6 @@ fun NoteContentEditor(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
-                    // Draw soft glow behind cursor area
                     textLayoutResult?.let { layout ->
                         val cursorPosition = state.editingContent.selection.start
                         if (cursorPosition >= 0 && layout.layoutInput.text.isNotEmpty() && cursorPosition <= layout.layoutInput.text.length) {
@@ -180,12 +161,10 @@ fun NoteContentEditor(
                                 val cursorRect = layout.getCursorRect(cursorPosition.coerceIn(0, layout.layoutInput.text.length))
                                 drawCircle(
                                     brush = glowBrush,
-                                    radius = 30f,
+                                    radius = 40f,
                                     center = Offset(cursorRect.left, cursorRect.top + cursorRect.height / 2)
                                 )
-                            } catch (e: Exception) {
-                                // Ignore cursor position errors during rapid typing
-                            }
+                            } catch (e: Exception) {}
                         }
                     }
                 }
@@ -220,7 +199,7 @@ fun NoteContentEditor(
                     singleLine = false,
                     visualTransformation = VisualTransformation.None,
                     interactionSource = interactionSource,
-                    placeholder = { Text(stringResource(id = R.string.note), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
+                    placeholder = { Text(stringResource(id = R.string.note), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), style = contentTextStyle) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -252,15 +231,18 @@ fun ReminderDisplay(
         val formattedTime = formatter.format(dateTime)
         val repeatText = if (repeatOption != null && repeatOption != "DOES_NOT_REPEAT") ", $repeatOption" else ""
 
-        androidx.compose.material3.AssistChip(
+        AssistChip(
             onClick = onClick,
             label = { Text(text = "$formattedTime$repeatText") },
-            leadingIcon = { androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Default.Alarm, contentDescription = "Reminder") },
-            colors = androidx.compose.material3.AssistChipDefaults.assistChipColors(
+            leadingIcon = { Icon(Icons.Default.Alarm, contentDescription = "Reminder") },
+            shape = MaterialTheme.shapes.medium,
+            colors = AssistChipDefaults.assistChipColors(
                 labelColor = MaterialTheme.colorScheme.primary,
-                leadingIconContentColor = MaterialTheme.colorScheme.primary
-            )
+                leadingIconContentColor = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+            ),
+            modifier = Modifier.springPress()
         )
-        Spacer(modifier = androidx.compose.ui.Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
     }
 }

@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.labels
 
 import androidx.compose.foundation.clickable
@@ -13,8 +14,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
@@ -22,6 +25,7 @@ import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.SettingsGroupCard
 import com.suvojeet.notenext.ui.components.EmptyState
+import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +35,7 @@ fun EditLabelsScreen(
     val viewModel: EditLabelsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -41,11 +45,11 @@ fun EditLabelsScreen(
                     Text(
                         stringResource(id = R.string.edit_labels),
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                        fontWeight = FontWeight.Black
                     ) 
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackPressed) {
+                    IconButton(onClick = onBackPressed, modifier = Modifier.springPress()) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
@@ -59,7 +63,8 @@ fun EditLabelsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { viewModel.onEvent(EditLabelsEvent.ShowAddLabelDialog) },
-                shape = FloatingActionButtonDefaults.largeShape,
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.springPress(),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
@@ -132,12 +137,13 @@ fun LabelItem(
     ListItem(
         modifier = Modifier
             .fillMaxWidth()
+            .springPress()
             .clickable(onClick = onEditClick),
         headlineContent = { 
             Text(
                 text = label.name,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold
             ) 
         },
         leadingContent = {
@@ -167,27 +173,30 @@ fun AddLabelDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.add_label)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(id = R.string.new_label)) }
+                label = { Text(stringResource(id = R.string.new_label)) },
+                shape = MaterialTheme.shapes.extraSmall
             )
         },
         confirmButton = {
             Button(
+                modifier = Modifier.springPress(),
                 onClick = {
                     if (name.isNotBlank()) {
                         onConfirm(name)
                     }
                 }
             ) {
-                Text(stringResource(id = R.string.add))
+                Text(stringResource(id = R.string.add), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                 Text(stringResource(id = R.string.cancel))
             }
         }
@@ -205,32 +214,35 @@ fun EditLabelDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.edit_labels)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(id = R.string.new_label)) }
+                label = { Text(stringResource(id = R.string.new_label)) },
+                shape = MaterialTheme.shapes.extraSmall
             )
         },
         confirmButton = {
             Button(
+                modifier = Modifier.springPress(),
                 onClick = {
                     if (name.isNotBlank()) {
                         onConfirm(name)
                     }
                 }
             ) {
-                Text(stringResource(id = R.string.save))
+                Text(stringResource(id = R.string.save), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            Row {
-                TextButton(onClick = onDelete) {
-                    Text(stringResource(id = R.string.delete), color = MaterialTheme.colorScheme.error)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = onDelete, modifier = Modifier.springPress()) {
+                    Text(stringResource(id = R.string.delete), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = onDismiss) {
+                TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                     Text(stringResource(id = R.string.cancel))
                 }
             }

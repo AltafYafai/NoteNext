@@ -1,21 +1,24 @@
-
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 package com.suvojeet.notenext.ui.project
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,15 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,17 +50,13 @@ import androidx.compose.runtime.LaunchedEffect
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
-import com.suvojeet.notenext.ui.components.ContextualTopAppBar
-import com.suvojeet.notenext.ui.components.LabelDialog
-import com.suvojeet.notenext.ui.components.NoteItem
-import com.suvojeet.notenext.ui.components.SearchBar
+import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.ui.reminder.ReminderSetDialog
@@ -75,11 +66,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
-import androidx.compose.material3.TopAppBarDefaults
-import com.suvojeet.notenext.ui.components.MultiActionFab
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 fun ProjectNotesScreen(
     onBackClick: () -> Unit,
     themeMode: ThemeMode,
@@ -96,6 +87,8 @@ fun ProjectNotesScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -140,11 +133,12 @@ fun ProjectNotesScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 AnimatedContent(
                     targetState = isSelectionModeActive,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(220, delayMillis = 90)).togetherWith(fadeOut(animationSpec = tween(90)))
+                        fadeIn(animationSpec = spring()).togetherWith(fadeOut(animationSpec = spring()))
                     },
                     label = "TopAppBar Animation"
                 ) { targetState ->
@@ -160,7 +154,7 @@ fun ProjectNotesScreen(
                             onCopyClick = { viewModel.onEvent(ProjectNotesEvent.CopySelectedNotes) },
                             onSendClick = { viewModel.onEvent(ProjectNotesEvent.SendSelectedNotes) },
                             onLabelClick = { showLabelDialog = true },
-                            onMoveToProjectClick = { /* Not applicable for project notes */ },
+                            onMoveToProjectClick = { },
                             onLockClick = { viewModel.onEvent(ProjectNotesEvent.ToggleLockForSelectedNotes) },
                             onSelectAllClick = { viewModel.onEvent(ProjectNotesEvent.SelectAllNotes) }
                         )
@@ -179,7 +173,7 @@ fun ProjectNotesScreen(
                                     onSortMenuDismissRequest = { showSortMenu = false },
                                     onSortOptionClick = { sortType ->
                                         val newSortType = if (sortType == state.sortType) {
-                                            SortType.DATE_MODIFIED // Revert to default if same option is clicked
+                                            SortType.DATE_MODIFIED
                                         } else {
                                             sortType
                                         }
@@ -189,12 +183,13 @@ fun ProjectNotesScreen(
                                 )
                             },
                             navigationIcon = {
-                                IconButton(onClick = onBackClick) {
+                                IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                             )
                         )
                     }
@@ -213,7 +208,7 @@ fun ProjectNotesScreen(
                         viewModel.onEvent(ProjectNotesEvent.ExpandNote(-1, "CHECKLIST"))
                         isFabExpanded = false
                     },
-                    onProjectClick = { /* Do nothing */ },
+                    onProjectClick = { },
                     showProjectButton = false,
                     themeMode = themeMode
                 )
@@ -223,6 +218,7 @@ fun ProjectNotesScreen(
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
+                    shape = MaterialTheme.shapes.extraLarge,
                     title = { Text(stringResource(id = R.string.move_to_bin_question)) },
                     text = { Text(stringResource(id = R.string.move_to_bin_message, autoDeleteDays)) },
                     confirmButton = {
@@ -230,13 +226,14 @@ fun ProjectNotesScreen(
                             onClick = {
                                 viewModel.onEvent(ProjectNotesEvent.DeleteSelectedNotes)
                                 showDeleteDialog = false
-                            }
+                            },
+                            modifier = Modifier.springPress()
                         ) {
-                            Text(stringResource(id = R.string.move_to_bin))
+                            Text(stringResource(id = R.string.move_to_bin), fontWeight = FontWeight.Bold)
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showDeleteDialog = false }) {
+                        TextButton(onClick = { showDeleteDialog = false }, modifier = Modifier.springPress()) {
                             Text(stringResource(id = R.string.cancel))
                         }
                     }
@@ -264,116 +261,104 @@ fun ProjectNotesScreen(
 
             Column(modifier = Modifier.padding(padding)) {
                 Spacer(modifier = Modifier.height(8.dp))
-                // Description Section
+                
                 var showEditDescriptionDialog by remember { mutableStateOf(false) }
                 var editingDescription by remember(state.projectDescription) { mutableStateOf(state.projectDescription ?: "") }
 
                 if (showEditDescriptionDialog) {
                     AlertDialog(
                         onDismissRequest = { showEditDescriptionDialog = false },
-                        title = { Text(stringResource(id = R.string.edit_description)) },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        title = { Text(stringResource(id = R.string.edit_description), fontWeight = FontWeight.Bold) },
                         text = {
-                            androidx.compose.material3.OutlinedTextField(
+                            OutlinedTextField(
                                 value = editingDescription,
                                 onValueChange = { editingDescription = it },
                                 label = { Text(stringResource(id = R.string.project_description)) },
                                 singleLine = false,
                                 maxLines = 5,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.extraSmall
                             )
                         },
                         confirmButton = {
-                            TextButton(onClick = {
+                            Button(onClick = {
                                 viewModel.onEvent(ProjectNotesEvent.UpdateProjectDescription(editingDescription.ifBlank { null }))
                                 showEditDescriptionDialog = false
-                            }) {
-                                Text(stringResource(id = R.string.save))
+                            }, modifier = Modifier.springPress()) {
+                                Text(stringResource(id = R.string.save), fontWeight = FontWeight.Bold)
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { showEditDescriptionDialog = false }) {
+                            TextButton(onClick = { showEditDescriptionDialog = false }, modifier = Modifier.springPress()) {
                                 Text(stringResource(id = R.string.cancel))
                             }
                         }
                     )
                 }
 
-                androidx.compose.material3.ElevatedCard(
-                    onClick = { showEditDescriptionDialog = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    colors = androidx.compose.material3.CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
-                    )
+                ExpressiveSection(
+                    title = "Workspace Info",
+                    description = "Manage details about this project"
                 ) {
-                    androidx.compose.foundation.layout.Row(
+                    Card(
+                        onClick = { showEditDescriptionDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .springPress(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        )
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Project Description",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            state.projectDescription?.let { description ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = description,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 10,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    text = "Description",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
-                            } ?: Text(
-                                text = stringResource(id = R.string.project_description),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                            )
-                        }
-                        IconButton(onClick = { showEditDescriptionDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = stringResource(id = R.string.edit_description),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                state.projectDescription?.let { description ->
+                                    Text(
+                                        text = description,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 5,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                } ?: Text(
+                                    text = stringResource(id = R.string.project_description),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                )
+                            }
+                            IconButton(onClick = { showEditDescriptionDialog = true }, modifier = Modifier.springPress()) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = stringResource(id = R.string.edit_description),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                androidx.compose.animation.Crossfade(
-                    targetState = state.notes.isEmpty(),
-                    label = "Empty State Animation"
-                ) { isEmpty ->
-                    if (isEmpty) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.Info,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(96.dp),
-                                    tint = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = stringResource(id = R.string.no_notes_yet),
-                                    textAlign = TextAlign.Center,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 32.dp)
-                                )
-                            }
-                        }
+                Box(modifier = Modifier.weight(1f)) {
+                    if (state.notes.isEmpty()) {
+                        EmptyState(
+                            icon = Icons.Default.Info,
+                            message = stringResource(id = R.string.no_notes_yet)
+                        )
                     } else {
                         val filteredNotes = state.notes.filter { note ->
                             !note.note.isArchived && (note.note.title.contains(searchQuery, ignoreCase = true) || note.note.content.contains(searchQuery, ignoreCase = true))
@@ -387,8 +372,8 @@ fun ProjectNotesScreen(
                                     columns = StaggeredGridCells.Fixed(2),
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalItemSpacing = 8.dp
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalItemSpacing = 12.dp
                                 ) {
                                     if (pinnedNotes.isNotEmpty()) {
                                         item(span = StaggeredGridItemSpan.FullLine) {
@@ -455,7 +440,7 @@ fun ProjectNotesScreen(
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     if (pinnedNotes.isNotEmpty()) {
                                         item {
@@ -526,8 +511,8 @@ fun ProjectNotesScreen(
 
         AnimatedVisibility(
             visible = state.expandedNoteId != null,
-            enter = scaleIn(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-            exit = scaleOut(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            enter = scaleIn(initialScale = 0.85f, animationSpec = spring()) + fadeIn(animationSpec = spring()),
+            exit = scaleOut(targetScale = 0.85f, animationSpec = spring()) + fadeOut(animationSpec = spring())
         ) {
             AddEditNoteScreen(
                 state = state.toNotesState(),

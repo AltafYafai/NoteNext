@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.notes
 
 import androidx.activity.compose.BackHandler
@@ -5,7 +6,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -28,25 +29,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalFocusManager
@@ -68,13 +54,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
-import com.suvojeet.notenext.ui.components.ContextualTopAppBar
-import com.suvojeet.notenext.ui.components.EmptyState
-import com.suvojeet.notenext.ui.components.LabelDialog
-import com.suvojeet.notenext.ui.components.NoteItem
-import com.suvojeet.notenext.ui.components.MultiActionFab
-import com.suvojeet.notenext.ui.components.SearchBar
-import com.suvojeet.notenext.ui.components.ColorSelectionDialog
+import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.notes.LayoutType
@@ -83,12 +63,9 @@ import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
 import com.suvojeet.notenext.ui.reminder.ReminderSetDialog
-import com.suvojeet.notenext.ui.components.ShareOptionsDialog
-import com.suvojeet.notenext.ui.components.QrCodeDisplayDialog
 import com.suvojeet.notenext.util.findActivity
 import kotlinx.coroutines.flow.SharedFlow
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NotesScreen(
     viewModel: NotesViewModel,
@@ -107,7 +84,6 @@ fun NotesScreen(
     var isFabExpanded by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     
-    // Calculate isDarkTheme for theme-adaptive note colors
     val systemInDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
     val isDarkTheme = when (themeMode) {
         ThemeMode.DARK, ThemeMode.AMOLED -> true
@@ -129,7 +105,7 @@ fun NotesScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val currentVersion = 16 // Matches app/build.gradle.kts versionCode
+        val currentVersion = 16 
         settingsRepository.lastSeenVersion.collect { lastSeen ->
             if (currentVersion > lastSeen) {
                 showWhatsNewDialog = true
@@ -203,25 +179,26 @@ fun NotesScreen(
             targetState = state.expandedNoteId,
             label = "NoteTransition",
             transitionSpec = {
+                val springSpec = spring<Float>(dampingRatio = 0.8f, stiffness = 300f)
                 if (targetState != null) {
-                    (fadeIn(tween(300)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)))
-                        .togetherWith(fadeOut(tween(300)))
+                    (fadeIn(spring()) + scaleIn(initialScale = 0.85f, animationSpec = springSpec))
+                        .togetherWith(fadeOut(spring()))
                 } else {
-                    fadeIn(tween(300))
-                        .togetherWith(fadeOut(tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300)))
+                    fadeIn(spring())
+                        .togetherWith(fadeOut(spring()) + scaleOut(targetScale = 0.85f, animationSpec = springSpec))
                 }
             }
         ) { expandedId ->
             if (expandedId == null) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+                    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
                     Scaffold(
                         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                         topBar = {
                             AnimatedContent(
                                 targetState = isSelectionModeActive,
                                 transitionSpec = {
-                                    fadeIn(animationSpec = tween(220, delayMillis = 90)).togetherWith(fadeOut(animationSpec = tween(90)))
+                                    fadeIn(animationSpec = spring()).togetherWith(fadeOut(animationSpec = spring()))
                                 },
                                 label = "TopAppBar Animation"
                             ) { targetState ->
@@ -271,8 +248,8 @@ fun NotesScreen(
                                             }
                                         },
                                         colors = TopAppBarDefaults.topAppBarColors(
-                                            containerColor = Color.Transparent,
-                                            scrolledContainerColor = MaterialTheme.colorScheme.surface
+                                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                                         )
                                     )
                                 }
@@ -316,6 +293,7 @@ fun NotesScreen(
                         if (showDeleteDialog) {
                             AlertDialog(
                                 onDismissRequest = { showDeleteDialog = false },
+                                shape = MaterialTheme.shapes.extraLarge,
                                 title = { Text(stringResource(id = R.string.move_to_bin_question)) },
                                 text = { Text(stringResource(id = R.string.move_to_bin_message, autoDeleteDays)) },
                                 confirmButton = {
@@ -323,13 +301,14 @@ fun NotesScreen(
                                         onClick = {
                                             viewModel.onEvent(NotesEvent.DeleteSelectedNotes)
                                             showDeleteDialog = false
-                                        }
+                                        },
+                                        modifier = Modifier.springPress()
                                     ) {
                                         Text(stringResource(id = R.string.move_to_bin))
                                     }
                                 },
                                 dismissButton = {
-                                    TextButton(onClick = { showDeleteDialog = false }) {
+                                    TextButton(onClick = { showDeleteDialog = false }, modifier = Modifier.springPress()) {
                                         Text(stringResource(id = R.string.cancel))
                                     }
                                 }
@@ -391,7 +370,6 @@ fun NotesScreen(
                             WhatsNewDialog(onDismiss = { showWhatsNewDialog = false })
                         }
 
-                        // Share Options Dialog
                         var showQrDisplayDialog by remember { mutableStateOf(false) }
                         var qrNoteTitle by remember { mutableStateOf("") }
                         var qrNoteContent by remember { mutableStateOf("") }
@@ -402,12 +380,10 @@ fun NotesScreen(
                                     showShareOptionsDialog = false 
                                 },
                                 onShareAsQr = {
-                                    // Get first selected note for QR (or combine if multiple)
                                     val selectedNotes = state.notes.filter { state.selectedNoteIds.contains(it.note.id) }
                                     if (selectedNotes.isNotEmpty()) {
                                         val firstNote = selectedNotes.first()
                                         qrNoteTitle = firstNote.note.title
-                                        // Simple HTML strip (avoid suspend function in composable)
                                         fun stripHtml(html: String): String = html.replace(Regex("<[^>]*>"), "").trim()
                                         qrNoteContent = if (selectedNotes.size == 1) {
                                             stripHtml(firstNote.note.content)
@@ -428,7 +404,6 @@ fun NotesScreen(
                             )
                         }
 
-                        // QR Code Display Dialog
                         if (showQrDisplayDialog) {
                             QrCodeDisplayDialog(
                                 noteTitle = qrNoteTitle,
@@ -454,32 +429,7 @@ fun NotesScreen(
                             }
 
                             if (state.isLoading) {
-                                when (state.layoutType) {
-                                    LayoutType.GRID -> {
-                                        LazyVerticalStaggeredGrid(
-                                            columns = StaggeredGridCells.Fixed(2),
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalItemSpacing = 8.dp
-                                        ) {
-                                            items(10) {
-                                                com.suvojeet.notenext.ui.components.SkeletonNoteItem()
-                                            }
-                                        }
-                                    }
-                                    LayoutType.LIST -> {
-                                        LazyColumn(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            items(10) {
-                                                com.suvojeet.notenext.ui.components.SkeletonNoteItem()
-                                            }
-                                        }
-                                    }
-                                }
+                                ExpressiveLoading()
                             } else if (notesToDisplay.isEmpty()) {
                                 val currentLabel = state.filteredLabel
                                 val emptyMessage = if (currentLabel != null) {
@@ -684,6 +634,7 @@ private fun CreateProjectDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.create_new_project)) },
         text = {
             OutlinedTextField(
@@ -691,19 +642,21 @@ private fun CreateProjectDialog(
                 onValueChange = { projectName = it },
                 label = { Text(stringResource(id = R.string.project_name)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.extraSmall
             )
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(projectName) },
-                enabled = projectName.isNotBlank()
+                enabled = projectName.isNotBlank(),
+                modifier = Modifier.springPress()
             ) {
                 Text(stringResource(id = R.string.create))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                 Text(stringResource(id = R.string.cancel))
             }
         }
@@ -720,6 +673,7 @@ private fun MoveToProjectDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.move_to_project)) },
         text = {
             Column {
@@ -755,13 +709,14 @@ private fun MoveToProjectDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(selectedProject?.id) }
+                onClick = { onConfirm(selectedProject?.id) },
+                modifier = Modifier.springPress()
             ) {
                 Text(stringResource(id = R.string.move))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                 Text(stringResource(id = R.string.cancel))
             }
         }
@@ -772,6 +727,7 @@ private fun MoveToProjectDialog(
 private fun WhatsNewDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -826,7 +782,7 @@ private fun WhatsNewDialog(onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().springPress()
             ) {
                 Text(stringResource(id = R.string.dismiss))
             }
@@ -845,7 +801,7 @@ private fun WhatsNewItem(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .background(color.copy(alpha = 0.1f), androidx.compose.foundation.shape.CircleShape),
+                .background(color.copy(alpha = 0.1f), MaterialTheme.shapes.extraLarge),
             contentAlignment = Alignment.Center
         ) {
             Icon(

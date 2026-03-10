@@ -1,4 +1,4 @@
-
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.project
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -10,23 +10,19 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.components.EmptyState
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.theme.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -39,8 +35,9 @@ fun ProjectScreen(
 ) {
     val viewModel: ProjectViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
-    val themeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     var showCreateProjectDialog by remember { mutableStateOf(false) }
+
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -51,7 +48,7 @@ fun ProjectScreen(
                 is ProjectScreenEvent.CreateNewChecklist -> {
                     navController.navigate("add_edit_note?projectId=${event.projectId}&noteType=CHECKLIST")
                 }
-                else -> { /* CreateProject is handled synchronously, no navigation needed */ }
+                else -> { }
             }
         }
     }
@@ -67,20 +64,35 @@ fun ProjectScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.projects)) },
+            LargeTopAppBar(
+                title = { 
+                    Text(
+                        stringResource(id = R.string.projects),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black
+                    ) 
+                },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(onClick = onMenuClick, modifier = Modifier.springPress()) {
                         Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showCreateProjectDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary
+                modifier = Modifier.springPress(),
+                shape = MaterialTheme.shapes.extraLarge,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.create_new_project))
             }
@@ -94,16 +106,21 @@ fun ProjectScreen(
                     description = stringResource(id = R.string.create_first_project)
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 80.dp), // Add padding for FAB
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ExpressiveSection(
+                    title = "Workspaces",
+                    description = "Group your related notes and ideas together"
                 ) {
-                    items(state.projects, key = { it.id }) { project ->
-                        ProjectItem(
-                            project = project,
-                            onClick = { onProjectClick(project.id) }
-                        )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(state.projects, key = { it.id }) { project ->
+                            ProjectItem(
+                                project = project,
+                                onClick = { onProjectClick(project.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -121,11 +138,12 @@ private fun CreateProjectDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Create, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.create_new_project))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(stringResource(id = R.string.create_new_project), fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -136,7 +154,7 @@ private fun CreateProjectDialog(
                     label = { Text(stringResource(id = R.string.project_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.extraSmall
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
@@ -146,23 +164,24 @@ private fun CreateProjectDialog(
                     singleLine = false,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.extraSmall
                 )
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = { onConfirm(projectName, projectDescription.ifBlank { null }) },
-                enabled = projectName.isNotBlank()
+                enabled = projectName.isNotBlank(),
+                modifier = Modifier.springPress(),
+                shape = MaterialTheme.shapes.medium
             ) {
-                Text(stringResource(id = R.string.create))
+                Text(stringResource(id = R.string.create), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                 Text(stringResource(id = R.string.cancel))
             }
         }
     )
 }
-

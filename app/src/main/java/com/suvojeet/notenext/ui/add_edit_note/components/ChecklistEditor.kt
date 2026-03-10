@@ -1,64 +1,22 @@
 package com.suvojeet.notenext.ui.add_edit_note.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.zIndex
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
-import kotlin.math.roundToInt
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -66,25 +24,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
+import kotlin.math.roundToInt
 
-/**
- * A composable for editing a checklist with fluid animations,
- * Swipe-to-Delete, and Collapsible Checked Items section.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 fun LazyListScope.ChecklistEditor(
     state: NotesState,
@@ -95,7 +55,6 @@ fun LazyListScope.ChecklistEditor(
     val uncheckedItems = state.editingChecklist.filter { !it.isChecked }.sortedBy { it.position }
     val checkedItems = state.editingChecklist.filter { it.isChecked }.sortedBy { it.position }
 
-    // Unchecked Items with staggered animation
     itemsIndexed(uncheckedItems, key = { _, item -> item.id }) { index, item ->
         val dragOffset = remember { mutableStateOf(0f) }
         val isDragging = dragOffset.value != 0f
@@ -132,19 +91,15 @@ fun LazyListScope.ChecklistEditor(
                 )
             }
 
-        // Spring animation entry for each item
         var isVisible by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) { isVisible = true }
         
         AnimatedVisibility(
             visible = isVisible,
             enter = slideInVertically(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                ),
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f),
                 initialOffsetY = { -40 }
-            ) + fadeIn(animationSpec = tween(300))
+            ) + fadeIn(animationSpec = spring())
         ) {
             ChecklistItemRow(
                 item = item,
@@ -167,44 +122,26 @@ fun LazyListScope.ChecklistEditor(
         }
     }
 
-    // Add Item Button with pulse effect
     item {
-        var isPulsing by remember { mutableStateOf(false) }
-        val scale by animateFloatAsState(
-            targetValue = if (isPulsing) 1.05f else 1f,
-            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-            label = "pulse"
-        )
-        
         TextButton(
-            onClick = { 
-                isPulsing = true
-                onEvent(NotesEvent.AddChecklistItem) 
-            },
+            onClick = { onEvent(NotesEvent.AddChecklistItem) },
             modifier = Modifier
-                .padding(vertical = 4.dp)
-                .padding(horizontal = 16.dp)
-                .scale(scale)
+                .padding(vertical = 8.dp, horizontal = 16.dp)
+                .springPress(),
+            shape = MaterialTheme.shapes.medium,
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(id = R.string.add_item))
-        }
-        
-        LaunchedEffect(isPulsing) {
-            if (isPulsing) {
-                kotlinx.coroutines.delay(150)
-                isPulsing = false
-            }
+            Text(stringResource(id = R.string.add_item), fontWeight = FontWeight.Bold)
         }
     }
 
-    // Checked Items Header with animated arrow rotation
     if (checkedItems.isNotEmpty()) {
         item {
             val rotationAngle by animateFloatAsState(
                 targetValue = if (isCheckedItemsExpanded) 180f else 0f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
                 label = "arrow_rotation"
             )
             
@@ -217,7 +154,7 @@ fun LazyListScope.ChecklistEditor(
             ) {
                 IconButton(
                     onClick = onToggleCheckedItems,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp).springPress()
                 ) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
@@ -230,26 +167,22 @@ fun LazyListScope.ChecklistEditor(
                 Text(
                     text = "Checked items (${checkedItems.size})",
                     style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.weight(1f))
                     
-                TextButton(onClick = { onEvent(NotesEvent.DeleteAllCheckedItems) }) {
-                    Text("Delete all", color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = { onEvent(NotesEvent.DeleteAllCheckedItems) }, modifier = Modifier.springPress()) {
+                    Text("Delete all", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
-        // Checked Items with collapse animation
         items(checkedItems, key = { it.id }) { item ->
             AnimatedVisibility(
                 visible = isCheckedItemsExpanded,
-                enter = expandVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ) + fadeIn(),
-                exit = shrinkVertically(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ) + fadeOut()
+                enter = expandVertically(animationSpec = spring()) + fadeIn(animationSpec = spring()),
+                exit = shrinkVertically(animationSpec = spring()) + fadeOut(animationSpec = spring())
             ) {
                 ChecklistItemRow(
                     item = item,
@@ -285,24 +218,21 @@ fun ChecklistItemRow(
         }
     )
     
-    // Animated checkbox scale
     val checkScale by animateFloatAsState(
         targetValue = if (isChecked) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
         label = "check_scale"
     )
     
-    // Animated text color and strikethrough
     val textColor by animateColorAsState(
         targetValue = if (isChecked) 
             MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) 
         else 
             MaterialTheme.colorScheme.onSurface,
-        animationSpec = tween(300),
+        animationSpec = spring(),
         label = "text_color"
     )
     
-    // Auto-focus for newly added items
     LaunchedEffect(isNewlyAdded) {
         if (isNewlyAdded) {
             focusRequester.requestFocus()
@@ -311,21 +241,21 @@ fun ChecklistItemRow(
     }
 
     SwipeToDismissBox(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)),
+        modifier = modifier.clip(MaterialTheme.shapes.medium),
         state = dismissState,
         backgroundContent = {
-            val color = Color(0xFFFF5252)
+            val color = MaterialTheme.colorScheme.errorContainer
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color)
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 24.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         },
@@ -334,12 +264,11 @@ fun ChecklistItemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .padding(vertical = 6.dp)
-                .padding(start = (item.level * 32).dp),
+                .background(Color.Transparent)
+                .padding(vertical = 8.dp)
+                .padding(start = (item.level * 24).dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Drag Handle
             Icon(
                 imageVector = Icons.Default.DragHandle,
                 contentDescription = "Reorder",
@@ -347,11 +276,10 @@ fun ChecklistItemRow(
                     .padding(start = 8.dp, end = 4.dp)
                     .size(24.dp)
                     .then(dragModifier),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
             ) 
             
-            // Animated Checkbox
-            Box(modifier = Modifier.scale(checkScale)) {
+            Box(modifier = Modifier.scale(checkScale).springPress()) {
                 Checkbox(
                     checked = item.isChecked,
                     onCheckedChange = { checked ->
@@ -364,7 +292,6 @@ fun ChecklistItemRow(
                 )
             }
             
-            // Text field with animated color
             BasicTextField(
                 value = inputValue ?: TextFieldValue(item.text),
                 onValueChange = { textFieldValue: TextFieldValue ->
@@ -373,7 +300,7 @@ fun ChecklistItemRow(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester)
-                    .padding(start = 8.dp)
+                    .padding(start = 12.dp)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
                             onEvent(NotesEvent.OnChecklistItemFocus(item.id))
@@ -382,16 +309,16 @@ fun ChecklistItemRow(
                 textStyle = TextStyle(
                     fontSize = 16.sp,
                     color = textColor,
+                    fontWeight = if (isChecked) FontWeight.Normal else FontWeight.Medium,
                     textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None
                 ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 singleLine = false 
             )
             
-            // Delete Button with fade
             IconButton(
                 onClick = { onEvent(NotesEvent.DeleteChecklistItem(item.id)) },
-                modifier = Modifier.alpha(0.7f)
+                modifier = Modifier.alpha(0.6f).springPress()
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,

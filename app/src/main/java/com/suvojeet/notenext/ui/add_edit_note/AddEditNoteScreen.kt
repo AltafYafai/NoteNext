@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.add_edit_note
 
 import android.content.Context
@@ -7,7 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -28,8 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,13 +41,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.add_edit_note.components.*
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.ui.theme.Motion
-import com.suvojeet.notenext.ui.theme.HeroShapes
 import com.suvojeet.notenext.ui.reminder.ReminderSheetContent
 import com.suvojeet.notenext.data.RepeatOption
 import java.time.LocalDate
@@ -199,12 +197,6 @@ fun AddEditNoteScreen(
         }
     }
 
-    LaunchedEffect(state.editingContent) {
-        if (state.editingContent.selection.end == state.editingContent.text.length) {
-            // Optional: Auto-scroll logic if needed
-        }
-    }
-
     // Theme calculations
     val systemInDarkTheme = isSystemInDarkTheme()
     val isDarkTheme = when (themeMode) {
@@ -224,8 +216,8 @@ fun AddEditNoteScreen(
             topBar = {
                 AnimatedVisibility(
                     visible = !isFocusMode,
-                    enter = slideInVertically(initialOffsetY = { -it }, animationSpec = Motion.emphasis()) + fadeIn(Motion.emphasis()),
-                    exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = Motion.snappy()) + fadeOut(Motion.snappy())
+                    enter = slideInVertically(initialOffsetY = { -it }, animationSpec = spring()) + fadeIn(spring()),
+                    exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = spring()) + fadeOut(spring())
                 ) {
                     AddEditNoteTopAppBar(
                         state = state,
@@ -244,14 +236,14 @@ fun AddEditNoteScreen(
             bottomBar = {
                 AnimatedVisibility(
                     visible = !isFocusMode,
-                    enter = slideInVertically(initialOffsetY = { it }, animationSpec = Motion.emphasis()) + fadeIn(Motion.emphasis()),
-                    exit = slideOutVertically(targetOffsetY = { it }, animationSpec = Motion.snappy()) + fadeOut(Motion.snappy())
+                    enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()),
+                    exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring())
                 ) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp, vertical = 12.dp),
-                        shape = HeroShapes.Squircle,
+                        shape = MaterialTheme.shapes.extraLarge,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
                         tonalElevation = 3.dp,
                         shadowElevation = 8.dp
@@ -294,7 +286,6 @@ fun AddEditNoteScreen(
                                 .background(backgroundColor)
                                 .verticalScroll(scrollState)
                         ) {
-                            // Extracted Attachments List
                             NoteAttachmentsList(
                                 attachments = state.editingAttachments,
                                 onEvent = onEvent,
@@ -310,7 +301,6 @@ fun AddEditNoteScreen(
                                 onReminderClick = { checkAndRequestReminderPermissions() }
                             )
                             
-                            // Immersive Canvas: No Spacer, unified scrolling
                             NoteContentEditor(
                                 state = state,
                                 onEvent = onEvent,
@@ -327,7 +317,6 @@ fun AddEditNoteScreen(
                             }
                         }
                     } else {
-                        // CHECKLIST MODE
                         LazyColumn(
                             modifier = Modifier
                                 .weight(1f)
@@ -380,38 +369,14 @@ fun AddEditNoteScreen(
                             }
                         }
                     }
-
-                    // Floating Color Picker
-                    // Floating Color Picker (Modal Bottom Sheet)
-                    if (showColorPicker) {
-                        ModalBottomSheet(
-                            onDismissRequest = { showColorPicker = false },
-                            sheetState = colorPickerSheetState,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            dragHandle = { BottomSheetDefaults.DragHandle() }
-                        ) {
-                            Text(
-                                text = "Color",
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-                            ColorPicker(
-                                colors = colors,
-                                editingColor = state.editingColor,
-                                onEvent = onEvent
-                            )
-                            Spacer(modifier = Modifier.height(48.dp))
-                        }
-                    }
                 }
             }
         }
         
-        // Formatting Toolbar
         AnimatedVisibility(
             visible = showFormatBar && (state.editingNoteType == "TEXT" || state.editingNoteType == "CHECKLIST"),
-            enter = slideInVertically(initialOffsetY = { it }, animationSpec = Motion.emphasis()) + fadeIn(Motion.emphasis()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = Motion.emphasis()),
-            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = Motion.snappy()) + fadeOut(Motion.snappy()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = Motion.snappy()),
+            enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = spring()),
+            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = spring()),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .imePadding()
@@ -419,7 +384,7 @@ fun AddEditNoteScreen(
         ) {
             Surface(
                 shadowElevation = 12.dp,
-                shape = HeroShapes.Squircle,
+                shape = MaterialTheme.shapes.extraLarge,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 modifier = Modifier.padding(horizontal = 24.dp)
             ) {
@@ -435,15 +400,14 @@ fun AddEditNoteScreen(
             }
         }
         
-        // AI Checklist Feature
         var showAiChecklistSheet by remember { mutableStateOf(false) }
         val showAiButton = (state.editingNoteType == "TEXT" && state.editingContent.text.isEmpty()) || 
                            (state.editingNoteType == "CHECKLIST" && state.editingChecklist.isEmpty())
                            
         AnimatedVisibility(
             visible = showAiButton && !isFocusMode,
-            enter = fadeIn(Motion.emphasis()) + slideInVertically(animationSpec = Motion.emphasis()) { it } + androidx.compose.animation.scaleIn(animationSpec = Motion.emphasis(), initialScale = 0.8f),
-            exit = fadeOut(Motion.snappy()) + slideOutVertically(animationSpec = Motion.snappy()) { it } + androidx.compose.animation.scaleOut(animationSpec = Motion.snappy(), targetScale = 0.8f),
+            enter = fadeIn(spring()) + slideInVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleIn(animationSpec = spring(), initialScale = 0.8f),
+            exit = fadeOut(spring()) + slideOutVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleOut(animationSpec = spring(), targetScale = 0.8f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 120.dp, end = 20.dp) 
@@ -453,25 +417,24 @@ fun AddEditNoteScreen(
             )
         }
 
-        // Grammar Fix Dialog
         AnimatedVisibility(
             visible = state.fixedContentPreview != null,
-            enter = androidx.compose.animation.scaleIn() + fadeIn(),
-            exit = androidx.compose.animation.scaleOut() + fadeOut(),
+            enter = androidx.compose.animation.scaleIn(animationSpec = spring()) + fadeIn(spring()),
+            exit = androidx.compose.animation.scaleOut(animationSpec = spring()) + fadeOut(spring()),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(bottom = 100.dp, end = 16.dp)
         ) {
             Surface(
-                shape = CircleShape,
+                shape = MaterialTheme.shapes.extraLarge,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 6.dp
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
-                    IconButton(onClick = { onEvent(NotesEvent.ApplyGrammarFix) }) {
+                    IconButton(onClick = { onEvent(NotesEvent.ApplyGrammarFix) }, modifier = Modifier.springPress()) {
                         Icon(Icons.Filled.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
                     }
-                    IconButton(onClick = { onEvent(NotesEvent.ClearGrammarFix) }) {
+                    IconButton(onClick = { onEvent(NotesEvent.ClearGrammarFix) }, modifier = Modifier.springPress()) {
                         Icon(Icons.Filled.Close, contentDescription = "Discard", tint = Color(0xFFE57373))
                     }
                 }
@@ -492,7 +455,6 @@ fun AddEditNoteScreen(
         )
     }
 
-    // Export Launchers
     val createTxtLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         uri?.let { onEvent(NotesEvent.ExportNote(it, "TXT")) }
     }
@@ -500,7 +462,6 @@ fun AddEditNoteScreen(
         uri?.let { onEvent(NotesEvent.ExportNote(it, "MD")) }
     }
 
-    // Extracted Dialogs
     AddEditNoteDialogs(
         state = state,
         onEvent = onEvent,
@@ -547,7 +508,8 @@ fun AddEditNoteScreen(
         ModalBottomSheet(
             onDismissRequest = { showReminderDialog = false },
             sheetState = reminderSheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
             ReminderSheetContent(
@@ -564,7 +526,8 @@ fun AddEditNoteScreen(
         ModalBottomSheet(
             onDismissRequest = { showSlashCommandSheet = false },
             sheetState = slashCommandSheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
             SlashCommandSheetContent(
@@ -579,6 +542,28 @@ fun AddEditNoteScreen(
                     }
                 }
             )
+        }
+    }
+
+    if (showColorPicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showColorPicker = false },
+            sheetState = colorPickerSheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            Text(
+                text = "Color",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            ColorPicker(
+                colors = colors,
+                editingColor = state.editingColor,
+                onEvent = onEvent
+            )
+            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }

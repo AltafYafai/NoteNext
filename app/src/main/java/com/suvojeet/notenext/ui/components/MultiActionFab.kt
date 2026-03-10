@@ -1,10 +1,10 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -19,27 +19,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.CreateNewFolder
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -50,8 +40,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.ui.theme.Motion
-import com.suvojeet.notenext.ui.theme.HeroShapes
 
 @Composable
 fun MultiActionFab(
@@ -68,7 +56,7 @@ fun MultiActionFab(
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 135f else 0f,
-        animationSpec = Motion.emphasis(),
+        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
         label = "FabIconRotation"
     )
 
@@ -102,10 +90,9 @@ fun MultiActionFab(
         }
     }
 
-    var pressed by remember { mutableStateOf(false) }
     val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.92f else 1f,
-        animationSpec = Motion.snappy(),
+        targetValue = 1f, // Standard M3E buttons should handle their own press
+        animationSpec = spring(),
         label = "MainFabPressScale"
     )
 
@@ -116,8 +103,8 @@ fun MultiActionFab(
         // Items in reverse order (top to bottom)
         AnimatedVisibility(
             visible = showProject && showProjectButton,
-            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
-            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
+            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
                 icon = Icons.Default.CreateNewFolder,
@@ -132,8 +119,8 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showScanQr,
-            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
-            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
+            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
                 icon = Icons.Default.QrCodeScanner,
@@ -148,8 +135,8 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showTodo,
-            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
-            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
+            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
                 icon = Icons.Default.TaskAlt,
@@ -164,8 +151,8 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showChecklist,
-            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
-            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
+            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
                 icon = Icons.Default.CheckBox,
@@ -180,8 +167,8 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showNote,
-            enter = fadeIn(Motion.emphasis()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = Motion.emphasis()) + scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()),
-            exit = fadeOut(Motion.snappy()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = Motion.snappy()) + scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
+            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
                 icon = Icons.Default.Note,
@@ -195,7 +182,7 @@ fun MultiActionFab(
         }
 
         // Main FAB
-        androidx.compose.material3.ExtendedFloatingActionButton(
+        ExtendedFloatingActionButton(
             text = { 
                  AnimatedVisibility(
                      visible = isScrollExpanded && !isExpanded,
@@ -205,7 +192,7 @@ fun MultiActionFab(
                      Text(
                          text = stringResource(id = R.string.add),
                          style = MaterialTheme.typography.labelLarge,
-                         fontWeight = FontWeight.ExtraBold
+                         fontWeight = FontWeight.Black
                      )
                  }
             },
@@ -217,22 +204,14 @@ fun MultiActionFab(
                 )
             },
             onClick = {
-                pressed = true
                 onExpandedChange(!isExpanded)
             },
             expanded = isScrollExpanded && !isExpanded,
             containerColor = if (isExpanded) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primary,
             contentColor = if (isExpanded) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.scale(pressScale),
-            shape = if (isExpanded) HeroShapes.Squircle else MaterialTheme.shapes.extraLarge
+            modifier = Modifier.scale(pressScale).springPress(),
+            shape = MaterialTheme.shapes.extraLarge
         )
-    }
-
-    LaunchedEffect(pressed) {
-        if (pressed) {
-            kotlinx.coroutines.delay(100)
-            pressed = false
-        }
     }
 }
 
@@ -256,8 +235,8 @@ private fun FabItem(
     }
 
     Card(
-        modifier = Modifier.clickable { onClick() },
-        shape = HeroShapes.Leaf,
+        modifier = Modifier.clickable { onClick() }.springPress(),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = cardColor,
             contentColor = if (themeMode == ThemeMode.AMOLED) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSecondaryContainer
@@ -273,7 +252,7 @@ private fun FabItem(
             Icon(
                 imageVector = icon, 
                 contentDescription = label, 
-                tint = if (themeMode == ThemeMode.AMOLED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = label,

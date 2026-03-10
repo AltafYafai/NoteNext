@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.todo
 
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,9 +21,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.EmptyState
-
+import com.suvojeet.notenext.ui.components.ExpressiveLoading
 import com.suvojeet.notenext.ui.components.ExpressiveSection
-import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +33,7 @@ fun TodoScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -41,17 +43,17 @@ fun TodoScreen(
                     Text(
                         text = stringResource(id = R.string.todos),
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                        fontWeight = FontWeight.Black
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 actions = {
                     if (state.completedCount > 0) {
-                        IconButton(onClick = { viewModel.onEvent(TodoEvent.DeleteAllCompleted) }) {
+                        IconButton(onClick = { viewModel.onEvent(TodoEvent.DeleteAllCompleted) }, modifier = Modifier.springPress()) {
                             Icon(
                                 Icons.Default.DeleteSweep,
                                 contentDescription = stringResource(id = R.string.delete_completed),
@@ -71,8 +73,9 @@ fun TodoScreen(
             ExtendedFloatingActionButton(
                 onClick = { viewModel.onEvent(TodoEvent.ShowAddDialog) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(id = R.string.add_todo)) },
-                shape = FloatingActionButtonDefaults.largeShape,
+                text = { Text(stringResource(id = R.string.add_todo), fontWeight = FontWeight.Bold) },
+                shape = MaterialTheme.shapes.extraLarge,
+                modifier = Modifier.springPress(),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -83,22 +86,16 @@ fun TodoScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Filter chips
             FilterChipRow(
                 selectedFilter = state.filter,
                 onFilterSelected = { viewModel.onEvent(TodoEvent.SetFilter(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             )
 
             if (state.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                ExpressiveLoading()
             } else if (state.todos.isEmpty()) {
                 EmptyState(
                     icon = Icons.Default.CheckCircle,
@@ -140,7 +137,6 @@ fun TodoScreen(
         }
     }
 
-    // Add/Edit Dialog
     if (state.showAddEditDialog) {
         AddEditTodoDialog(
             editingTodo = state.editingTodo,
@@ -166,6 +162,8 @@ private fun FilterChipRow(
             selected = selectedFilter is TodoFilter.All,
             onClick = { onFilterSelected(TodoFilter.All) },
             label = { Text(stringResource(id = R.string.all_todos)) },
+            modifier = Modifier.springPress(),
+            shape = MaterialTheme.shapes.medium,
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -174,6 +172,8 @@ private fun FilterChipRow(
             selected = selectedFilter is TodoFilter.Active,
             onClick = { onFilterSelected(TodoFilter.Active) },
             label = { Text(stringResource(id = R.string.active_todos)) },
+            modifier = Modifier.springPress(),
+            shape = MaterialTheme.shapes.medium,
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -182,6 +182,8 @@ private fun FilterChipRow(
             selected = selectedFilter is TodoFilter.Completed,
             onClick = { onFilterSelected(TodoFilter.Completed) },
             label = { Text(stringResource(id = R.string.completed_todos)) },
+            modifier = Modifier.springPress(),
+            shape = MaterialTheme.shapes.medium,
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
             )

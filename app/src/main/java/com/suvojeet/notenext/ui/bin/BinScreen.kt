@@ -1,62 +1,30 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.bin
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.*
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.NoteItem
 import com.suvojeet.notenext.data.NoteWithAttachments
-
-import androidx.compose.material.icons.filled.Menu
-
 import com.suvojeet.notenext.ui.components.ExpressiveSection
-import com.suvojeet.notenext.ui.components.SettingsGroupCard
 import com.suvojeet.notenext.ui.components.EmptyState
+import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -68,7 +36,7 @@ fun BinScreen(
     val isSelectionModeActive = state.selectedNoteIds.isNotEmpty()
     var showEmptyBinDialog by remember { mutableStateOf(false) }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -87,17 +55,17 @@ fun BinScreen(
                             Text(
                                 text = stringResource(id = R.string.bin_title),
                                 style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                                fontWeight = FontWeight.Black
                             ) 
                         },
                         navigationIcon = {
-                            IconButton(onClick = onMenuClick) {
+                            IconButton(onClick = onMenuClick, modifier = Modifier.springPress()) {
                                 Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
                             }
                         },
                         actions = {
                             if (state.notes.isNotEmpty()) {
-                                IconButton(onClick = { showEmptyBinDialog = true }) {
+                                IconButton(onClick = { showEmptyBinDialog = true }, modifier = Modifier.springPress()) {
                                     Icon(imageVector = Icons.Default.DeleteForever, contentDescription = "Empty Bin")
                                 }
                             }
@@ -129,9 +97,9 @@ fun BinScreen(
                         LazyVerticalStaggeredGrid(
                             columns = StaggeredGridCells.Fixed(2),
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalItemSpacing = 8.dp
+                            contentPadding = PaddingValues(bottom = 32.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalItemSpacing = 12.dp
                         ) {
                             items(
                                 items = state.notes,
@@ -168,8 +136,8 @@ fun BinScreen(
         }
         AnimatedVisibility(
             visible = state.expandedNoteId != null,
-            enter = scaleIn(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-            exit = scaleOut(animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            enter = scaleIn(initialScale = 0.85f, animationSpec = spring()) + fadeIn(animationSpec = spring()),
+            exit = scaleOut(targetScale = 0.85f, animationSpec = spring()) + fadeOut(animationSpec = spring())
         ) {
             BinnedNoteScreen(
                 state = state,
@@ -179,22 +147,24 @@ fun BinScreen(
     }
 
     if (showEmptyBinDialog) {
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { showEmptyBinDialog = false },
+            shape = MaterialTheme.shapes.extraLarge,
             title = { Text("Empty Bin") },
             text = { Text("Are you sure you want to permanently delete all notes in the bin? This action cannot be undone.") },
             confirmButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
+                    modifier = Modifier.springPress(),
                     onClick = {
                         viewModel.onEvent(BinEvent.EmptyBin)
                         showEmptyBinDialog = false
                     }
                 ) {
-                    Text("Delete All", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                    Text("Delete All", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showEmptyBinDialog = false }) {
+                TextButton(onClick = { showEmptyBinDialog = false }, modifier = Modifier.springPress()) {
                     Text("Cancel")
                 }
             }
@@ -215,21 +185,23 @@ private fun BinContextualTopAppBar(
     TopAppBar(
         title = { Text(text = stringResource(id = R.string.x_selected, selectedItemCount)) },
         navigationIcon = {
-            IconButton(onClick = onClearSelection) {
+            IconButton(onClick = onClearSelection, modifier = Modifier.springPress()) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.clear_selection))
             }
         },
         actions = {
-            IconButton(onClick = onRestoreClick) {
+            IconButton(onClick = onRestoreClick, modifier = Modifier.springPress()) {
                 Icon(Icons.Default.Restore, contentDescription = stringResource(id = R.string.restore))
             }
             Box {
-                IconButton(onClick = { showMenu = !showMenu }) {
+                IconButton(onClick = { showMenu = !showMenu }, modifier = Modifier.springPress()) {
                     Icon(Icons.Default.MoreVert, contentDescription = stringResource(id = R.string.more_options))
                 }
                 DropdownMenu(
                     expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+                    onDismissRequest = { showMenu = false },
+                    shape = MaterialTheme.shapes.medium,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(id = R.string.delete_permanently)) },

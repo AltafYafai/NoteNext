@@ -1,287 +1,159 @@
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.ui.theme.Motion
-import com.suvojeet.notenext.ui.theme.HeroShapes
+import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
-import androidx.compose.material.icons.filled.ViewModule
-import androidx.compose.material.icons.filled.ViewList
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.ui.res.stringResource
-import com.suvojeet.notenext.R
+import androidx.compose.ui.focus.onFocusChanged
 
+import com.suvojeet.notenext.ui.theme.fullShape
 
-/**
- * A customizable search bar with animated transitions for search activation, layout toggling,
- * and sorting options.
- *
- * @param searchQuery The current text in the search field.
- * @param onSearchQueryChange Lambda to be invoked when the search query changes.
- * @param layoutType The current layout type (List or Grid) for displaying notes.
- * @param onLayoutToggleClick Lambda to be invoked when the layout toggle button is clicked.
- * @param onSortClick Lambda to be invoked when the sort button is clicked.
- * @param sortMenuExpanded Boolean indicating if the sort dropdown menu is expanded.
- * @param onSortMenuDismissRequest Lambda to be invoked when the sort dropdown menu is dismissed.
- * @param onSortOptionClick Lambda to be invoked when a sort option is selected.
- * @param isSearchActive Boolean indicating if the search bar is in active search mode.
- * @param onSearchActiveChange Lambda to be invoked when the search active state changes.
- * @param currentSortType The currently selected sort type.
- * @param modifier The modifier to be applied to the search bar.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SearchBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    layoutType: LayoutType,
+    isSearchActive: Boolean,
+    onSearchActiveChange: (Boolean) -> Unit,
     onLayoutToggleClick: () -> Unit,
     onSortClick: () -> Unit,
+    layoutType: LayoutType,
     sortMenuExpanded: Boolean,
     onSortMenuDismissRequest: () -> Unit,
     onSortOptionClick: (SortType) -> Unit,
-    isSearchActive: Boolean,
-    onSearchActiveChange: (Boolean) -> Unit,
     currentSortType: SortType,
     modifier: Modifier = Modifier
 ) {
-    val focusManager = LocalFocusManager.current
-    var isSearchFocused by remember { mutableStateOf(false) }
-
-    Card(
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = HeroShapes.Squircle,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSearchFocused) 8.dp else 2.dp
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        )
+            .height(56.dp)
+            .springPress(),
+        shape = fullShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 2.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Search/Back Icon with smooth animation based on search active state.
             AnimatedContent(
                 targetState = isSearchActive,
                 transitionSpec = {
-                    fadeIn(animationSpec = Motion.emphasis()) +
-                            scaleIn(initialScale = 0.8f, animationSpec = Motion.emphasis()) togetherWith
-                            fadeOut(animationSpec = Motion.snappy()) +
-                            scaleOut(targetScale = 0.8f, animationSpec = Motion.snappy())
+                    fadeIn(animationSpec = spring()).togetherWith(fadeOut(animationSpec = spring()))
                 },
-                label = "SearchIconTransition"
+                label = "SearchIconAnimation"
             ) { active ->
                 if (active) {
-                    // Back button when search is active.
-                    IconButton(
-                        onClick = {
-                            onSearchActiveChange(false)
-                            onSearchQueryChange("")
-                            focusManager.clearFocus()
-                        },
-                        modifier = Modifier.size(40.dp)
-                    ) {
+                    IconButton(onClick = { 
+                        onSearchActiveChange(false)
+                        onSearchQueryChange("")
+                    }, modifier = Modifier.springPress()) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(id = R.string.back),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                            contentDescription = stringResource(id = R.string.back)
                         )
                     }
                 } else {
-                    // Search icon and text when search is inactive.
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (isSearchFocused) 1.2f else 1f,
-                        animationSpec = Motion.snappy(),
-                        label = "SearchIconScale"
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .clickable { onSearchActiveChange(true) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+                    Box(modifier = Modifier.padding(start = 8.dp)) {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(id = R.string.search),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier
-                                .size(24.dp)
-                                .scale(iconScale)
-                        )
-                        Text(
-                            text = stringResource(id = R.string.search),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            contentDescription = stringResource(id = R.string.search_notes),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-            // Search TextField
-            val focusRequester = remember { FocusRequester() }
-            
-            // Request focus when search becomes active
-            LaunchedEffect(isSearchActive) {
-                if (isSearchActive) {
-                    focusRequester.requestFocus()
-                }
-            }
-            
-            BasicTextField(
+
+            TextField(
                 value = searchQuery,
-                onValueChange = onSearchQueryChange,
+                onValueChange = {
+                    onSearchQueryChange(it)
+                    if (!isSearchActive) onSearchActiveChange(true)
+                },
+                placeholder = { 
+                    Text(
+                        stringResource(id = R.string.search_notes),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    ) 
+                },
                 modifier = Modifier
                     .weight(1f)
-                    .focusRequester(focusRequester)
-                    .onFocusChanged { focusState ->
-                        isSearchFocused = focusState.isFocused
-                        if (focusState.isFocused) onSearchActiveChange(true)
-                    },
-                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Medium
+                    .onFocusChanged { if (it.isFocused) onSearchActiveChange(true) },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 ),
-                singleLine = true,
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                decorationBox = { innerTextField ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                onSearchActiveChange(true)
-                                focusRequester.requestFocus()
-                            },
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        if (searchQuery.isEmpty() && isSearchActive) {
-                            Text(
-                                stringResource(id = R.string.search_notes),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
+                textStyle = MaterialTheme.typography.bodyLarge,
+                singleLine = true
             )
 
-            // Clear button with animation, visible when search is active and query is not empty.
-            AnimatedVisibility(
-                visible = isSearchActive && searchQuery.isNotEmpty(),
-                enter = scaleIn(
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
-                ) + fadeIn(),
-                exit = scaleOut() + fadeOut()
-            ) {
-                IconButton(
-                    onClick = { onSearchQueryChange("") },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = stringResource(id = R.string.clear_selection),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
-                    )
+            if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = { onSearchQueryChange("") }, modifier = Modifier.springPress()) {
+                    Icon(Icons.Default.Close, contentDescription = "Clear")
                 }
             }
 
-            // Controls (layout toggle and sort button) with slide animation, visible when search is inactive.
-            AnimatedVisibility(
-                visible = !isSearchActive,
-                enter = slideInHorizontally(
-                    initialOffsetX = { it / 2 },
-                    animationSpec = Motion.emphasis()
-                ) + fadeIn(Motion.emphasis()),
-                exit = slideOutHorizontally(
-                    targetOffsetX = { it / 2 },
-                    animationSpec = Motion.snappy()
-                ) + fadeOut(Motion.snappy())
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-
-                    CompactViewModeToggle(
-                        currentMode = layoutType,
-                        onModeChange = onLayoutToggleClick
-                    )
-
+            if (!isSearchActive) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onLayoutToggleClick, modifier = Modifier.springPress()) {
+                        Icon(
+                            imageVector = if (layoutType == LayoutType.GRID) Icons.Default.ViewAgenda else Icons.Default.GridView,
+                            contentDescription = "Toggle Layout"
+                        )
+                    }
                     Box {
-                        CompactSortButton(onClick = onSortClick)
-
+                        IconButton(onClick = onSortClick, modifier = Modifier.springPress()) {
+                            Icon(
+                                imageVector = Icons.Default.Sort,
+                                contentDescription = "Sort"
+                            )
+                        }
                         DropdownMenu(
                             expanded = sortMenuExpanded,
                             onDismissRequest = onSortMenuDismissRequest,
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            shape = MaterialTheme.shapes.medium,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                         ) {
-                            SortMenuItem(
-                                text = stringResource(id = R.string.date_created),
-                                icon = Icons.Default.CalendarToday,
-                                isSelected = currentSortType == SortType.DATE_CREATED,
-                                onClick = {
-                                    onSortOptionClick(SortType.DATE_CREATED)
-                                    onSortMenuDismissRequest()
-                                }
-                            )
-                            SortMenuItem(
-                                text = stringResource(id = R.string.date_modified),
-                                icon = Icons.Default.Update,
+                            SortOption(
+                                label = "Date Modified",
                                 isSelected = currentSortType == SortType.DATE_MODIFIED,
-                                onClick = {
-                                    onSortOptionClick(SortType.DATE_MODIFIED)
-                                    onSortMenuDismissRequest()
-                                }
+                                onClick = { onSortOptionClick(SortType.DATE_MODIFIED) }
                             )
-                            SortMenuItem(
-                                text = stringResource(id = R.string.sort_by_alpha),
-                                icon = Icons.Default.SortByAlpha,
+                            SortOption(
+                                label = "Date Created",
+                                isSelected = currentSortType == SortType.DATE_CREATED,
+                                onClick = { onSortOptionClick(SortType.DATE_CREATED) }
+                            )
+                            SortOption(
+                                label = "Title",
                                 isSelected = currentSortType == SortType.TITLE,
-                                onClick = {
-                                    onSortOptionClick(SortType.TITLE)
-                                    onSortMenuDismissRequest()
-                                }
+                                onClick = { onSortOptionClick(SortType.TITLE) }
                             )
                         }
                     }
@@ -291,241 +163,23 @@ fun SearchBar(
     }
 }
 
-/**
- * A menu item for sorting options within a dropdown menu.
- *
- * @param text The display text for the menu item.
- * @param icon The icon to display next to the text.
- * @param isSelected Boolean indicating if this sort option is currently selected.
- * @param onClick Lambda to be invoked when the menu item is clicked.
- */
 @Composable
-fun SortMenuItem(
-    text: String,
-    icon: ImageVector,
+private fun SortOption(
+    label: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
     DropdownMenuItem(
-        text = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null, // Content description is handled by the text itself.
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                if (isSelected) {
-                    Spacer(Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = stringResource(id = R.string.selected),
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+        text = { 
+            Text(
+                text = label,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            ) 
         },
-        onClick = onClick
+        onClick = onClick,
+        trailingIcon = if (isSelected) {
+            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+        } else null
     )
-}
-
-/**
- * A compact toggle button group for switching between list and grid view modes.
- *
- * @param currentMode The currently active [LayoutType].
- * @param onModeChange Lambda to be invoked when the view mode is changed.
- */
-@Composable
-fun CompactViewModeToggle(
-    currentMode: LayoutType,
-    onModeChange: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
-            .padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(1.dp)
-    ) {
-        CompactViewModeButton(
-            icon = Icons.Default.ViewList,
-            contentDescription = stringResource(id = R.string.list_view_icon_description),
-            isSelected = currentMode == LayoutType.LIST,
-            onClick = { if (currentMode != LayoutType.LIST) onModeChange() }
-        )
-
-        CompactViewModeButton(
-            icon = Icons.Default.ViewModule,
-            contentDescription = stringResource(id = R.string.grid_view_icon_description),
-            isSelected = currentMode == LayoutType.GRID,
-            onClick = { if (currentMode != LayoutType.GRID) onModeChange() }
-        )
-    }
-}
-
-/**
- * A single button within the [CompactViewModeToggle] group.
- *
- * @param icon The icon to display for the button.
- * @param contentDescription The accessibility description for the icon.
- * @param isSelected Boolean indicating if this button is currently selected.
- * @param onClick Lambda to be invoked when the button is clicked.
- */
-@Composable
-fun CompactViewModeButton(
-    icon: ImageVector,
-    contentDescription: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    // Animate the background color change.
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isSelected)
-            MaterialTheme.colorScheme.primaryContainer
-        else
-            Color.Transparent,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "ViewModeButtonBackground"
-    )
-
-    // Animate the content (icon) color change.
-    val contentColor by animateColorAsState(
-        targetValue = if (isSelected)
-            MaterialTheme.colorScheme.onPrimaryContainer
-        else
-            MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(300),
-        label = "ViewModeButtonContentColor"
-    )
-    
-    // Animate the scale for a subtle "pop" effect when selected.
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 1.05f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "ViewModeButtonScale"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(34.dp)
-            .scale(scale)
-            .clip(RoundedCornerShape(11.dp))
-            .background(backgroundColor)
-            .clickable(
-                onClick = onClick,
-                indication = null, // No visual ripple effect.
-                interactionSource = remember { MutableInteractionSource() }
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = contentColor,
-            modifier = Modifier.size(18.dp)
-        )
-    }
-}
-
-/**
- * A compact button for triggering sorting options. Includes a custom press animation.
- *
- * @param onClick Lambda to be invoked when the button is clicked.
- */
-@Composable
-fun CompactSortButton(onClick: () -> Unit) {
-    var isPressed by remember { mutableStateOf(false) }
-
-    // Animate the scale for a custom press effect.
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessHigh
-        ),
-        label = "SortButtonPressScale"
-    )
-
-    FilledTonalButton(
-        onClick = {
-            isPressed = true
-            onClick()
-        },
-        modifier = Modifier
-            .scale(scale)
-            .height(34.dp),
-        shape = RoundedCornerShape(14.dp),
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
-        colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-    ) {
-        Icon(
-            imageVector = Icons.Default.Sort,
-            contentDescription = stringResource(id = R.string.sort),
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = stringResource(id = R.string.sort),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-    }
-
-    // Reset the press state after a short delay to create a 'pop' effect.
-    LaunchedEffect(isPressed) {
-        if (isPressed) {
-            kotlinx.coroutines.delay(100)
-            isPressed = false
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SearchBarPreview() {
-    MaterialTheme {
-        var searchQuery by remember { mutableStateOf("") }
-        var layoutType by remember { mutableStateOf(LayoutType.GRID) }
-        var showSortMenu by remember { mutableStateOf(false) }
-        var isSearchActive by remember { mutableStateOf(false) }
-
-        Column(modifier = Modifier.fillMaxWidth()) {
-            SearchBar(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                layoutType = layoutType,
-                onLayoutToggleClick = {
-                    layoutType = if (layoutType == LayoutType.GRID) LayoutType.LIST else LayoutType.GRID
-                },
-                onSortClick = { showSortMenu = !showSortMenu },
-                sortMenuExpanded = showSortMenu,
-                onSortMenuDismissRequest = { showSortMenu = false },
-                onSortOptionClick = {},
-                isSearchActive = isSearchActive,
-                onSearchActiveChange = { isSearchActive = it },
-                currentSortType = SortType.DATE_MODIFIED
-            )
-            
-            // Preview state
-            if (isSearchActive) {
-                Text(
-                    "Search Active: ${searchQuery.ifEmpty { "Empty" }}",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
 }

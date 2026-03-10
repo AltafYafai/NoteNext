@@ -74,22 +74,36 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":data"))
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    testImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.material3.adaptive)
-    implementation(libs.androidx.material3.adaptive.layout)
-    implementation(libs.androidx.material3.adaptive.navigation)
-    implementation(libs.androidx.material3.window.size)
-    implementation(libs.androidx.material.icons.extended)
+    // BOM — ek jagah version, baaki sab auto
+    val bom = platform(libs.compose.bom)
+    implementation(bom)
+    androidTestImplementation(bom)
+
+    // Compose UI core
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.graphics)
+    implementation(libs.compose.ui.preview)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.animation)
+    debugImplementation(libs.compose.ui.tooling)
+
+    // Material 3 Expressive — THE main one
+    implementation(libs.material3)
+    implementation(libs.material3.window)
+    implementation(libs.material3.adaptive)
+
+    // Icons — manually add karna padega ab se M3 1.4.0+
+    implementation(libs.icons.core)
+    implementation(libs.icons.extended)
+
+    // Dynamic Color (Material You)
+    implementation(libs.dynamic.color)
+
+    // Shape Morphing
+    implementation(libs.graphics.shapes)
+
+    // Spring animations
+    implementation(libs.dynamic.animation)
 
     // Room
     implementation(libs.androidx.room.runtime)
@@ -136,7 +150,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
     // Google Drive Backup

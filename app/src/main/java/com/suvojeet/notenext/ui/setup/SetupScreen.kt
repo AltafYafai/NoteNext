@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.setup
 
 import android.Manifest
@@ -7,7 +8,9 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,6 +40,8 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.setup.components.PermissionItem
 import com.suvojeet.notenext.ui.settings.BackupRestoreViewModel
 import com.suvojeet.notenext.ui.components.PasswordInputDialog
+import com.suvojeet.notenext.ui.components.springPress
+import com.suvojeet.notenext.ui.components.ExpressiveLoading
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -76,13 +81,11 @@ fun SetupScreen(
         }
     }
     
-    // Sync BackupViewModel with current Google Account status
     LaunchedEffect(Unit) {
         val account = GoogleSignIn.getLastSignedInAccount(context)
         backupViewModel.setGoogleAccount(account)
     }
     
-    // Google Sign-In Handling
     var signInAction by remember { mutableStateOf<SignInAction?>(null) }
     
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -100,14 +103,13 @@ fun SetupScreen(
             account?.let {
                 backupViewModel.setGoogleAccount(it)
                 when (signInAction) {
-                    SignInAction.RESTORE -> { /* Handle restore if needed, or let user click button */ }
+                    SignInAction.RESTORE -> { }
                     SignInAction.ENABLE_BACKUP -> backupViewModel.toggleAutoBackup(true, it.email)
-                    else -> { /* Just connected */ }
+                    else -> { }
                 }
             }
         } catch (e: ApiException) {
             e.printStackTrace()
-            // Handle error (show snackbar ideally, but simple for now)
         }
         signInAction = null
     }
@@ -126,30 +128,35 @@ fun SetupScreen(
         bottomBar = {
             val canContinue = (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || postNotificationsGranted) && state.exactAlarmGranted
             
-            Box(
-                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-                    .imePadding()
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                tonalElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
             ) {
-                 Button(
-                    onClick = {
-                        viewModel.onEvent(SetupEvent.CompleteSetup)
-                        onSetupComplete()
-                    },
-                    modifier = Modifier
+                Box(
+                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    enabled = canContinue,
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
+                        .padding(24.dp)
+                        .imePadding()
                 ) {
-                    Text(
-                         text = stringResource(id = R.string.continue_button),
-                         style = MaterialTheme.typography.titleMedium
-                    )
+                     Button(
+                        onClick = {
+                            viewModel.onEvent(SetupEvent.CompleteSetup)
+                            onSetupComplete()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .springPress(),
+                        enabled = canContinue,
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(
+                             text = stringResource(id = R.string.continue_button),
+                             style = MaterialTheme.typography.titleLarge,
+                             fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         },
@@ -163,68 +170,88 @@ fun SetupScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
             
-            // Header Section
-            Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                contentDescription = "App Logo",
-                modifier = Modifier
-                    .size(100.dp) // Slightly smaller for better balance
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha=0.5f), RoundedCornerShape(32.dp))
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+            Surface(
+                modifier = Modifier.size(120.dp),
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                tonalElevation = 4.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(100.dp)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
             Text(
                 text = "Welcome to NoteNext",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Secure, Organized, and Synced.",
+                text = "Your secure, expressive, and local notepad.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
             
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
-            // Google Drive Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
-                shape = RoundedCornerShape(24.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                shape = MaterialTheme.shapes.extraLarge,
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.Top) {
-                         Icon(
-                            imageVector = Icons.Default.CloudSync,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                         Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.shapes.medium),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudSync,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Google Drive Sync",
+                                text = "Cloud Sync",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(Modifier.height(4.dp))
                             Text(
-                                text = if(backupState.googleAccountEmail != null) "Linked to ${backupState.googleAccountEmail}" else "Connect to enable cloud backup & restore.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Google Drive Backup",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
+                    Text(
+                        text = if(backupState.googleAccountEmail != null) "Connected to ${backupState.googleAccountEmail}" else "Keep your notes synced across devices with secure cloud storage.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -235,108 +262,115 @@ fun SetupScreen(
                                 val signInIntent = GoogleSignIn.getClient(context, gso).signInIntent
                                 googleSignInLauncher.launch(signInIntent)
                             },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().height(56.dp).springPress(),
+                            shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
-                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Connect Google Account")
+                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(12.dp))
+                            Text("Connect Google Account", fontWeight = FontWeight.Bold)
                         }
                     } else {
-                        // Options when connected
-                        
-                        // 1. Auto Backup Switch
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.3f), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Auto Backup", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                Text("Daily backup", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("Daily Auto Backup", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                                        Text("Highly recommended", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Switch(
+                                        checked = backupState.isAutoBackupEnabled,
+                                        onCheckedChange = { enabled -> 
+                                            backupState.googleAccountEmail?.let { 
+                                                 backupViewModel.toggleAutoBackup(enabled, it)
+                                            }
+                                        }
+                                    )
+                                }
                             }
-                            Switch(
-                                checked = backupState.isAutoBackupEnabled,
-                                onCheckedChange = { enabled -> 
-                                    backupState.googleAccountEmail?.let { 
-                                         backupViewModel.toggleAutoBackup(enabled, it)
+
+                            if (backupState.isRestoring) {
+                                ExpressiveLoading(modifier = Modifier.height(100.dp))
+                            } else if (backupState.restoreResult?.contains("successful", true) == true) {
+                                 Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = Color(0xFFE8F5E9)
+                                ) {
+                                     Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF2E7D32), modifier = Modifier.size(24.dp))
+                                        Spacer(Modifier.width(12.dp))
+                                        Text("Data Restored Successfully", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
                                     }
                                 }
-                            )
-                        }
-                        
-                        // HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                        Spacer(Modifier.height(12.dp))
-
-                        // 2. Restore Action (Restyle)
-                        if (backupState.isRestoring) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                Spacer(Modifier.width(12.dp))
-                                Text(backupState.restoreResult ?: "Restoring...", style = MaterialTheme.typography.bodyMedium)
-                            }
-                        } else if (backupState.restoreResult?.contains("successful", true) == true) {
-                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.CheckCircle, null, tint = Color.Green, modifier = Modifier.size(24.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Restore Completed", style = MaterialTheme.typography.bodyMedium, color = Color.Green, fontWeight = FontWeight.Bold)
-                            }
-                        } else {
-                             OutlinedButton(
-                                onClick = {
-                                    val account = GoogleSignIn.getLastSignedInAccount(context)
-                                    account?.let { backupViewModel.restoreFromDrive(it) }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                            ) {
-                                Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Restore Existing Data")
+                            } else {
+                                 OutlinedButton(
+                                    onClick = {
+                                        val account = GoogleSignIn.getLastSignedInAccount(context)
+                                        account?.let { backupViewModel.restoreFromDrive(it) }
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(56.dp).springPress(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                                ) {
+                                    Icon(Icons.Default.CloudDownload, null, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(12.dp))
+                                    Text("Restore Previous Notes", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
             
-            Text(
-                text = "Required Permissions",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Start)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                PermissionItem(
-                    title = "Notifications",
-                    description = "Get notified about reminders & backups.",
-                    isGranted = postNotificationsGranted,
-                    onRequestClick = { postNotificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "System Access",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black
                 )
-                Spacer(modifier = Modifier.height(12.dp))
             }
-
-            PermissionItem(
-                title = "Exact Alarms",
-                description = "Required for precise reminder timing.",
-                isGranted = state.exactAlarmGranted,
-                onRequestClick = {
-                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).also {
-                        exactAlarmPermissionLauncher.launch(it)
-                    }
-                }
-            )
             
-            Spacer(modifier = Modifier.height(100.dp)) // Padding for bottom bar
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    PermissionItem(
+                        title = "Notifications",
+                        description = "Required for reminders and sync status.",
+                        isGranted = postNotificationsGranted,
+                        onRequestClick = { postNotificationsPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+                    )
+                }
+
+                PermissionItem(
+                    title = "Exact Alarms",
+                    description = "Ensures reminders are triggered precisely.",
+                    isGranted = state.exactAlarmGranted,
+                    onRequestClick = {
+                        Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).also {
+                            exactAlarmPermissionLauncher.launch(it)
+                        }
+                    }
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(120.dp))
         }
     }
 }

@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.settings
 
 import org.acra.ACRA
@@ -9,7 +10,7 @@ import com.suvojeet.notenext.ui.theme.ThemeMode
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
@@ -19,8 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -41,11 +40,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.util.UpdateChecker
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.biometric.BiometricManager
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,15 +58,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val settingsRepository = remember { SettingsRepository(context) }
     val scope = rememberCoroutineScope()
 
-    // -- Helper to check if service is running --
-    val isServiceRunning: (String) -> Boolean = { serviceName ->
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        try {
-            manager.getRunningServices(Integer.MAX_VALUE).any { it.service.className == serviceName }
-        } catch (e: Exception) { false }
-    }
-
-    // -- State Collection --
     val selectedThemeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
     val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsState(initial = false)
@@ -70,21 +65,17 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val selectedLanguage by settingsRepository.language.collectAsState(initial = "en")
     val disallowScreenshots by settingsRepository.disallowScreenshots.collectAsState(initial = false)
 
-    // -- Search State --
     var searchQuery by remember { mutableStateOf("") }
 
-    // -- Dialog States --
     var showThemeDialog by remember { mutableStateOf(false) }
     var showAutoDeleteDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var showAppLockInfoDialog by remember { mutableStateOf(false) }
-    var showScreenshotInfoDialog by remember { mutableStateOf(false) }
-    var showRateDialog by remember { mutableStateOf(false) }
-    var showChangelogDialog by remember { mutableStateOf(false) }
     var showBugReportDialog by remember { mutableStateOf(false) }
     var issueDescription by remember { mutableStateOf("") }
     var showImportSourceDialog by remember { mutableStateOf(false) }
     var showKeepInstructionsDialog by remember { mutableStateOf(false) }
+    var showRateDialog by remember { mutableStateOf(false) }
+    var showChangelogDialog by remember { mutableStateOf(false) }
 
     val backupRestoreViewModel: BackupRestoreViewModel = hiltViewModel()
     val importKeepLauncher = rememberLauncherForActivityResult(
@@ -95,7 +86,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    // Data-driven Settings Structure
     val sections = remember(
         selectedThemeMode, autoDeleteDays, enableRichLinkPreview, enableAppLock, 
         selectedLanguage, disallowScreenshots, showBugReportDialog
@@ -155,7 +145,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                                         scope.launch { settingsRepository.saveEnableAppLock(true) }
                                     }
                                     BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> {
-                                        // Open enrollment settings for Android 11+
                                         val enrollIntent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
                                             android.content.Intent(android.provider.Settings.ACTION_BIOMETRIC_ENROLL).apply {
                                                 putExtra(
@@ -278,13 +267,13 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 title = {
                     Text(
                         text = stringResource(id = R.string.settings_title),
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = (-1.5).sp
+                        letterSpacing = (-1.0).sp
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                         Icon(Icons.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
@@ -300,10 +289,9 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Expressive Search Bar
             item {
                 androidx.compose.material3.SearchBar(
                     query = searchQuery,
@@ -315,20 +303,19 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                     trailingIcon = if (searchQuery.isNotEmpty()) {
                         { 
-                            IconButton(onClick = { searchQuery = "" }) {
+                            IconButton(onClick = { searchQuery = "" }, modifier = Modifier.springPress()) {
                                 Icon(Icons.Rounded.Close, contentDescription = null)
                             }
                         }
                     } else null,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
+                    shape = MaterialTheme.shapes.extraLarge,
                     colors = SearchBarDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     )
                 ) {}
             }
 
-            // Hero Moment Shortcuts
             if (searchQuery.isEmpty()) {
                 item {
                     Row(
@@ -357,7 +344,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 }
             }
 
-            // Render Dynamic Sections
             filteredSections.forEach { section ->
                 item {
                     ExpressiveSection(
@@ -382,7 +368,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 }
             }
 
-            // Support & Updates
             if (searchQuery.isEmpty()) {
                 item {
                     ExpressiveSection(
@@ -416,7 +401,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
         }
     }
 
-    // --- Dialogs ---
     if (showThemeDialog) ThemeChooserDialog(selectedThemeMode, { theme -> scope.launch { settingsRepository.saveThemeMode(theme) }; showThemeDialog = false }, { showThemeDialog = false })
     if (showAutoDeleteDialog) AutoDeleteDialog(autoDeleteDays, { days -> scope.launch { settingsRepository.saveAutoDeleteDays(days) }; showAutoDeleteDialog = false }, { showAutoDeleteDialog = false })
     if (showLanguageDialog) LanguageChooserDialog(selectedLanguage, { lang -> scope.launch { settingsRepository.saveLanguage(lang) }; showLanguageDialog = false }, { showLanguageDialog = false })
@@ -426,14 +410,12 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     if (showChangelogDialog) ChangelogDialog { showChangelogDialog = false }
     if (showBugReportDialog) BugReportDialog(issueDescription, { issueDescription = it }, { 
         showBugReportDialog = false 
-        // Send manual report via ACRA
         ACRA.errorReporter.putCustomData("IssueDescription", issueDescription)
         ACRA.errorReporter.handleSilentException(Exception("Manual Bug Report: $issueDescription"))
         issueDescription = ""
     }, { showBugReportDialog = false })
 }
 
-// --- Data Models ---
 private data class SettingsSectionData(
     val title: String,
     val description: String,
@@ -451,8 +433,6 @@ private data class SettingsItemData(
     val onClick: (() -> Unit)? = null
 )
 
-// --- Expressive Components ---
-
 @Composable
 private fun FeaturedCard(
     title: String,
@@ -466,8 +446,9 @@ private fun FeaturedCard(
     Card(
         modifier = modifier
             .height(115.dp)
-            .clip(RoundedCornerShape(32.dp))
+            .springPress()
             .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
             contentColor = contentColor
@@ -502,7 +483,7 @@ private fun SettingsItem(
 ) {
     ListItem(
         modifier = Modifier
-            .clip(RoundedCornerShape(24.dp))
+            .springPress()
             .clickable(enabled = onClick != null || hasSwitch) {
                 if (hasSwitch && onCheckedChange != null) onCheckedChange(!checked) else onClick?.invoke()
             },
@@ -512,8 +493,7 @@ private fun SettingsItem(
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(iconColor.copy(alpha = 0.12f)),
+                    .background(iconColor.copy(alpha = 0.12f), MaterialTheme.shapes.medium),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(22.dp), tint = iconColor)
@@ -537,18 +517,17 @@ private fun SettingsItem(
     )
 }
 
-// --- Helper Dialogs ---
-
 @Composable
 private fun LanguageChooserDialog(selectedLanguage: String, onLanguageSelected: (String) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.choose_language)) },
         text = {
             Column {
                 listOf("en" to R.string.language_english, "hi" to R.string.language_hindi).forEach { (code, resId) ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onLanguageSelected(code) }.padding(12.dp),
+                        modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { onLanguageSelected(code) }.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(selected = (selectedLanguage == code), onClick = null)
@@ -558,7 +537,7 @@ private fun LanguageChooserDialog(selectedLanguage: String, onLanguageSelected: 
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) } }
+        confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text(stringResource(id = R.string.cancel)) } }
     )
 }
 
@@ -566,6 +545,7 @@ private fun LanguageChooserDialog(selectedLanguage: String, onLanguageSelected: 
 private fun ThemeChooserDialog(selectedThemeMode: ThemeMode, onThemeSelected: (ThemeMode) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.choose_theme)) },
         text = {
             Column {
@@ -573,13 +553,13 @@ private fun ThemeChooserDialog(selectedThemeMode: ThemeMode, onThemeSelected: (T
                     ListItem(
                         headlineContent = { Text(if (mode == ThemeMode.AMOLED) stringResource(id = R.string.theme_amoled) else mode.name.lowercase().replaceFirstChar { it.uppercase() }) },
                         leadingContent = { RadioButton(selected = (mode == selectedThemeMode), onClick = null) },
-                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onThemeSelected(mode) },
+                        modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { onThemeSelected(mode) },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                     )
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) } }
+        confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text(stringResource(id = R.string.cancel)) } }
     )
 }
 
@@ -588,6 +568,7 @@ private fun AutoDeleteDialog(currentDays: Int, onConfirm: (Int) -> Unit, onDismi
     var pos by remember { mutableFloatStateOf(currentDays.toFloat()) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = { Text(stringResource(id = R.string.auto_delete_after)) },
         text = {
             Column {
@@ -595,77 +576,8 @@ private fun AutoDeleteDialog(currentDays: Int, onConfirm: (Int) -> Unit, onDismi
                 Slider(value = pos, onValueChange = { pos = it }, valueRange = 1f..60f, steps = 58)
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(pos.roundToInt()) }) { Text(stringResource(id = R.string.save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) } }
-    )
-}
-
-@Composable
-fun ImportSourceDialog(onDismiss: () -> Unit, onSelectKeep: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Import from...") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ImportOptionItem("Google Keep", Icons.Rounded.Description, Color(0xFFFFBB00), onSelectKeep)
-                ImportOptionItem("Evernote", Icons.Rounded.Description, Color(0xFF00A82D), enabled = false)
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
-
-@Composable
-fun ImportOptionItem(text: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}, enabled: Boolean = true) {
-    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled, onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(imageVector = icon, contentDescription = null, tint = if (enabled) color else Color.Gray, modifier = Modifier.size(24.dp))
-        Spacer(Modifier.width(16.dp))
-        Text(text = text, style = MaterialTheme.typography.bodyLarge, color = if (enabled) MaterialTheme.colorScheme.onSurface else Color.Gray)
-    }
-}
-
-@Composable
-fun KeepInstructionsDialog(onDismiss: () -> Unit, onImport: () -> Unit) {
-    val context = LocalContext.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Google Keep Import") },
-        text = { Text("Please select your Google Takeout ZIP file to import your Keep notes.") },
-        confirmButton = { TextButton(onClick = onImport) { Text("Select ZIP") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
-
-@Composable
-private fun BugReportDialog(desc: String, onDescChange: (String) -> Unit, onSend: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Bug Report") },
-        text = { 
-            Column {
-                Text("Describe the issue you're facing. System logs will be attached automatically.", style = MaterialTheme.typography.bodyMedium)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = desc, onValueChange = onDescChange, label = { Text("Issue description") }, modifier = Modifier.fillMaxWidth()) 
-            }
-        },
-        confirmButton = { TextButton(onClick = onSend) { Text("Send Report") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
-
-@Composable
-fun RateAppDialog(context: android.content.Context, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Rate NoteNext") },
-        text = { Text("Loving the app? Help us by rating it on the Play Store!") },
-        confirmButton = { TextButton(onClick = { 
-            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))) }
-            catch (e: Exception) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))) }
-            onDismiss()
-        }) { Text("Rate Now") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Later") } }
+        confirmButton = { TextButton(onClick = { onConfirm(pos.roundToInt()) }, modifier = Modifier.springPress()) { Text(stringResource(id = R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text(stringResource(id = R.string.cancel)) } }
     )
 }
 
@@ -712,6 +624,7 @@ private fun CheckForUpdateItem(context: android.content.Context) {
         val result = updateResult!!
         AlertDialog(
             onDismissRequest = { showResultDialog = false },
+            shape = MaterialTheme.shapes.extraLarge,
             title = { Text(if (result.isUpdateAvailable) stringResource(R.string.update_available) else stringResource(R.string.you_are_up_to_date)) },
             text = { 
                 Column {
@@ -730,12 +643,84 @@ private fun CheckForUpdateItem(context: android.content.Context) {
                     Button(onClick = {
                         showResultDialog = false
                         (context as? android.app.Activity)?.let { updateChecker.startUpdate(it) }
-                    }) { Text(stringResource(R.string.update_now)) }
+                    }, modifier = Modifier.springPress()) { Text(stringResource(R.string.update_now)) }
                 } else {
-                    TextButton(onClick = { showResultDialog = false }) { Text(stringResource(R.string.ok)) }
+                    TextButton(onClick = { showResultDialog = false }, modifier = Modifier.springPress()) { Text(stringResource(R.string.ok)) }
                 }
             },
-            dismissButton = if (result.isUpdateAvailable) { { TextButton(onClick = { showResultDialog = false }) { Text(stringResource(R.string.cancel)) } } } else null
+            dismissButton = if (result.isUpdateAvailable) { { TextButton(onClick = { showResultDialog = false }, modifier = Modifier.springPress()) { Text(stringResource(R.string.cancel)) } } } else null
         )
     }
+}
+
+@Composable
+fun ImportSourceDialog(onDismiss: () -> Unit, onSelectKeep: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        title = { Text("Import from...") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ImportOptionItem("Google Keep", Icons.Rounded.Description, Color(0xFFFFBB00), onSelectKeep)
+                ImportOptionItem("Evernote", Icons.Rounded.Description, Color(0xFF00A82D), enabled = false)
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Cancel") } }
+    )
+}
+
+@Composable
+fun ImportOptionItem(text: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}, enabled: Boolean = true) {
+    Row(modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(enabled = enabled, onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(imageVector = icon, contentDescription = null, tint = if (enabled) color else Color.Gray, modifier = Modifier.size(24.dp))
+        Spacer(Modifier.width(16.dp))
+        Text(text = text, style = MaterialTheme.typography.bodyLarge, color = if (enabled) MaterialTheme.colorScheme.onSurface else Color.Gray)
+    }
+}
+
+@Composable
+fun KeepInstructionsDialog(onDismiss: () -> Unit, onImport: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        title = { Text("Google Keep Import") },
+        text = { Text("Please select your Google Takeout ZIP file to import your Keep notes.") },
+        confirmButton = { TextButton(onClick = onImport, modifier = Modifier.springPress()) { Text("Select ZIP") } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun BugReportDialog(desc: String, onDescChange: (String) -> Unit, onSend: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        title = { Text("Bug Report") },
+        text = { 
+            Column {
+                Text("Describe the issue you're facing. System logs will be attached automatically.", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = desc, onValueChange = onDescChange, label = { Text("Issue description") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraSmall) 
+            }
+        },
+        confirmButton = { TextButton(onClick = onSend, modifier = Modifier.springPress()) { Text("Send Report") } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Cancel") } }
+    )
+}
+
+@Composable
+fun RateAppDialog(context: android.content.Context, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
+        title = { Text("Rate NoteNext") },
+        text = { Text("Loving the app? Help us by rating it on the Play Store!") },
+        confirmButton = { TextButton(onClick = { 
+            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))) }
+            catch (e: Exception) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))) }
+            onDismiss()
+        }, modifier = Modifier.springPress()) { Text("Rate Now") } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Later") } }
+    )
 }

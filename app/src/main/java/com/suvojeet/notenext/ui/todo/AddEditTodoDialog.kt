@@ -1,24 +1,20 @@
 package com.suvojeet.notenext.ui.todo
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.TodoItem
+import com.suvojeet.notenext.ui.components.springPress
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,20 +29,16 @@ fun AddEditTodoDialog(
     var description by remember { mutableStateOf(editingTodo?.description ?: "") }
     var priority by remember { mutableIntStateOf(editingTodo?.priority ?: 0) }
     var dueDate by remember { mutableStateOf(editingTodo?.dueDate) }
-    var showDatePicker by remember { mutableStateOf(false) }
     
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = dueDate ?: System.currentTimeMillis()
-    )
+    var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = MaterialTheme.shapes.extraLarge,
         title = {
             Text(
-                text = if (editingTodo != null) 
-                    stringResource(id = R.string.edit_todo) 
-                else 
-                    stringResource(id = R.string.add_todo),
+                text = if (editingTodo == null) stringResource(id = R.string.add_todo) else "Edit Task",
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
         },
@@ -54,95 +46,97 @@ fun AddEditTodoDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Title
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text(stringResource(id = R.string.todo_title)) },
-                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.title)) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = MaterialTheme.shapes.extraSmall,
+                    singleLine = true
                 )
                 
-                // Description
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text(stringResource(id = R.string.todo_description)) },
-                    minLines = 2,
-                    maxLines = 4,
+                    label = { Text("Description (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = MaterialTheme.shapes.extraSmall,
+                    minLines = 2
                 )
                 
-                // Priority
-                Text(
-                    text = stringResource(id = R.string.priority),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .selectableGroup(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    PriorityChip(
-                        label = stringResource(id = R.string.priority_low),
-                        selected = priority == 0,
-                        onClick = { priority = 0 },
-                        color = TodoPriorityColors.Low,
-                        modifier = Modifier.weight(1f)
+                Column {
+                    Text(
+                        text = "Priority",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                    PriorityChip(
-                        label = stringResource(id = R.string.priority_medium),
-                        selected = priority == 1,
-                        onClick = { priority = 1 },
-                        color = TodoPriorityColors.Medium,
-                        modifier = Modifier.weight(1f)
-                    )
-                    PriorityChip(
-                        label = stringResource(id = R.string.priority_high),
-                        selected = priority == 2,
-                        onClick = { priority = 2 },
-                        color = TodoPriorityColors.High,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                
-                // Due Date
-                Text(
-                    text = stringResource(id = R.string.due_date),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = { showDatePicker = true },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.CalendarMonth, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = dueDate?.let { 
-                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
-                            } ?: stringResource(id = R.string.select_date)
+                        PriorityChip(
+                            label = "Low",
+                            selected = priority == 0,
+                            onClick = { priority = 0 },
+                            color = TodoPriorityColors.Low,
+                            modifier = Modifier.weight(1f)
+                        )
+                        PriorityChip(
+                            label = "Med",
+                            selected = priority == 1,
+                            onClick = { priority = 1 },
+                            color = TodoPriorityColors.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        PriorityChip(
+                            label = "High",
+                            selected = priority == 2,
+                            onClick = { priority = 2 },
+                            color = TodoPriorityColors.High,
+                            modifier = Modifier.weight(1f)
                         )
                     }
-                    
-                    if (dueDate != null) {
-                        IconButton(onClick = { dueDate = null }) {
-                            Icon(Icons.Default.Clear, contentDescription = stringResource(id = R.string.cancel))
+                }
+                
+                OutlinedCard(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth().springPress(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = if (dueDate != null) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f) else Color.Transparent
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = if (dueDate != null) {
+                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(dueDate!!))
+                            } else "Set due date",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (dueDate != null) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            TextButton(
+                                onClick = { dueDate = null },
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Clear")
+                            }
                         }
                     }
                 }
@@ -150,37 +144,37 @@ fun AddEditTodoDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onSave(title, description, priority, dueDate) },
-                enabled = title.isNotBlank()
+                onClick = { if (title.isNotBlank()) onSave(title, description, priority, dueDate) },
+                enabled = title.isNotBlank(),
+                modifier = Modifier.springPress(),
+                shape = MaterialTheme.shapes.medium
             ) {
-                Text(stringResource(id = R.string.save))
+                Text(stringResource(id = R.string.save), fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                 Text(stringResource(id = R.string.cancel))
             }
         }
     )
 
-    // Date Picker Dialog
     if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = dueDate ?: System.currentTimeMillis()
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        datePickerState.selectedDateMillis?.let { dueDate = it }
+                        dueDate = datePickerState.selectedDateMillis
                         showDatePicker = false
                     }
-                ) {
-                    Text(stringResource(id = R.string.ok))
-                }
+                ) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(id = R.string.cancel))
-                }
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -193,33 +187,24 @@ private fun PriorityChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
-    color: androidx.compose.ui.graphics.Color,
+    color: Color,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier
-            .selectable(
-                selected = selected,
-                onClick = onClick,
-                role = Role.RadioButton
-            ),
-        shape = RoundedCornerShape(12.dp),
-        color = if (selected) color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface,
-        border = androidx.compose.foundation.BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) color else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-        )
-    ) {
-        Box(
-            modifier = Modifier.padding(vertical = 12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (selected) color else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-            )
-        }
-    }
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = color.copy(alpha = 0.2f),
+            selectedLabelColor = color
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            selectedBorderColor = color,
+            borderColor = MaterialTheme.colorScheme.outlineVariant
+        ),
+        shape = MaterialTheme.shapes.medium,
+        modifier = modifier.springPress()
+    )
 }

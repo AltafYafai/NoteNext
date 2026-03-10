@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.reminder
 
 import androidx.compose.foundation.layout.*
@@ -5,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -14,8 +16,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 import com.suvojeet.notenext.data.RepeatOption
+import com.suvojeet.notenext.ui.components.springPress
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderSheetContent(
@@ -25,7 +29,6 @@ fun ReminderSheetContent(
     onDismissRequest: () -> Unit,
     onConfirm: (LocalDate, LocalTime, RepeatOption) -> Unit
 ) {
-    // ... existing implementation ...
     var selectedDate by remember { mutableStateOf(initialDate ?: LocalDate.now()) }
     var selectedTime by remember { mutableStateOf(initialTime ?: LocalTime.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -44,18 +47,19 @@ fun ReminderSheetContent(
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
+            shape = MaterialTheme.shapes.extraLarge,
             confirmButton = {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let {
                         selectedDate = java.time.Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
                     }
                     showDatePicker = false
-                }) {
-                    Text("OK")
+                }, modifier = Modifier.springPress()) {
+                    Text("OK", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { showDatePicker = false }, modifier = Modifier.springPress()) {
                     Text("Cancel")
                 }
             }
@@ -71,12 +75,12 @@ fun ReminderSheetContent(
                 TextButton(onClick = {
                     selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
                     showTimePicker = false
-                }) {
-                    Text("OK")
+                }, modifier = Modifier.springPress()) {
+                    Text("OK", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
+                TextButton(onClick = { showTimePicker = false }, modifier = Modifier.springPress()) {
                     Text("Cancel")
                 }
             }
@@ -94,23 +98,38 @@ fun ReminderSheetContent(
         Text(
             text = "Set Reminder",
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 16.dp)
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 24.dp)
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(onClick = { showDatePicker = true }) {
-                Text(selectedDate.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")))
+            OutlinedCard(
+                onClick = { showDatePicker = true },
+                modifier = Modifier.weight(1f).springPress(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Date", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(selectedDate.format(DateTimeFormatter.ofPattern("MMM dd")), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                }
             }
-            Button(onClick = { showTimePicker = true }) {
-                Text(selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a")))
+            OutlinedCard(
+                onClick = { showTimePicker = true },
+                modifier = Modifier.weight(1f).springPress(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Time", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a")), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         ExposedDropdownMenuBox(
             expanded = expandedRepeatMenu,
@@ -121,15 +140,18 @@ fun ReminderSheetContent(
                 value = selectedRepeatOption.label,
                 onValueChange = { /* Read Only */ },
                 readOnly = true,
-                label = { Text("Repeat") },
+                label = { Text("Repeat Interval") },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedRepeatMenu) },
+                shape = MaterialTheme.shapes.extraSmall,
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth()
             )
             ExposedDropdownMenu(
                 expanded = expandedRepeatMenu,
-                onDismissRequest = { expandedRepeatMenu = false }
+                onDismissRequest = { expandedRepeatMenu = false },
+                shape = MaterialTheme.shapes.medium,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
             ) {
                 RepeatOption.values().forEach { option ->
                     DropdownMenuItem(
@@ -143,21 +165,25 @@ fun ReminderSheetContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
-            TextButton(onClick = onDismissRequest) {
+            TextButton(onClick = onDismissRequest, modifier = Modifier.springPress()) {
                 Text("Cancel")
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = { onConfirm(selectedDate, selectedTime, selectedRepeatOption) }) {
-                Text("Set")
+            Spacer(modifier = Modifier.width(12.dp))
+            Button(
+                onClick = { onConfirm(selectedDate, selectedTime, selectedRepeatOption) },
+                modifier = Modifier.springPress(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Set Reminder", fontWeight = FontWeight.Bold)
             }
         }
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -177,10 +203,10 @@ fun ReminderSetDialog(
             shape = MaterialTheme.shapes.extraLarge,
             tonalElevation = 6.dp,
             modifier = Modifier
-                .width(320.dp)
+                .width(340.dp)
                 .wrapContentHeight()
                 .padding(16.dp),
-            color = MaterialTheme.colorScheme.surfaceContainer
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             ReminderSheetContent(
                 initialDate = initialDate,

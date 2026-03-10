@@ -1,6 +1,7 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.navigation
 
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import com.suvojeet.notenext.ui.project.toNotesUiEvent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
@@ -21,20 +23,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.*
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.PermanentNavigationDrawer
-import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -90,6 +81,7 @@ import com.suvojeet.notenext.util.findActivity
 import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
 import androidx.navigation.toRoute
+import com.suvojeet.notenext.ui.components.springPress
 
 @Composable
 fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId: Int = -1, startAddNote: Boolean = false, sharedText: String? = null) {
@@ -149,15 +141,22 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
     }
 
     val isExpandedScreen = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
+    val pageSpring = spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = 0.9f, stiffness = 200f)
+    val fadeSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 200f)
 
     if (isExpandedScreen) {
         PermanentNavigationDrawer(
             drawerContent = {
-                PermanentDrawerSheet(modifier = Modifier.fillMaxWidth(0.15f)) {
+                PermanentDrawerSheet(
+                    modifier = Modifier.fillMaxWidth(0.15f),
+                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    drawerShape = MaterialTheme.shapes.extraLarge
+                ) {
                     Text(
                         text = stringResource(id = R.string.app_name),
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(16.dp)
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(24.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -165,7 +164,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) },
-                        label = { Text(stringResource(id = R.string.notes)) },
+                        label = { Text(stringResource(id = R.string.notes), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Notes") == true && notesState.filteredLabel == null,
                         onClick = {
                             if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != null) {
@@ -176,22 +175,22 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 }
                             }
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) },
-                        label = { Text(stringResource(id = R.string.projects)) },
+                        label = { Text(stringResource(id = R.string.projects), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Projects") == true,
                         onClick = {
                             navController.navigate(Destination.Projects)
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) },
-                        label = { Text(stringResource(id = R.string.archive)) },
+                        label = { Text(stringResource(id = R.string.archive), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Archive") == true,
                         onClick = {
                             navController.navigate(Destination.Archive) {
@@ -199,12 +198,12 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 launchSingleTop = true
                             }
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) },
-                        label = { Text(stringResource(id = R.string.bin)) },
+                        label = { Text(stringResource(id = R.string.bin), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Bin") == true,
                         onClick = {
                             navController.navigate(Destination.Bin) {
@@ -212,57 +211,58 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 launchSingleTop = true
                             }
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) },
-                        label = { Text(stringResource(id = R.string.settings)) },
+                        label = { Text(stringResource(id = R.string.settings), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Settings") == true,
                         onClick = {
                             navController.navigate(Destination.Settings)
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
-                        label = { Text(stringResource(id = R.string.reminders)) },
+                        label = { Text(stringResource(id = R.string.reminders), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Reminder") == true,
                         onClick = {
                             navController.navigate(Destination.Reminder)
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp))
 
                     if (notesState.labels.isEmpty()) {
                         NavigationDrawerItem(
                             icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.create_new_label)) },
-                            label = { Text(stringResource(id = R.string.create_new_label)) },
+                            label = { Text(stringResource(id = R.string.create_new_label), fontWeight = FontWeight.Bold) },
                             selected = false,
                             onClick = {
                                 navController.navigate(Destination.EditLabels)
                             },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                         )
                     } else {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 24.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text = stringResource(id = R.string.labels_title),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             IconButton(onClick = {
                                 navController.navigate(Destination.EditLabels)
-                            }) {
+                            }, modifier = Modifier.size(24.dp).springPress()) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = stringResource(id = R.string.edit_labels),
@@ -274,7 +274,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         notesState.labels.forEach { label ->
                             NavigationDrawerItem(
                                 icon = { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = label) },
-                                label = { Text(label) },
+                                label = { Text(label, fontWeight = FontWeight.Medium) },
                                 selected = notesState.filteredLabel == label,
                                 onClick = {
                                     notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
@@ -285,7 +285,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                         }
                                     }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                             )
                         }
                     }
@@ -294,8 +294,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
         ) {
             NavHost(navController = navController, startDestination = Destination.Notes(), modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
                 composable<Destination.Notes>(
-                    enterTransition = { fadeIn(animationSpec = tween(300)) },
-                    exitTransition = { fadeOut(animationSpec = tween(300)) }
+                    enterTransition = { fadeIn(animationSpec = fadeSpring) },
+                    exitTransition = { fadeOut(animationSpec = fadeSpring) }
                 ) {
                     NotesScreen(
                         viewModel = notesViewModel,
@@ -313,8 +313,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Settings>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     SettingsScreen(
                         onBackClick = { navController.popBackStack() },
@@ -328,8 +328,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.Backup>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     BackupScreen(
                         onBackClick = { navController.popBackStack() }
@@ -337,8 +337,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Archive>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ArchiveScreen(
                         onMenuClick = { scope.launch { drawerState.open() } }
@@ -346,8 +346,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.EditLabels>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     EditLabelsScreen(
                         onBackPressed = { navController.popBackStack() }
@@ -355,8 +355,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Bin>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     val binViewModel: BinViewModel = hiltViewModel()
                     BinScreen(
@@ -366,8 +366,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Reminder>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ReminderScreen(
                         onBackClick = { navController.popBackStack() },
@@ -379,16 +379,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.AddEditReminder>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AddEditReminderScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable<Destination.Projects>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ProjectScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
@@ -400,16 +400,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.About>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AboutScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable<Destination.QrScanner>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     QrScannerScreen(
                         onBackClick = { navController.popBackStack() },
@@ -420,16 +420,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.Todo>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     TodoScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable<Destination.ProjectNotes>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ProjectNotesScreen(
                         onBackClick = { navController.popBackStack() },
@@ -455,11 +455,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
             drawerState = drawerState,
             gesturesEnabled = notesState.expandedNoteId == null,
             drawerContent = {
-                ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.7f)) {
+                ModalDrawerSheet(
+                    modifier = Modifier.fillMaxWidth(0.85f),
+                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+                ) {
                     Text(
                         text = stringResource(id = R.string.app_name),
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(16.dp)
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(24.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -467,7 +472,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) },
-                        label = { Text(stringResource(id = R.string.notes)) },
+                        label = { Text(stringResource(id = R.string.notes), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Notes") == true && notesState.filteredLabel == null,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -479,22 +484,22 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 }
                             }
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) },
-                        label = { Text(stringResource(id = R.string.projects)) },
+                        label = { Text(stringResource(id = R.string.projects), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Projects") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Destination.Projects)
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) },
-                        label = { Text(stringResource(id = R.string.archive)) },
+                        label = { Text(stringResource(id = R.string.archive), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Archive") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -503,12 +508,12 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 launchSingleTop = true
                             }
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) },
-                        label = { Text(stringResource(id = R.string.bin)) },
+                        label = { Text(stringResource(id = R.string.bin), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Bin") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
@@ -517,61 +522,62 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                 launchSingleTop = true
                             }
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) },
-                        label = { Text(stringResource(id = R.string.settings)) },
+                        label = { Text(stringResource(id = R.string.settings), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Settings") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Destination.Settings)
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
-                        label = { Text(stringResource(id = R.string.reminders)) },
+                        label = { Text(stringResource(id = R.string.reminders), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Reminder") == true,
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Destination.Reminder)
                         },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp))
 
                     if (notesState.labels.isEmpty()) {
                         NavigationDrawerItem(
                             icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.create_new_label)) },
-                            label = { Text(stringResource(id = R.string.create_new_label)) },
+                            label = { Text(stringResource(id = R.string.create_new_label), fontWeight = FontWeight.Bold) },
                             selected = false,
                             onClick = {
                                 scope.launch { drawerState.close() }
                                 navController.navigate(Destination.EditLabels)
                             },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                         )
                     } else {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 24.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
                                 text = stringResource(id = R.string.labels_title),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             IconButton(onClick = {
                                 scope.launch { drawerState.close() }
                                 navController.navigate(Destination.EditLabels)
-                            }) {
+                            }, modifier = Modifier.size(24.dp).springPress()) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = stringResource(id = R.string.edit_labels),
@@ -583,7 +589,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         notesState.labels.forEach { label ->
                             NavigationDrawerItem(
                                 icon = { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = label) },
-                                label = { Text(label) },
+                                label = { Text(label, fontWeight = FontWeight.Medium) },
                                 selected = notesState.filteredLabel == label,
                                 onClick = {
                                     scope.launch { drawerState.close() }
@@ -595,7 +601,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                         }
                                     }
                                 },
-                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                             )
                         }
                     }
@@ -604,8 +610,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
         ) {
             NavHost(navController = navController, startDestination = Destination.Notes(), modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
                 composable<Destination.Notes>(
-                    enterTransition = { fadeIn(animationSpec = tween(300)) },
-                    exitTransition = { fadeOut(animationSpec = tween(300)) }
+                    enterTransition = { fadeIn(animationSpec = fadeSpring) },
+                    exitTransition = { fadeOut(animationSpec = fadeSpring) }
                 ) { backStackEntry ->
                     val route: Destination.Notes = backStackEntry.toRoute()
                     val noteId = route.noteId
@@ -630,8 +636,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Settings>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     SettingsScreen(
                         onBackClick = { navController.popBackStack() },
@@ -645,8 +651,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.Backup>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     BackupScreen(
                         onBackClick = { navController.popBackStack() }
@@ -654,8 +660,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Archive>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ArchiveScreen(
                         onMenuClick = { scope.launch { drawerState.open() } }
@@ -663,8 +669,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.EditLabels>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     EditLabelsScreen(
                         onBackPressed = { navController.popBackStack() }
@@ -672,8 +678,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Bin>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     val binViewModel: BinViewModel = hiltViewModel()
                     BinScreen(
@@ -683,8 +689,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 }
 
                 composable<Destination.Reminder>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ReminderScreen(
                         onBackClick = { navController.popBackStack() },
@@ -696,16 +702,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.AddEditReminder>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AddEditReminderScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable<Destination.Projects>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ProjectScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
@@ -717,16 +723,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.About>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AboutScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable<Destination.QrScanner>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     QrScannerScreen(
                         onBackClick = { navController.popBackStack() },
@@ -737,16 +743,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
                 }
                 composable<Destination.Todo>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     TodoScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable<Destination.ProjectNotes>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) }
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     ProjectNotesScreen(
                         onBackClick = { navController.popBackStack() },

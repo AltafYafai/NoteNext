@@ -3,12 +3,11 @@ package com.suvojeet.notenext.ui.add_edit_note.components
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
@@ -16,6 +15,7 @@ import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.add_edit_note.openUrl
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.util.BiometricAuthManager
 import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.util.findActivity
@@ -53,10 +53,12 @@ fun AddEditNoteDialogs(
         val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
         AlertDialog(
             onDismissRequest = { onShowDeleteDialogChange(false) },
+            shape = MaterialTheme.shapes.extraLarge,
             title = { Text("Move note to bin?") },
             text = { Text("This note will be moved to the recycle bin and permanently deleted after $autoDeleteDays days.") },
             confirmButton = {
                 TextButton(
+                    modifier = Modifier.springPress(),
                     onClick = {
                         scope.launch {
                             val htmlContent = HtmlConverter.annotatedStringToHtml(state.editingContent.annotatedString)
@@ -80,7 +82,7 @@ fun AddEditNoteDialogs(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onShowDeleteDialogChange(false) }) {
+                TextButton(onClick = { onShowDeleteDialogChange(false) }, modifier = Modifier.springPress()) {
                     Text(stringResource(id = R.string.cancel))
                 }
             }
@@ -133,10 +135,12 @@ fun AddEditNoteDialogs(
     if (clickedUrl != null) {
         AlertDialog(
             onDismissRequest = { onClickedUrlChange(null) },
+            shape = MaterialTheme.shapes.extraLarge,
             title = { Text("Open Link") },
             text = { Text("Do you want to open this link?\n\n$clickedUrl") },
             confirmButton = {
                 TextButton(
+                    modifier = Modifier.springPress(),
                     onClick = {
                         openUrl(context, clickedUrl)
                         onClickedUrlChange(null)
@@ -146,7 +150,7 @@ fun AddEditNoteDialogs(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onClickedUrlChange(null) }) {
+                TextButton(onClick = { onClickedUrlChange(null) }, modifier = Modifier.springPress()) {
                     Text("Cancel")
                 }
             }
@@ -173,8 +177,6 @@ fun AddEditNoteDialogs(
         )
     }
     
-    // Awesome AI Summary Sheet handled in main screen?? Or move here?
-    // It's a sheet, similar to MoreOptionsSheet. Let's move it here.
     if (state.showSummaryDialog) {
          AiSummarySheet(
             summary = state.summaryResult,
@@ -187,21 +189,25 @@ fun AddEditNoteDialogs(
     if (showExactAlarmDialog) {
          AlertDialog(
             onDismissRequest = { onShowExactAlarmDialogChange(false) },
+            shape = MaterialTheme.shapes.extraLarge,
             title = { Text("Exact Alarm Permission Needed") },
             text = { Text("To ensure reminders fire at the exact time, please allow 'Alarms & reminders' permission in Settings.") },
             confirmButton = {
-                TextButton(onClick = {
-                    onShowExactAlarmDialogChange(false)
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                         val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                         context.startActivity(intent)
+                TextButton(
+                    modifier = Modifier.springPress(),
+                    onClick = {
+                        onShowExactAlarmDialogChange(false)
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                             val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                             context.startActivity(intent)
+                        }
                     }
-                }) {
+                ) {
                     Text("Go to Settings")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { onShowExactAlarmDialogChange(false) }) {
+                TextButton(onClick = { onShowExactAlarmDialogChange(false) }, modifier = Modifier.springPress()) {
                     Text("Cancel")
                 }
             }

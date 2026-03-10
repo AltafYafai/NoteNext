@@ -1,60 +1,41 @@
+@file:OptIn(ExperimentalFoundationApi::class)
 package com.suvojeet.notenext.ui.components
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.PushPin
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.icons.filled.CheckBox
-import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
-import com.suvojeet.notenext.data.ChecklistItem
-import com.suvojeet.notenext.util.HtmlConverter
-import com.suvojeet.notenext.data.NoteWithAttachments
-import androidx.compose.material.icons.filled.Attachment
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
+import com.suvojeet.notenext.data.ChecklistItem
+import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.text.TextLayoutResult
+import com.suvojeet.notenext.util.HtmlConverter
 
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import com.suvojeet.notenext.ui.theme.Motion
-import com.suvojeet.notenext.ui.theme.HeroShapes
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NoteItem(
     modifier: Modifier = Modifier,
@@ -66,17 +47,13 @@ fun NoteItem(
     binnedDaysRemaining: Int? = null,
     isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
-    // Get theme-adaptive color (maps dark colors to light equivalents when in light mode, etc.)
     val adaptiveColor = NoteGradients.getAdaptiveColor(note.note.color, isDarkTheme)
-    
-    // Check if the note has a custom color or is using the default (0)
     val isDefaultColor = adaptiveColor == 0
 
-    // Determine colors based on whether it's default or custom
     val contentColor = if (isDefaultColor) {
-        MaterialTheme.colorScheme.onSurface // Default Theme Text Color
+        MaterialTheme.colorScheme.onSurface
     } else {
-        NoteGradients.getContentColor(adaptiveColor) // Dynamic Text Color based on adaptive color
+        NoteGradients.getContentColor(adaptiveColor)
     }
     
     val tintColor = if (isDefaultColor) {
@@ -85,27 +62,24 @@ fun NoteItem(
         contentColor.copy(alpha = 0.7f)
     }
 
-    // Motion: Animate scale and elevation for selection
     val scale by animateFloatAsState(
-        targetValue = if (isSelected) 0.98f else 1f,
-        animationSpec = Motion.snappy(),
+        targetValue = if (isSelected) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
         label = "Scale"
     )
     
     val elevation by animateDpAsState(
-        targetValue = if (isSelected) 8.dp else (if (isDefaultColor) 1.dp else 0.dp),
-        animationSpec = Motion.emphasis(),
+        targetValue = if (isSelected) 4.dp else (if (isDefaultColor) 1.dp else 0.dp),
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
         label = "Elevation"
     )
 
-    // Shape: Use expressive shape for pinned notes, standard for others
     val cardShape = if (note.note.isPinned) {
-        MaterialTheme.shapes.extraLarge // Asymmetric expressive shape
+        MaterialTheme.shapes.extraLarge
     } else {
-        MaterialTheme.shapes.large
+        MaterialTheme.shapes.medium
     }
 
-    // Determine border stroke
     val borderStroke = if (isSelected) {
         BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
     } else if (isDefaultColor) {
@@ -122,10 +96,10 @@ fun NoteItem(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
             )
-            .animateContentSize(animationSpec = Motion.emphasis()),
+            .animateContentSize(animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f)),
         shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent
+            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
         ),
         border = borderStroke,
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
@@ -142,9 +116,8 @@ fun NoteItem(
                 )
         ) {
             Column(
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier.padding(16.dp)
             ) {
-                // Pin Icon
                 if (note.note.isPinned) {
                     Icon(
                         imageVector = Icons.Outlined.PushPin,
@@ -157,7 +130,6 @@ fun NoteItem(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                // Note Title (Always Visible)
                 if (note.note.title.isNotEmpty()) {
                     val titleText = if (searchQuery.isNotEmpty()) {
                         buildAnnotatedString {
@@ -184,8 +156,7 @@ fun NoteItem(
 
                     Text(
                         text = titleText,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = contentColor,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -194,7 +165,6 @@ fun NoteItem(
                 }
 
                 if (note.note.isLocked) {
-                    // Locked State Display
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -217,13 +187,10 @@ fun NoteItem(
                         )
                     }
                 } else {
-                    // Note Content Preview (Dynamic Sizing)
                     if ((note.note.noteType == "TEXT" && note.note.content.isNotEmpty()) || (note.note.noteType == "CHECKLIST" && note.checklistItems.isNotEmpty())) {
                         if (note.note.noteType == "TEXT") {
-                            // Use raw content length for stable sizing (prevents height jumping)
                             val rawContentLength = note.note.content.length
                             
-                            // Stable sizing based on raw HTML length (approximate)
                             val (textStyle, maxLines) = when {
                                 rawContentLength < 100 -> MaterialTheme.typography.headlineSmall to 6
                                 rawContentLength < 250 -> MaterialTheme.typography.bodyLarge to 8
@@ -232,8 +199,7 @@ fun NoteItem(
     
                             val fontWeight = if (note.note.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
-                            // Use produceState for async conversion with stable initial value
-                            val annotatedContentState = androidx.compose.runtime.produceState(
+                            val annotatedContentState = produceState(
                                 initialValue = androidx.compose.ui.text.AnnotatedString(note.note.content.take(500)),
                                 note.note.content
                             ) {
@@ -262,8 +228,8 @@ fun NoteItem(
                                 annotatedContent
                             }
     
-                            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-                            var textLayoutResult by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+                            val uriHandler = LocalUriHandler.current
+                            var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
 
                             Text(
                                 text = highlightedContent,
@@ -300,11 +266,6 @@ fun NoteItem(
                                                     try { uriHandler.openUri(annotation.item) } catch (e: Exception) { e.printStackTrace() }
                                                 }
                                             }
-                                            if (!isLink) {
-                                                highlightedContent.getStringAnnotations(tag = "NOTE_LINK", start = offset, end = offset).firstOrNull()?.let { annotation ->
-                                                    // Handle internal note link
-                                                }
-                                            }
                                             
                                             if (!isLink) {
                                                 onNoteClick()
@@ -314,12 +275,10 @@ fun NoteItem(
                                 }
                             )
                         } else {
-                            // Checklist Preview
                             ChecklistPreview(note.checklistItems, if (isDefaultColor) MaterialTheme.colorScheme.onSurface else contentColor, searchQuery)
                         }
                     }
 
-                    // Link Preview (Show first one if available)
                     if (note.note.linkPreviews.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
                         LinkPreviewDisplay(
@@ -328,7 +287,6 @@ fun NoteItem(
                         )
                     }
 
-                    // Footer Section
                     if (note.attachments.isNotEmpty() || !note.note.label.isNullOrEmpty() || note.note.reminderTime != null || binnedDaysRemaining != null) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(
@@ -356,7 +314,7 @@ fun NoteItem(
                             val label = note.note.label
                             if (!label.isNullOrEmpty()) {
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = MaterialTheme.shapes.small,
                                     color = if (isDefaultColor) MaterialTheme.colorScheme.secondaryContainer else contentColor.copy(alpha = 0.15f)
                                 ) {
                                     val labelText = if (searchQuery.isNotEmpty()) {
@@ -393,7 +351,7 @@ fun NoteItem(
 
                             if (binnedDaysRemaining != null) {
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = MaterialTheme.shapes.small,
                                     color = MaterialTheme.colorScheme.errorContainer
                                 ) {
                                     Text(
@@ -468,5 +426,3 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
         }
     }
 }
-
-

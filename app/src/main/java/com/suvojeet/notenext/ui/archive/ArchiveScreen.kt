@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.archive
 
 import androidx.compose.foundation.layout.*
@@ -12,15 +13,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.NoteItem
-
 import com.suvojeet.notenext.ui.components.ExpressiveSection
-import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +33,7 @@ fun ArchiveScreen(
     var showRestoreDialog by remember { mutableStateOf(false) }
     var noteToRestore by remember { mutableStateOf<Note?>(null) }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -42,11 +43,11 @@ fun ArchiveScreen(
                     Text(
                         stringResource(id = R.string.archive),
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold
+                        fontWeight = FontWeight.Black
                     ) 
                 },
                 navigationIcon = {
-                    IconButton(onClick = onMenuClick) {
+                    IconButton(onClick = onMenuClick, modifier = Modifier.springPress()) {
                         Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
                     }
                 },
@@ -72,9 +73,9 @@ fun ArchiveScreen(
                     LazyVerticalStaggeredGrid(
                         columns = StaggeredGridCells.Fixed(2),
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalItemSpacing = 8.dp
+                        contentPadding = PaddingValues(bottom = 32.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalItemSpacing = 12.dp
                     ) {
                         items(state.notes) { noteWithAttachments ->
                             NoteItem(
@@ -84,7 +85,7 @@ fun ArchiveScreen(
                                     noteToRestore = noteWithAttachments.note
                                     showRestoreDialog = true
                                 },
-                                onNoteLongClick = { /* TODO: Handle long click if needed */ }
+                                onNoteLongClick = { /* Handle long click if needed */ }
                             )
                         }
                     }
@@ -98,10 +99,12 @@ fun ArchiveScreen(
                     showRestoreDialog = false
                     noteToRestore = null
                 },
+                shape = MaterialTheme.shapes.extraLarge,
                 title = { Text(stringResource(id = R.string.restore_note_title)) },
                 text = { Text(stringResource(id = R.string.restore_note_confirmation)) },
                 confirmButton = {
                     TextButton(
+                        modifier = Modifier.springPress(),
                         onClick = {
                             noteToRestore?.let {
                                 viewModel.onEvent(ArchiveEvent.UnarchiveNote(it))
@@ -110,11 +113,12 @@ fun ArchiveScreen(
                             noteToRestore = null
                         }
                     ) {
-                        Text(stringResource(id = R.string.restore))
+                        Text(stringResource(id = R.string.restore), fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
                     TextButton(
+                        modifier = Modifier.springPress(),
                         onClick = {
                             showRestoreDialog = false
                             noteToRestore = null

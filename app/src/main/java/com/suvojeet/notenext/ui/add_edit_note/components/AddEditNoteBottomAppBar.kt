@@ -1,76 +1,38 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.automirrored.rounded.Redo
 import androidx.compose.material.icons.automirrored.rounded.Undo
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.TextFields
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
-import androidx.compose.ui.res.stringResource
-import com.suvojeet.notenext.R
-import kotlin.math.roundToInt
-import androidx.compose.foundation.border
-import com.suvojeet.notenext.ui.theme.ThemeMode
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Surface
-import androidx.compose.ui.draw.shadow
+import com.suvojeet.notenext.R
+import com.suvojeet.notenext.ui.components.springPress
+import com.suvojeet.notenext.ui.notes.NotesEvent
+import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.theme.ThemeMode
+import kotlin.math.roundToInt
 
-/**
- * Bottom app bar for the Add/Edit Note screen. Provides quick access to actions
- * like adding attachments, changing note color, formatting text, undo/redo, and more options.
- *
- * @param state The current [NotesState] containing information about the note being edited.
- * @param onEvent Lambda to dispatch [NotesEvent]s for various actions.
- * @param showColorPicker Lambda to show/hide the color picker.
- * @param showFormatBar Lambda to show/hide the format bar.
- * @param showMoreOptions Lambda to show/hide the more options sheet.
- * @param onImageClick Lambda to be invoked when "Add Image" is selected from the attachment menu.
- * @param onTakePhotoClick Lambda to be invoked when "Take Photo" is selected from the attachment menu.
- * @param onAudioClick Lambda to be invoked when "Audio Recording" is selected from the attachment menu.
- * @param themeMode The current theme mode of the app, used to conditionally apply a border in dark mode.
- */
 @Composable
 fun AddEditNoteBottomAppBar(
     state: NotesState,
@@ -88,29 +50,28 @@ fun AddEditNoteBottomAppBar(
     var showAttachmentMenu by remember { mutableStateOf(false) }
 
     BottomAppBar(
-        containerColor = backgroundColor, // Background color matches the note's color
-        windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp) // Remove default window insets for full-bleed
+        containerColor = backgroundColor,
+        windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 16.dp), // Add extra bottom padding to avoid navigation pill overlap
+                .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left-aligned action buttons: Add Attachment, Color Picker, Format Bar.
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Attachment menu FAB.
+            ButtonGroup {
                 Box {
                     var fabCoordinates by remember { mutableStateOf<IntOffset?>(null) }
                     var fabSize by remember { mutableStateOf<IntSize?>(null) }
 
                     FloatingActionButton(
                         onClick = { showAttachmentMenu = true },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = MaterialTheme.shapes.extraLarge,
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(48.dp)
+                            .springPress()
                             .onGloballyPositioned { coordinates ->
                                 fabCoordinates = IntOffset(
                                     coordinates.positionInWindow().x.roundToInt(),
@@ -118,20 +79,17 @@ fun AddEditNoteBottomAppBar(
                                 )
                                 fabSize = coordinates.size
                             },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ) {
                         Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.add_attachment))
                     }
 
                     if (showAttachmentMenu && fabCoordinates != null && fabSize != null) {
-                        val xOffset = fabCoordinates!!.x
-                        val yOffset = fabCoordinates!!.y - fabSize!!.height
-
                         AttachmentMenu(
                             expanded = showAttachmentMenu,
                             onDismissRequest = { showAttachmentMenu = false },
-                            offset = IntOffset(x = xOffset, y = yOffset),
+                            offset = IntOffset(x = fabCoordinates!!.x, y = fabCoordinates!!.y - fabSize!!.height),
                             themeMode = themeMode,
                             onImageClick = onImageClick,
                             onTakePhotoClick = onTakePhotoClick,
@@ -139,112 +97,72 @@ fun AddEditNoteBottomAppBar(
                         )
                     }
                 }
-                // Color picker FAB.
                 FloatingActionButton(
                     onClick = { showColorPicker(true) },
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.size(48.dp).springPress(),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Icon(Icons.Default.Palette, contentDescription = stringResource(id = R.string.toggle_color_picker))
                 }
-                // Format bar FAB.
                 FloatingActionButton(
                     onClick = { showFormatBar(true) },
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.size(48.dp).springPress(),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Icon(Icons.Default.TextFields, contentDescription = stringResource(id = R.string.toggle_format_bar))
                 }
-                // Reminder FAB.
                 FloatingActionButton(
                     onClick = { showReminderDialog(true) },
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.size(48.dp).springPress(),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Icon(Icons.Default.Alarm, contentDescription = "Set Reminder")
                 }
             }
-            // Right-aligned action buttons: Undo, Redo, More Options.
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Undo/Redo buttons are only visible if there's editing history (can undo or redo).
-                if (state.canUndo || state.canRedo) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Undo Button: enabled if there are previous states to undo to.
-                        FloatingActionButton(
-                            onClick = { onEvent(NotesEvent.OnUndoClick) },
-                            shape = CircleShape,
-                            modifier = Modifier.size(40.dp),
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                            contentColor = if (state.canUndo) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface.copy(
-                                alpha = 0.38f
-                            ) // Dimmed if no undo available.
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.Undo,
-                                contentDescription = stringResource(id = R.string.undo)
-                            )
-                        }
 
-                        // Redo Button: enabled if there are future states to redo to.
-                        FloatingActionButton(
-                            onClick = { onEvent(NotesEvent.OnRedoClick) },
-                            shape = CircleShape,
-                            modifier = Modifier.size(40.dp),
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                            contentColor = if (state.canRedo) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface.copy(
-                                alpha = 0.38f
-                            ) // Dimmed if no redo available.
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Rounded.Redo,
-                                contentDescription = stringResource(id = R.string.redo)
-                            )
-                        }
+            ButtonGroup {
+                if (state.canUndo || state.canRedo) {
+                    FloatingActionButton(
+                        onClick = { onEvent(NotesEvent.OnUndoClick) },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.size(48.dp).springPress(),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = if (state.canUndo) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.Undo, contentDescription = stringResource(id = R.string.undo))
+                    }
+
+                    FloatingActionButton(
+                        onClick = { onEvent(NotesEvent.OnRedoClick) },
+                        shape = MaterialTheme.shapes.extraLarge,
+                        modifier = Modifier.size(48.dp).springPress(),
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = if (state.canRedo) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.Redo, contentDescription = stringResource(id = R.string.redo))
                     }
                 }
 
-                // More options FAB.
-                Box {
-                    FloatingActionButton(
-                        onClick = { showMoreOptions(true) },
-                        shape = CircleShape,
-                        modifier = Modifier.size(40.dp),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(id = R.string.more_options)
-                        )
-                    }
+                FloatingActionButton(
+                    onClick = { showMoreOptions(true) },
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = Modifier.size(48.dp).springPress(),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(id = R.string.more_options))
                 }
             }
         }
     }
 }
 
-/**
- * A custom dropdown menu for attachment options, displayed in a Popup with a fade-in/fade-out animation.
- *
- * @param expanded Whether the menu is currently visible.
- * @param onDismissRequest Lambda to be invoked when the menu should be dismissed.
- * @param offset The offset of the popup from the top-left corner of the screen.
- * @param themeMode The current theme mode, used to apply a border in dark mode.
- * @param onImageClick Lambda for when the "Add Image" option is clicked.
- * @param onTakePhotoClick Lambda for when the "Take Photo" option is clicked.
- * @param onAudioClick Lambda for when the "Audio Recording" option is clicked.
- */
 @Composable
 private fun AttachmentMenu(
     expanded: Boolean,
@@ -262,8 +180,8 @@ private fun AttachmentMenu(
     ) {
         AnimatedVisibility(
             visible = expanded,
-            enter = fadeIn(animationSpec = tween(durationMillis = 150)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 150))
+            enter = fadeIn(animationSpec = spring()),
+            exit = fadeOut(animationSpec = spring())
         ) {
             val isDark = when (themeMode) {
                 ThemeMode.DARK, ThemeMode.AMOLED -> true
@@ -271,8 +189,8 @@ private fun AttachmentMenu(
                 else -> false
             }
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 shadowElevation = 6.dp,
                 modifier = Modifier
@@ -282,8 +200,8 @@ private fun AttachmentMenu(
                         if (isDark) {
                             Modifier.border(
                                 1.dp,
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                                RoundedCornerShape(20.dp)
+                                MaterialTheme.colorScheme.outlineVariant,
+                                MaterialTheme.shapes.extraLarge
                             )
                         } else {
                             Modifier
@@ -317,4 +235,3 @@ private fun AttachmentMenu(
         }
     }
 }
-
