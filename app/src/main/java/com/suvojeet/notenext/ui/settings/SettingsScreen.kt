@@ -41,7 +41,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.R
-import com.suvojeet.notenext.core.util.LogCollector
 import com.suvojeet.notenext.util.UpdateChecker
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
