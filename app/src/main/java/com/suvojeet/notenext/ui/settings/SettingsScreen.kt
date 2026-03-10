@@ -1,5 +1,10 @@
 package com.suvojeet.notenext.ui.settings
 
+import com.suvojeet.notenext.service.LoggingService
+import androidx.core.content.ContextCompat
+import android.app.ActivityManager
+import android.content.Context
+import com.suvojeet.notenext.core.util.LogCollector
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import android.content.Intent
@@ -49,6 +54,14 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val settingsRepository = remember { SettingsRepository(context) }
     val scope = rememberCoroutineScope()
 
+    // -- Helper to check if service is running --
+    val isServiceRunning: (String) -> Boolean = { serviceName ->
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        try {
+            manager.getRunningServices(Integer.MAX_VALUE).any { it.service.className == serviceName }
+        } catch (e: Exception) { false }
+    }
+
     // -- State Collection --
     val selectedThemeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
@@ -68,7 +81,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     var showScreenshotInfoDialog by remember { mutableStateOf(false) }
     var showRateDialog by remember { mutableStateOf(false) }
     var showChangelogDialog by remember { mutableStateOf(false) }
-    var isLoggingActive by remember { mutableStateOf(false) }
+    var isLoggingActive by remember { mutableStateOf(isServiceRunning(LoggingService::class.java.name)) }
     var showLoggingDialog by remember { mutableStateOf(false) }
     var issueDescription by remember { mutableStateOf("") }
     var showImportSourceDialog by remember { mutableStateOf(false) }
@@ -205,17 +218,23 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     SettingsItemData(
                         icon = Icons.Rounded.BugReport,
                         title = "Technical Support",
-                        subtitle = if (isLoggingActive) "Logging active..." else "Report bugs and technical issues",
+                        subtitle = if (isLoggingActive) "Logging active (Tap to Stop & Share)" else "Report bugs and technical issues",
                         iconColor = if (isLoggingActive) Color.Red else Color(0xFF795548),
                         onClick = {
                             if (isLoggingActive) {
-                                val reportText = "Issue: $issueDescription\n\n${LogCollector.collectDeviceInfo(context)}\n\nLogs:\n${LogCollector.collectLogs()}"
-                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                // Stop Service
+                                val intent = Intent(context, LoggingService::class.java).apply { action = "STOP_LOGGING" }
+                                context.stopService(intent)
+                                
+                                val reportText = "Issue: $issueDescription\n\n${LogCollector.collectDeviceInfo(context)}\n\nLogs:\n${LogCollector.getSavedLogs(context)}"
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
-                                    putExtra(Intent.EXTRA_SUBJECT, "NoteNext Debug Logs")
+                                    putExtra(Intent.EXTRA_SUBJECT, "NoteNext Bug Report")
                                     putExtra(Intent.EXTRA_TEXT, reportText)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "Share Logs"))
+                                context.startActivity(Intent.createChooser(shareIntent, "Share Bug Report"))
+                                
+                                LogCollector.deleteLogs(context)
                                 isLoggingActive = false
                             } else {
                                 showLoggingDialog = true
@@ -395,7 +414,12 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     if (showKeepInstructionsDialog) KeepInstructionsDialog({ showKeepInstructionsDialog = false }, { showKeepInstructionsDialog = false; importKeepLauncher.launch(arrayOf("application/zip")) })
     if (showRateDialog) RateAppDialog(context) { showRateDialog = false }
     if (showChangelogDialog) ChangelogDialog { showChangelogDialog = false }
-    if (showLoggingDialog) StartLoggingDialog(issueDescription, { issueDescription = it }, { isLoggingActive = true; showLoggingDialog = false }, { showLoggingDialog = false })
+    if (showLoggingDialog) StartLoggingDialog(issueDescription, { issueDescription = it }, { 
+        isLoggingActive = true
+        showLoggingDialog = false 
+        val intent = Intent(context, LoggingService::class.java)
+        ContextCompat.startForegroundService(context, intent)
+    }, { showLoggingDialog = false })
 }
 
 // --- Data Models ---
