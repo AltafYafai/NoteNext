@@ -223,4 +223,7 @@
     <string name="restart_to_update">Restart to Update</string>
     <string name="checking_for_updates">Checking for updates...</string>
     <string name="you_are_up_to_date">You are up to date</string>
+    <string name="crash_report_title">NoteNext crashed</string>
+    <string name="crash_report_text">Tap to share the crash report with the developer</string>
+    <string name="crash_report_channel">Crash Reports</string>
 </resources>

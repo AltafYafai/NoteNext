@@ -14,8 +14,10 @@ import org.acra.ACRA
 import org.acra.config.CoreConfigurationBuilder
 import org.acra.config.HttpSenderConfigurationBuilder
 import org.acra.config.ToastConfigurationBuilder
+import org.acra.config.NotificationConfigurationBuilder
 import org.acra.data.StringFormat
 import org.acra.sender.HttpSender
+import com.suvojeet.notenext.util.CrashReportSenderFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -36,14 +38,16 @@ class NoteNextApp : Application(), Configuration.Provider {
         val builder = CoreConfigurationBuilder()
             .withBuildConfigClass(BuildConfig::class.java)
             .withReportFormat(StringFormat.JSON)
+            .withReportSenders(CrashReportSenderFactory::class.java)
             .withPluginConfigurations(
                 ToastConfigurationBuilder()
                     .withText(getString(R.string.crash_toast_text))
                     .withEnabled(true)
                     .build(),
-                HttpSenderConfigurationBuilder()
-                    .withUri("https://collector.tracepot.com/00000000")
-                    .withHttpMethod(HttpSender.Method.POST)
+                NotificationConfigurationBuilder()
+                    .withTitle(getString(R.string.crash_report_title))
+                    .withText(getString(R.string.crash_report_text))
+                    .withChannelName(getString(R.string.crash_report_channel))
                     .withEnabled(true)
                     .build()
             )
