@@ -13,7 +13,6 @@ import dagger.hilt.android.HiltAndroidApp
 import org.acra.ACRA
 import org.acra.config.CoreConfigurationBuilder
 import org.acra.config.HttpSenderConfigurationBuilder
-import org.acra.config.LogcatConfigurationBuilder
 import org.acra.config.ToastConfigurationBuilder
 import org.acra.data.StringFormat
 import org.acra.sender.HttpSender
@@ -34,22 +33,20 @@ class NoteNextApp : Application(), Configuration.Provider {
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         
-        val builder = CoreConfigurationBuilder(this)
+        val builder = CoreConfigurationBuilder()
             .withBuildConfigClass(BuildConfig::class.java)
             .withReportFormat(StringFormat.JSON)
-
-        builder.getPluginConfigurationBuilder(LogcatConfigurationBuilder::class.java)
-            .withEnabled(true)
-            .withLogcatArguments("-t", "200", "-v", "time")
-
-        builder.getPluginConfigurationBuilder(ToastConfigurationBuilder::class.java)
-            .withText(getString(R.string.crash_toast_text))
-            .withEnabled(true)
-
-        builder.getPluginConfigurationBuilder(HttpSenderConfigurationBuilder::class.java)
-            .withUri("https://collector.tracepot.com/00000000")
-            .withHttpMethod(HttpSender.Method.POST)
-            .withEnabled(true)
+            .withPluginConfigurations(
+                ToastConfigurationBuilder()
+                    .withText(getString(R.string.crash_toast_text))
+                    .withEnabled(true)
+                    .build(),
+                HttpSenderConfigurationBuilder()
+                    .withUri("https://collector.tracepot.com/00000000")
+                    .withHttpMethod(HttpSender.Method.POST)
+                    .withEnabled(true)
+                    .build()
+            )
 
         ACRA.init(this, builder)
     }

@@ -397,8 +397,8 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     if (showBugReportDialog) BugReportDialog(issueDescription, { issueDescription = it }, { 
         showBugReportDialog = false 
         // Send manual report via ACRA
-        ACRA.getErrorReporter().putCustomData("IssueDescription", issueDescription)
-        ACRA.getErrorReporter().handleSilentException(Exception("Manual Bug Report: $issueDescription"))
+        ACRA.errorReporter.putCustomData("IssueDescription", issueDescription)
+        ACRA.errorReporter.handleSilentException(Exception("Manual Bug Report: $issueDescription"))
         issueDescription = ""
     }, { showBugReportDialog = false })
 }
