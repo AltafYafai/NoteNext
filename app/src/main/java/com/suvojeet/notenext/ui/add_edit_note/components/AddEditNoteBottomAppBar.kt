@@ -61,7 +61,10 @@ fun AddEditNoteBottomAppBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ButtonGroup(modifier = Modifier, arrangement = Arrangement.spacedBy(8.dp)) {
+            ButtonGroup(
+                modifier = Modifier, 
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Box {
                     var fabCoordinates by remember { mutableStateOf<IntOffset?>(null) }
                     var fabSize by remember { mutableStateOf<IntSize?>(null) }
@@ -126,7 +129,10 @@ fun AddEditNoteBottomAppBar(
                 }
             }
 
-            ButtonGroup(modifier = Modifier, arrangement = Arrangement.spacedBy(8.dp)) {
+            ButtonGroup(
+                modifier = Modifier, 
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 if (state.canUndo || state.canRedo) {
                     FloatingActionButton(
                         onClick = { onEvent(NotesEvent.OnUndoClick) },
@@ -154,7 +160,7 @@ fun AddEditNoteBottomAppBar(
                     shape = MaterialTheme.shapes.extraLarge,
                     modifier = Modifier.size(40.dp).springPress(),
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 ) {
                     Icon(Icons.Default.MoreVert, contentDescription = stringResource(id = R.string.more_options), modifier = Modifier.size(20.dp))
                 }

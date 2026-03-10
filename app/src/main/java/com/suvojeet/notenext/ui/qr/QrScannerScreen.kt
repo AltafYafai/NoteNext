@@ -400,6 +400,7 @@ private fun RawQrContentDialog(
     )
 }
 
+@androidx.camera.core.ExperimentalGetImage
 @Composable
 private fun CameraPreviewView(
     isFlashOn: Boolean,
@@ -439,7 +440,6 @@ private fun CameraPreviewView(
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
             imageAnalysis.setAnalyzer(executor) { imageProxy ->
                 val mediaImage = imageProxy.image
                 if (mediaImage != null && scanningState.value) {
