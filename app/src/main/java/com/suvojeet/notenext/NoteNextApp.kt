@@ -35,7 +35,7 @@ class NoteNextApp : Application(), Configuration.Provider {
             buildConfigClass = BuildConfig::class.java
             reportFormat = StringFormat.JSON
             
-            // Logcat Configuration (Default fields already include LOGCAT)
+            // Logcat Configuration
             logcatArguments = listOf("-t", "200", "-v", "time")
             
             toast {

@@ -52,7 +52,7 @@ acra-toast = { group = "ch.acra", name = "acra-toast", version.ref = "acra" }
 acra-notification = { group = "ch.acra", name = "acra-notification", version.ref = "acra" }
 acra-dialog = { group = "ch.acra", name = "acra-dialog", version.ref = "acra" }
 acra-core = { group = "ch.acra", name = "acra-core", version.ref = "acra" }
-acra-ktx = { group = "ch.acra", name = "acra-ktx", version.ref = "acra" }
+acra-core-ktx = { group = "ch.acra", name = "acra-core-ktx", version.ref = "acra" }
 
 # AndroidX
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }

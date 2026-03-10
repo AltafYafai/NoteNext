@@ -15,7 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.automirrored.filled.Label as LabelIcon
+import androidx.compose.ui.res.stringResource
+import com.suvojeet.notenext.R
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.SettingsGroupCard
+import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.data.Label
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +70,7 @@ fun EditLabelsScreen(
         Column(modifier = Modifier.padding(padding)) {
             if (state.labels.isEmpty()) {
                 EmptyState(
-                    icon = Icons.AutoMirrored.Filled.Label,
+                    icon = LabelIcon,
                     message = "No labels yet. Create one to organize your notes."
                 )
             } else {
@@ -121,7 +126,7 @@ fun EditLabelsScreen(
 
 @Composable
 fun LabelItem(
-    label: com.suvojeet.notenext.data.Label,
+    label: Label,
     onEditClick: () -> Unit
 ) {
     ListItem(
@@ -137,7 +142,7 @@ fun LabelItem(
         },
         leadingContent = {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.Label,
+                imageVector = LabelIcon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
             )
@@ -191,7 +196,7 @@ fun AddLabelDialog(
 
 @Composable
 fun EditLabelDialog(
-    label: com.suvojeet.notenext.data.Label,
+    label: Label,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     onDelete: () -> Unit
