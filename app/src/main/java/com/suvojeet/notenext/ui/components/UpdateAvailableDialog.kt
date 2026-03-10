@@ -12,6 +12,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.res.stringResource
+import com.suvojeet.notenext.R
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateAvailableDialog(
@@ -38,7 +41,7 @@ fun UpdateAvailableDialog(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "New Update Available! 🚀",
+                text = stringResource(R.string.update_available) + "! 🚀",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -64,7 +67,7 @@ fun UpdateAvailableDialog(
                 )
             ) {
                 Text(
-                    text = "Update Now",
+                    text = stringResource(R.string.update_now),
                     modifier = Modifier.padding(vertical = 8.dp),
                     fontSize = 16.sp
                 )
@@ -76,7 +79,7 @@ fun UpdateAvailableDialog(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Not Now")
+                Text(stringResource(R.string.cancel))
             }
             
             Spacer(modifier = Modifier.height(32.dp))

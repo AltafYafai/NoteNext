@@ -177,4 +177,11 @@
     <string name="notenext_logo">नोटनेक्स्ट लोगो</string>
     <string name="profile_picture">प्रोफ़ाइल चित्र</string>
     <string name="labels_title">लेबल</string>
+    <string name="update_available">अपडेट उपलब्ध है</string>
+    <string name="check_for_updates">अपडेट की जांच करें</string>
+    <string name="update_now">अभी अपडेट करें</string>
+    <string name="update_downloaded_ready">अपडेट डाउनलोड हो गया है और इंस्टॉल करने के लिए तैयार है।</string>
+    <string name="restart_to_update">अपडेट के लिए रीस्टार्ट करें</string>
+    <string name="checking_for_updates">अपडेट की जांच हो रही है...</string>
+    <string name="you_are_up_to_date">आप अप टू डेट हैं</string>
 </resources>

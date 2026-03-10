@@ -5,8 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.Modifier
 import com.suvojeet.notenext.navigation.NavGraph
 import com.suvojeet.notenext.ui.theme.NoteNextTheme
@@ -33,6 +38,8 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import javax.inject.Inject
+import com.suvojeet.notenext.util.UpdateChecker
+import androidx.compose.ui.res.stringResource
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -41,11 +48,15 @@ class MainActivity : ComponentActivity() {
     lateinit var settingsRepository: SettingsRepository
 
     private val _startNoteIdFlow = MutableStateFlow(-1)
+    
+    private lateinit var updateChecker: UpdateChecker
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        updateChecker = UpdateChecker(this)
 
         val initialNoteId = intent.getIntExtra("NOTE_ID", -1)
         _startNoteIdFlow.value = initialNoteId
@@ -56,7 +67,6 @@ class MainActivity : ComponentActivity() {
                 intent.getStringExtra(Intent.EXTRA_TEXT)
             }
             else -> null
-
         }
 
         lifecycleScope.launch {
@@ -74,7 +84,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Apply Locale on start (if needed, though Android 13+ handles this via its own service)
         lifecycleScope.launch {
             settingsRepository.language.collect { languageCode ->
                 val appLocales = LocaleListCompat.forLanguageTags(languageCode)
@@ -114,19 +123,35 @@ class MainActivity : ComponentActivity() {
 
             var unlocked by remember { mutableStateOf(false) }
 
-            // In-App Update Logic
+            // In-App Update Handling
+            val updateStatus by updateChecker.updateStatus.collectAsState()
+            val snackbarHostState = remember { SnackbarHostState() }
             var showUpdateDialog by remember { mutableStateOf(false) }
-            val appUpdateManager = com.google.android.play.core.appupdate.AppUpdateManagerFactory.create(this)
             
-            // Check for update
+            val updateAvailableText = stringResource(R.string.update_downloaded_ready)
+            val restartText = stringResource(R.string.restart_to_update)
+
             LaunchedEffect(Unit) {
-                val appUpdateInfoTask = appUpdateManager.appUpdateInfo
-                appUpdateInfoTask.addOnSuccessListener { appUpdateInfo ->
-                    if (appUpdateInfo.updateAvailability() == com.google.android.play.core.install.model.UpdateAvailability.UPDATE_AVAILABLE) {
-                         if (appUpdateInfo.isUpdateTypeAllowed(com.google.android.play.core.install.model.AppUpdateType.FLEXIBLE)) {
-                             showUpdateDialog = true
-                         }
+                updateChecker.checkForUpdate()
+                updateChecker.resumeUpdateCheck(this@MainActivity)
+            }
+
+            LaunchedEffect(updateStatus) {
+                when (updateStatus) {
+                    is UpdateChecker.UpdateStatus.UpdateAvailable -> {
+                        showUpdateDialog = true
                     }
+                    is UpdateChecker.UpdateStatus.Downloaded -> {
+                        val result = snackbarHostState.showSnackbar(
+                            message = updateAvailableText,
+                            actionLabel = restartText,
+                            duration = androidx.compose.material3.SnackbarDuration.Indefinite
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            updateChecker.completeUpdate()
+                        }
+                    }
+                    else -> {}
                 }
             }
 
@@ -134,50 +159,47 @@ class MainActivity : ComponentActivity() {
                 com.suvojeet.notenext.ui.components.UpdateAvailableDialog(
                     onUpdateClick = {
                         showUpdateDialog = false
-                        try {
-                            appUpdateManager.startUpdateFlowForResult(
-                                appUpdateInfoTask.result,
-                                com.google.android.play.core.install.model.AppUpdateType.FLEXIBLE,
-                                this,
-                                500
-                            )
-                        } catch (e: Exception) {
-                            appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
-                                appUpdateManager.startUpdateFlowForResult(
-                                    info,
-                                    com.google.android.play.core.install.model.AppUpdateType.FLEXIBLE,
-                                    this,
-                                    500
-                                )
-                            }
-                        }
+                        updateChecker.startUpdate(this@MainActivity)
                     },
                     onDismiss = { showUpdateDialog = false }
                 )
             }
 
             NoteNextTheme(themeMode = themeMode) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    if (enableAppLockLoaded == null || isSetupCompleteLoaded == null) {
-                        Surface(modifier = Modifier.fillMaxSize()) {}
-                    } else if (isSetupCompleteLoaded == false) {
-                        SetupScreen { }
-                    } else if (enableAppLockLoaded!! && !unlocked) {
-                        LockScreen(onUnlock = { unlocked = true })
-                    } else {
-                        val startNoteId by _startNoteIdFlow.collectAsState()
-                        NavGraph(themeMode = themeMode, windowSizeClass = windowSizeClass, startNoteId = startNoteId, startAddNote = startAddNote, sharedText = sharedText)
+                Scaffold(
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
+                    modifier = Modifier.fillMaxSize()
+                ) { paddingValues ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        if (enableAppLockLoaded == null || isSetupCompleteLoaded == null) {
+                            Surface(modifier = Modifier.fillMaxSize()) {}
+                        } else if (isSetupCompleteLoaded == false) {
+                            SetupScreen { }
+                        } else if (enableAppLockLoaded!! && !unlocked) {
+                            LockScreen(onUnlock = { unlocked = true })
+                        } else {
+                            val startNoteId by _startNoteIdFlow.collectAsState()
+                            NavGraph(themeMode = themeMode, windowSizeClass = windowSizeClass, startNoteId = startNoteId, startAddNote = startAddNote, sharedText = sharedText)
+                        }
                     }
                 }
             }
         }
     }
 
-    private val appUpdateInfoTask by lazy { 
-        com.google.android.play.core.appupdate.AppUpdateManagerFactory.create(this).appUpdateInfo 
+    override fun onResume() {
+        super.onResume()
+        updateChecker.resumeUpdateCheck(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        updateChecker.unregisterListener()
     }
 
     override fun onNewIntent(intent: Intent) {

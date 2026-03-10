@@ -216,4 +216,11 @@
     <string name="completed_todos">Completed</string>
     <string name="delete_completed">Delete completed</string>
     <string name="todo_completed">To-do completed</string>
+    <string name="update_available">Update Available</string>
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="update_now">Update Now</string>
+    <string name="update_downloaded_ready">Update downloaded and ready to install.</string>
+    <string name="restart_to_update">Restart to Update</string>
+    <string name="checking_for_updates">Checking for updates...</string>
+    <string name="you_are_up_to_date">You are up to date</string>
 </resources>

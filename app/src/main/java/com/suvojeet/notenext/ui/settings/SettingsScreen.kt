@@ -656,10 +656,11 @@ private fun CheckForUpdateItem(context: android.content.Context) {
 
     SettingsItem(
         icon = Icons.Rounded.Update,
-        title = "Check for Updates",
-        subtitle = if (errorMessage != null) errorMessage!! else "Current: v$currentVersionName",
+        title = stringResource(R.string.check_for_updates),
+        subtitle = if (isChecking) stringResource(R.string.checking_for_updates) else if (errorMessage != null) errorMessage!! else "Current: v$currentVersionName",
         iconColor = Color(0xFF2196F3),
         onClick = {
+            if (isChecking) return@SettingsItem
             isChecking = true
             errorMessage = null
             scope.launch {
@@ -681,19 +682,30 @@ private fun CheckForUpdateItem(context: android.content.Context) {
         val result = updateResult!!
         AlertDialog(
             onDismissRequest = { showResultDialog = false },
-            title = { Text(if (result.isUpdateAvailable) "Update Available!" else "You're Up to Date!") },
-            text = { Text(if (result.isUpdateAvailable) "A new version of NoteNext is available on the Play Store." else "You're running the latest version of NoteNext.") },
+            title = { Text(if (result.isUpdateAvailable) stringResource(R.string.update_available) else stringResource(R.string.you_are_up_to_date)) },
+            text = { 
+                Column {
+                    Text(if (result.isUpdateAvailable) 
+                        "A new version of NoteNext is available on the Play Store." 
+                        else "You're running the latest version of NoteNext.")
+                    
+                    if (result.isUpdateAvailable) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("New Version: ${result.availableVersionCode}", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
             confirmButton = {
                 if (result.isUpdateAvailable) {
                     Button(onClick = {
                         showResultDialog = false
-                        (context as? android.app.Activity)?.let { updateChecker.openPlayStore(it) }
-                    }) { Text("Update Now") }
+                        (context as? android.app.Activity)?.let { updateChecker.startUpdate(it) }
+                    }) { Text(stringResource(R.string.update_now)) }
                 } else {
-                    TextButton(onClick = { showResultDialog = false }) { Text("OK") }
+                    TextButton(onClick = { showResultDialog = false }) { Text(stringResource(R.string.ok)) }
                 }
             },
-            dismissButton = if (result.isUpdateAvailable) { { TextButton(onClick = { showResultDialog = false }) { Text("Later") } } } else null
+            dismissButton = if (result.isUpdateAvailable) { { TextButton(onClick = { showResultDialog = false }) { Text(stringResource(R.string.cancel)) } } } else null
         )
     }
 }
