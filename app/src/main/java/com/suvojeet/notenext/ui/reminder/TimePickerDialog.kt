@@ -20,8 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-import com.suvojeet.notenext.ui.components.springPress
-
 @Composable
 fun TimePickerDialog(
     onDismissRequest: () -> Unit,
@@ -64,12 +62,8 @@ fun TimePickerDialog(
                         .fillMaxWidth()
                 ) {
                     Spacer(modifier = Modifier.weight(1f))
-                    Box(modifier = Modifier.springPress()) {
-                        dismissButton?.invoke()
-                    }
-                    Box(modifier = Modifier.springPress()) {
-                        confirmButton()
-                    }
+                    dismissButton?.invoke()
+                    confirmButton()
                 }
             }
         }
