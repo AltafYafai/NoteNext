@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.reminder
 
 import androidx.compose.foundation.layout.Column
@@ -6,25 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import com.suvojeet.notenext.R
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,12 +40,12 @@ fun AddEditReminderScreen(onBackClick: () -> Unit) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text(stringResource(id = R.string.ok))
+                TextButton(onClick = { showDatePicker = false }, modifier = Modifier.springPress()) {
+                    Text(stringResource(id = R.string.ok), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(onClick = { showDatePicker = false }, modifier = Modifier.springPress()) {
                     Text(stringResource(id = R.string.cancel))
                 }
             }
@@ -67,12 +58,12 @@ fun AddEditReminderScreen(onBackClick: () -> Unit) {
         TimePickerDialog(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
-                TextButton(onClick = { showTimePicker = false }) {
-                    Text(stringResource(id = R.string.ok))
+                TextButton(onClick = { showTimePicker = false }, modifier = Modifier.springPress()) {
+                    Text(stringResource(id = R.string.ok), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) {
+                TextButton(onClick = { showTimePicker = false }, modifier = Modifier.springPress()) {
                     Text(stringResource(id = R.string.cancel))
                 }
             }
@@ -84,9 +75,14 @@ fun AddEditReminderScreen(onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(id = R.string.add_reminder_title)) },
+                title = { 
+                    Text(
+                        stringResource(id = R.string.add_reminder_title),
+                        fontWeight = FontWeight.Black
+                    ) 
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = stringResource(id = R.string.back)
@@ -94,7 +90,7 @@ fun AddEditReminderScreen(onBackClick: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Save reminder */ }) {
+                    IconButton(onClick = { /* TODO: Save reminder */ }, modifier = Modifier.springPress()) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = stringResource(id = R.string.save)
@@ -116,24 +112,41 @@ fun AddEditReminderScreen(onBackClick: () -> Unit) {
                 .padding(it)
                 .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text(stringResource(id = R.string.title)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            ExpressiveSection(
+                title = "Reminder Details",
+                description = "Set the title and time for your alert"
             ) {
-                Button(onClick = { showDatePicker = true }) {
-                    Text(text = stringResource(id = R.string.select_date))
-                }
-                Button(onClick = { showTimePicker = true }) {
-                    Text(text = stringResource(id = R.string.select_time))
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(stringResource(id = R.string.title)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.weight(1f).springPress(),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(text = stringResource(id = R.string.select_date), fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { showTimePicker = true },
+                        modifier = Modifier.weight(1f).springPress(),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Text(text = stringResource(id = R.string.select_time), fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
     }
 }
+

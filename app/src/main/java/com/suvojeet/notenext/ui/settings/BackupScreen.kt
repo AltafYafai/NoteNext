@@ -47,12 +47,15 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.runtime.mutableStateListOf 
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.suvojeet.notenext.ui.components.WavyProgressIndicator
 import com.suvojeet.notenext.ui.components.PasswordSetDialog
 import com.suvojeet.notenext.ui.components.PasswordInputDialog
 import com.suvojeet.notenext.ui.components.EncryptionInfoDialog
+import com.suvojeet.notenext.ui.components.ExpressiveSection
+import com.suvojeet.notenext.ui.components.springPress
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BackupScreen(
     onBackClick: () -> Unit
@@ -208,7 +211,7 @@ fun BackupScreen(
             TopAppBar(
                 title = { Text(stringResource(id = R.string.backup_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }

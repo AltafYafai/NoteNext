@@ -1,9 +1,8 @@
-@file:OptIn(ExperimentalFoundationApi::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -62,12 +61,6 @@ fun NoteItem(
         contentColor.copy(alpha = 0.7f)
     }
 
-    val scale by animateFloatAsState(
-        targetValue = if (isSelected) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
-        label = "Scale"
-    )
-    
     val elevation by animateDpAsState(
         targetValue = if (isSelected) 4.dp else (if (isDefaultColor) 1.dp else 0.dp),
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
@@ -91,7 +84,7 @@ fun NoteItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .springPress()
             .combinedClickable(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
