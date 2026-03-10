@@ -409,86 +409,88 @@ private fun CameraPreviewView(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    var camera by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
     
     val scanningState = rememberUpdatedState(isScanning)
     val onQrScannedState = rememberUpdatedState(onQrCodeScanned)
 
-    LaunchedEffect(isFlashOn) {
-        camera?.cameraControl?.enableTorch(isFlashOn)
-    }
+    val executor = remember { Executors.newSingleThreadExecutor() }
+    val barcodeScanner = remember { BarcodeScanning.getClient() }
 
-    val previewView = remember { 
-        PreviewView(context).apply {
-            scaleType = PreviewView.ScaleType.FILL_CENTER
-        }
-    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        AndroidView(
+            factory = { ctx ->
+                PreviewView(ctx).apply {
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                }
+            },
+            update = { previewView ->
+                val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+                cameraProviderFuture.addListener({
+                    val cameraProvider = try {
+                        cameraProviderFuture.get()
+                    } catch (e: Exception) {
+                        null
+                    } ?: return@addListener
 
-    DisposableEffect(lifecycleOwner) {
-        val executor = Executors.newSingleThreadExecutor()
-        val barcodeScanner = BarcodeScanning.getClient()
+                    val preview = Preview.Builder().build().also {
+                        it.surfaceProvider = previewView.surfaceProvider
+                    }
 
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
 
-            val preview = Preview.Builder().build().also {
-                it.surfaceProvider = previewView.surfaceProvider
-            }
+                    imageAnalysis.setAnalyzer(executor) { imageProxy ->
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null && scanningState.value) {
+                            val inputImage = InputImage.fromMediaImage(
+                                mediaImage,
+                                imageProxy.imageInfo.rotationDegrees
+                            )
 
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-
-            imageAnalysis.setAnalyzer(executor) { imageProxy ->
-                val mediaImage = imageProxy.image
-                if (mediaImage != null && scanningState.value) {
-                    val inputImage = InputImage.fromMediaImage(
-                        mediaImage,
-                        imageProxy.imageInfo.rotationDegrees
-                    )
-
-                    barcodeScanner.process(inputImage)
-                        .addOnSuccessListener { barcodes ->
-                            for (barcode in barcodes) {
-                                if (barcode.format == Barcode.FORMAT_QR_CODE) {
-                                    barcode.rawValue?.let { onQrScannedState.value(it) }
+                            barcodeScanner.process(inputImage)
+                                .addOnSuccessListener { barcodes ->
+                                    for (barcode in barcodes) {
+                                        if (barcode.format == Barcode.FORMAT_QR_CODE) {
+                                            barcode.rawValue?.let { onQrScannedState.value(it) }
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                        .addOnCompleteListener {
+                                .addOnCompleteListener {
+                                    imageProxy.close()
+                                }
+                        } else {
                             imageProxy.close()
                         }
-                } else {
-                    imageProxy.close()
-                }
-            }
+                    }
 
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-            try {
-                cameraProvider.unbindAll()
-                camera = cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    cameraSelector,
-                    preview,
-                    imageAnalysis
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }, ContextCompat.getMainExecutor(context))
+                    try {
+                        cameraProvider.unbindAll()
+                        val camera = cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview,
+                            imageAnalysis
+                        )
+                        if (isFlashOn) {
+                            camera.cameraControl.enableTorch(true)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }, ContextCompat.getMainExecutor(context))
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 
+    DisposableEffect(Unit) {
         onDispose {
-            cameraProviderFuture.get().unbindAll()
             executor.shutdown()
         }
     }
-
-    AndroidView(
-        factory = { previewView },
-        modifier = Modifier.fillMaxSize()
-    )
 }
 
 @Composable
