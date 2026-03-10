@@ -8,7 +8,7 @@ import java.io.File
 import java.io.IOException
 
 object LogcatManager {
-    private var logcatProcess: Process? = null
+    private var logcatProcess: java.lang.Process? = null
     private var logFile: File? = null
 
     fun startLogging(context: Context) {
