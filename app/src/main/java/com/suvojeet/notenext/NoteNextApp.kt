@@ -38,7 +38,7 @@ class NoteNextApp : Application(), Configuration.Provider {
         val builder = CoreConfigurationBuilder()
             .withBuildConfigClass(BuildConfig::class.java)
             .withReportFormat(StringFormat.JSON)
-            .withReportSenders(CrashReportSenderFactory::class.java)
+            .setReportSenders(CrashReportSenderFactory::class.java)
             .withPluginConfigurations(
                 ToastConfigurationBuilder()
                     .withText(getString(R.string.crash_toast_text))
