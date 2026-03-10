@@ -12,16 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material.icons.automirrored.filled.Label
 import com.suvojeet.notenext.data.Label
-import androidx.compose.ui.res.stringResource
-import com.suvojeet.notenext.R
-
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import com.suvojeet.notenext.ui.components.ExpressiveSection
-import com.suvojeet.notenext.ui.components.SettingsGroupCard
-import com.suvojeet.notenext.ui.components.EmptyState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -126,7 +121,7 @@ fun EditLabelsScreen(
 
 @Composable
 fun LabelItem(
-    label: Label,
+    label: com.suvojeet.notenext.data.Label,
     onEditClick: () -> Unit
 ) {
     ListItem(
@@ -196,7 +191,7 @@ fun AddLabelDialog(
 
 @Composable
 fun EditLabelDialog(
-    label: Label,
+    label: com.suvojeet.notenext.data.Label,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     onDelete: () -> Unit

@@ -12,7 +12,6 @@ import com.suvojeet.notenext.worker.AutoDeleteWorker
 import dagger.hilt.android.HiltAndroidApp
 import org.acra.config.httpSender
 import org.acra.config.toast
-import org.acra.config.logcat
 import org.acra.data.StringFormat
 import org.acra.ktx.initAcra
 import org.acra.sender.HttpSender
@@ -36,10 +35,8 @@ class NoteNextApp : Application(), Configuration.Provider {
             buildConfigClass = BuildConfig::class.java
             reportFormat = StringFormat.JSON
             
-            logcat {
-                enabled = true
-                readCommandLineArguments = arrayOf("-t", "200", "-v", "time")
-            }
+            // Logcat Configuration (Default fields already include LOGCAT)
+            logcatArguments = listOf("-t", "200", "-v", "time")
             
             toast {
                 text = getString(R.string.crash_toast_text)
