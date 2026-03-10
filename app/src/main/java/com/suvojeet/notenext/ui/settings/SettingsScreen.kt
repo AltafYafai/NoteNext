@@ -1,10 +1,9 @@
 package com.suvojeet.notenext.ui.settings
 
-import com.suvojeet.notenext.service.LoggingService
+import org.acra.ACRA
 import androidx.core.content.ContextCompat
 import android.app.ActivityManager
 import android.content.Context
-import com.suvojeet.notenext.core.util.LogCollector
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import android.content.Intent
@@ -80,8 +79,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     var showScreenshotInfoDialog by remember { mutableStateOf(false) }
     var showRateDialog by remember { mutableStateOf(false) }
     var showChangelogDialog by remember { mutableStateOf(false) }
-    var isLoggingActive by remember { mutableStateOf(isServiceRunning(LoggingService::class.java.name)) }
-    var showLoggingDialog by remember { mutableStateOf(false) }
+    var showBugReportDialog by remember { mutableStateOf(false) }
     var issueDescription by remember { mutableStateOf("") }
     var showImportSourceDialog by remember { mutableStateOf(false) }
     var showKeepInstructionsDialog by remember { mutableStateOf(false) }
@@ -98,7 +96,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     // Data-driven Settings Structure
     val sections = remember(
         selectedThemeMode, autoDeleteDays, enableRichLinkPreview, enableAppLock, 
-        selectedLanguage, disallowScreenshots, isLoggingActive
+        selectedLanguage, disallowScreenshots, showBugReportDialog
     ) {
         listOf(
             SettingsSectionData(
@@ -217,28 +215,9 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                     SettingsItemData(
                         icon = Icons.Rounded.BugReport,
                         title = "Technical Support",
-                        subtitle = if (isLoggingActive) "Logging active (Tap to Stop & Share)" else "Report bugs and technical issues",
-                        iconColor = if (isLoggingActive) Color.Red else Color(0xFF795548),
-                        onClick = {
-                            if (isLoggingActive) {
-                                // Stop Service
-                                val intent = Intent(context, LoggingService::class.java).apply { action = "STOP_LOGGING" }
-                                context.stopService(intent)
-                                
-                                val reportText = "Issue: $issueDescription\n\n${LogCollector.collectDeviceInfo(context)}\n\nLogs:\n${LogCollector.getSavedLogs(context)}"
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_SUBJECT, "NoteNext Bug Report")
-                                    putExtra(Intent.EXTRA_TEXT, reportText)
-                                }
-                                context.startActivity(Intent.createChooser(shareIntent, "Share Bug Report"))
-                                
-                                LogCollector.deleteLogs(context)
-                                isLoggingActive = false
-                            } else {
-                                showLoggingDialog = true
-                            }
-                        }
+                        subtitle = "Report bugs and technical issues via ACRA",
+                        iconColor = Color(0xFF795548),
+                        onClick = { showBugReportDialog = true }
                     )
                 )
             )
@@ -413,12 +392,13 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     if (showKeepInstructionsDialog) KeepInstructionsDialog({ showKeepInstructionsDialog = false }, { showKeepInstructionsDialog = false; importKeepLauncher.launch(arrayOf("application/zip")) })
     if (showRateDialog) RateAppDialog(context) { showRateDialog = false }
     if (showChangelogDialog) ChangelogDialog { showChangelogDialog = false }
-    if (showLoggingDialog) StartLoggingDialog(issueDescription, { issueDescription = it }, { 
-        isLoggingActive = true
-        showLoggingDialog = false 
-        val intent = Intent(context, LoggingService::class.java)
-        ContextCompat.startForegroundService(context, intent)
-    }, { showLoggingDialog = false })
+    if (showBugReportDialog) BugReportDialog(issueDescription, { issueDescription = it }, { 
+        showBugReportDialog = false 
+        // Send manual report via ACRA
+        ACRA.getErrorReporter().putCustomData("IssueDescription", issueDescription)
+        ACRA.getErrorReporter().handleSilentException(Exception("Manual Bug Report: $issueDescription"))
+        issueDescription = ""
+    }, { showBugReportDialog = false })
 }
 
 // --- Data Models ---
@@ -663,12 +643,18 @@ fun KeepInstructionsDialog(onDismiss: () -> Unit, onImport: () -> Unit) {
 }
 
 @Composable
-private fun StartLoggingDialog(desc: String, onDescChange: (String) -> Unit, onStart: () -> Unit, onDismiss: () -> Unit) {
+private fun BugReportDialog(desc: String, onDescChange: (String) -> Unit, onSend: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Debug Logging") },
-        text = { OutlinedTextField(value = desc, onValueChange = onDescChange, label = { Text("Issue description") }, modifier = Modifier.fillMaxWidth()) },
-        confirmButton = { TextButton(onClick = onStart) { Text("Start") } },
+        title = { Text("Bug Report") },
+        text = { 
+            Column {
+                Text("Describe the issue you're facing. System logs will be attached automatically.", style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(value = desc, onValueChange = onDescChange, label = { Text("Issue description") }, modifier = Modifier.fillMaxWidth()) 
+            }
+        },
+        confirmButton = { TextButton(onClick = onSend) { Text("Send Report") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
