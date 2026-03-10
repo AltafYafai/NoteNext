@@ -51,6 +51,9 @@ import androidx.compose.material.icons.rounded.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 
+import com.suvojeet.notenext.util.LogcatManager
+import android.widget.Toast
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
@@ -76,6 +79,8 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     var showKeepInstructionsDialog by remember { mutableStateOf(false) }
     var showRateDialog by remember { mutableStateOf(false) }
     var showChangelogDialog by remember { mutableStateOf(false) }
+    
+    var isLoggingActive by remember { mutableStateOf(LogcatManager.isLogging()) }
 
     val backupRestoreViewModel: BackupRestoreViewModel = hiltViewModel()
     val importKeepLauncher = rememberLauncherForActivityResult(
@@ -88,7 +93,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
 
     val sections = remember(
         selectedThemeMode, autoDeleteDays, enableRichLinkPreview, enableAppLock, 
-        selectedLanguage, disallowScreenshots, showBugReportDialog
+        selectedLanguage, disallowScreenshots, showBugReportDialog, isLoggingActive
     ) {
         listOf(
             SettingsSectionData(
@@ -213,8 +218,8 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 )
             ),
             SettingsSectionData(
-                title = "About NoteNext",
-                description = "Application information and support",
+                title = "Support & Logging",
+                description = "Information and bug reproduction",
                 items = listOf(
                     SettingsItemData(
                         icon = Icons.Rounded.Info,
@@ -222,6 +227,26 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = "v1.2.6 Stable Build",
                         iconColor = Color(0xFF9C27B0),
                         onClick = { onNavigate("about") }
+                    ),
+                    SettingsItemData(
+                        icon = if (isLoggingActive) Icons.Rounded.StopCircle else Icons.Rounded.PlayCircle,
+                        title = if (isLoggingActive) "Stop Logging" else "Start Logging",
+                        subtitle = if (isLoggingActive) "Logging active. Reproduce bug now." else "Record app logs to report bugs",
+                        iconColor = if (isLoggingActive) Color(0xFFF44336) else Color(0xFF4CAF50),
+                        onClick = {
+                            if (isLoggingActive) {
+                                val logFile = LogcatManager.stopLogging()
+                                if (logFile != null) {
+                                    LogcatManager.shareLogFile(context, logFile)
+                                    Toast.makeText(context, "Log saved and ready to share", Toast.LENGTH_SHORT).show()
+                                }
+                                isLoggingActive = false
+                            } else {
+                                LogcatManager.startLogging(context)
+                                isLoggingActive = true
+                                Toast.makeText(context, "Logging started. Reproduce the bug now.", Toast.LENGTH_LONG).show()
+                            }
+                        }
                     ),
                     SettingsItemData(
                         icon = Icons.Rounded.Code,
@@ -232,13 +257,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/suvojeet-sengupta/NoteNext"))
                             context.startActivity(intent)
                         }
-                    ),
-                    SettingsItemData(
-                        icon = Icons.Rounded.BugReport,
-                        title = "Technical Support",
-                        subtitle = "Report bugs and technical issues via ACRA",
-                        iconColor = Color(0xFF795548),
-                        onClick = { showBugReportDialog = true }
                     )
                 )
             )
