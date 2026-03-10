@@ -1,105 +1,68 @@
-# NoteNext - Your Smart Note-Taking Companion
+# NoteNext
 
 <p align="center">
-  <img src="app_logo.svg" alt="NoteNext Logo" width="150"/>
+  <img src="app_logo.svg" alt="NoteNext Logo" width="120"/>
 </p>
 
 <p align="center">
-  <strong>A modern, intuitive, and feature-rich note-taking application for Android.</strong>
+  <strong>The premium note-taking experience for Android.</strong>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-1.2-blue.svg" alt="Version"/>
-  <img src="https://img.shields.io/badge/Platform-Android-brightgreen.svg" alt="Platform"/>
-  <img src="https://img.shields.io/badge/License-MIT-lightgrey.svg" alt="License"/>
+  <img src="https://img.shields.io/badge/Platform-Android-00c853?style=flat-square&logo=android&logoColor=white" alt="Platform"/>
+  <img src="https://img.shields.io/badge/Design-Material_3_Expressive-6200ee?style=flat-square&logo=material-design&logoColor=white" alt="Design"/>
+  <img src="https://img.shields.io/badge/Security-Biometric-0091ea?style=flat-square&logo=fingerprint&logoColor=white" alt="Security"/>
+  <img src="https://img.shields.io/badge/License-MIT-9e9e9e?style=flat-square" alt="License"/>
 </p>
 
-## Overview
+---
 
-NoteNext is designed to help you organize your thoughts, tasks, and ideas effortlessly. Built with the latest Android development technologies, it provides a seamless and visually appealing experience for all your note-taking needs.
+## Introduction
 
-## ✨ Features
+NoteNext is a high-performance, private, and visually sophisticated note-taking application designed for the modern Android ecosystem. It prioritizes a fluid user experience through cutting-edge design principles and robust local-first architecture.
 
-| Feature           | Description                                               |
-| ----------------- | --------------------------------------------------------- |
-| Rich Text Editing | Format your notes with bold, italics, underline, and more. |
-| Checklists        | Create interactive checklists to manage your tasks.       |
-| Attachments       | Add images, audio, and other files to your notes.         |
-| Link Previews     | Automatically generate rich previews for embedded links.  |
-| Labels            | Organize your notes with custom labels.                   |
-| Projects          | Group related notes into projects.                        |
-| Reminders         | Set reminders for your important notes.                   |
-| Note Management   | Pin, archive, and trash notes.                            |
-| Color Coding      | Customize notes with different colors.                    |
-| Search            | Quickly find any note with powerful search.               |
-| Themes            | Light & Dark theme support.                               |
-| Security          | Secure your notes with biometric lock.                    |
-| Export            | Save your notes as PDF or TXT files.                      |
+## Advanced Design: Material 3 Expressive
 
-## 🛠️ Tech Stack
+NoteNext is built using the latest **Material 3 Expressive (M3E)** design system. This represents a significant evolution in user interface aesthetics and interaction:
 
-NoteNext is built using a robust and modern Android tech stack:
+- **Expressive Motion**: Every interaction is powered by spring-based physics, providing a tactile and responsive feel that adapts to user intent.
+- **Dynamic Shapes**: Utilizing adaptive corner rounding and morphing shapes to create a modern, organic interface.
+- **Vibrant Typography**: Featuring Roboto Flex for superior legibility and a sophisticated typographic hierarchy.
+* **Fluid UI Components**: High-contrast buttons, card layouts, and navigation elements designed for clarity and ease of use.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Kotlin-0095D5?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"/>
-  <img src="https://img.shields.io/badge/Jetpack Compose-4285F4?style=for-the-badge&logo=compose&logoColor=white" alt="Jetpack Compose"/>
-  <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android"/>
-  <img src="https://img.shields.io/badge/Gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white" alt="Gradle"/>
-  <img src="https://img.shields.io/badge/Room-4285F4?style=for-the-badge&logo=android-studio&logoColor=white" alt="Room Database" />
-  <img src="https://img.shields.io/badge/Coroutines-6200EE?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin Coroutines" />
-  <img src="https://img.shields.io/badge/Flow-F05032?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin Flow" />
-  <img src="https://img.shields.io/badge/Jetpack Navigation-000000?style=for-the-badge&logo=android&logoColor=white" alt="Jetpack Navigation" />
-  <img src="https://img.shields.io/badge/DataStore-4285F4?style=for-the-badge&logo=android&logoColor=white" alt="DataStore Preferences" />
-  <img src="https://img.shields.io/badge/Coil-000000?style=for-the-badge&logo=coil&logoColor=white" alt="Coil Image Loading" />
-  <img src="https://img.shields.io/badge/Jsoup-2196F3?style=for-the-badge&logo=jsoup&logoColor=white" alt="Jsoup HTML Parser" />
-  <img src="https://img.shields.io/badge/Gson-F44336?style=for-the-badge&logo=gson&logoColor=white" alt="Gson JSON" />
-  <img src="https://img.shields.io/badge/Google Fonts-4285F4?style=for-the-badge&logo=google-fonts&logoColor=white" alt="Google Fonts" />
-  <img src="https://img.shields.io/badge/Biometric-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Android Biometric" />
-  <img src="https://img.shields.io/badge/Material%20Design%203-6200EE?style=for-the-badge&logo=material-design&logoColor=white" alt="Material Design 3" />
-</p>
+## Key Features
 
-- **Kotlin**: Primary language for Android app development.
-- **Jetpack Compose**: Modern toolkit for building native Android UI.
-- **Android SDK**: Targeting API 36.
-- **Gradle**: Build automation tool.
-- **Room Database**: Persistence library for local data storage.
-- **Kotlin Coroutines & Flow**: For asynchronous programming.
-- **Jetpack Navigation**: For in-app navigation.
-- **DataStore Preferences**: Modern data storage for key-value pairs.
-- **Coil**: Image loading library.
-- **Jsoup**: For parsing HTML.
-- **Gson**: For JSON serialization.
-- **Google Fonts**: For custom typography.
-- **Android Biometric**: For biometric authentication.
-- **Material Design 3 Adaptive**: For modern and adaptive UI.
+- **Rich Content Creation**: Craft detailed notes with advanced formatting options, including bold, italic, and structured headings.
+- **Interactive Checklists**: Efficiently manage tasks and to-do lists with seamless state tracking and organization.
+- **Workspace Management**: Group related thoughts and documentation into dedicated Projects for better organization.
+- **Privacy First**: Secure your sensitive information with industry-standard biometric authentication, including fingerprint and face unlock.
+- **Cloud & Local Backup**: Keep your data safe with integrated Google Drive synchronization or encrypted local storage exports.
+- **Intelligent Organization**: Utilize custom labels, color-coding, and powerful search capabilities to find information instantly.
+- **Smart Reminders**: Set time-based alerts to ensure important tasks and notes are never overlooked.
+- **Rich Media Support**: Seamlessly attach images, documents, and interactive link previews to your documentation.
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Android Studio Hedgehog | 2023.1.1 or newer
-- Android SDK 36
-- Java 17
+## Getting Started
 
 ### Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/suvojeet-sengupta/NoteNext.git
-    ```
-2.  Open the project in Android Studio.
-3.  Build and run on an Android device or emulator.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/suvojeet-sengupta/NoteNext.git
+   ```
+2. Open the project in Android Studio.
+3. Build and deploy to your Android device.
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! Please feel free to open an issue or submit a pull request.
+We welcome contributions from the developer community. If you wish to improve NoteNext, please follow the standard GitHub workflow: fork the repository, create a feature branch, and submit a pull request for review.
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is distributed under the MIT License. Detailed information can be found in the [LICENSE](LICENSE) file.
 
-## 📞 Contact
+## Contact
 
-Suvojeet Sengupta - [suvojeetsengupta@zohomail.in](mailto:suvojeetsengupta@zohomail.in)
+**Suvojeet Sengupta**  
+[Email](mailto:suvojeetsengupta@zohomail.in) | [GitHub](https://github.com/suvojeet-sengupta)
 
-Project Link: [https://github.com/suvojeet-sengupta/NoteNext](https://github.com/suvojeet-sengupta/NoteNext)
+Project Repository: [https://github.com/suvojeet-sengupta/NoteNext](https://github.com/suvojeet-sengupta/NoteNext)
