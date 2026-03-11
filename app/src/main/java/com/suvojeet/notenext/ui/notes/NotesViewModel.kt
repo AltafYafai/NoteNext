@@ -83,6 +83,8 @@ class NotesViewModel @Inject constructor(
     private var autoSaveJob: Job? = null
     private var selectionActionsJob: Job? = null
 
+    private var lastCreatedNoteId: Int? = null
+
     private fun scheduleAutoSave() {
         autoSaveJob?.cancel()
         _state.value = state.value.copy(saveStatus = SaveStatus.SAVING)
@@ -519,6 +521,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ExpandNote -> {
+                lastCreatedNoteId = null
                 viewModelScope.launch {
                     if (event.noteId != -1) {
                         noteUseCases.getNote(event.noteId)?.let { noteWithAttachments ->
@@ -1227,8 +1230,11 @@ class NotesViewModel @Inject constructor(
     }
 
     private suspend fun saveNote(shouldCollapse: Boolean) {
-        val noteId = state.value.expandedNoteId
-        if (noteId == null) return
+        val expandedId = state.value.expandedNoteId
+        if (expandedId == null) return
+        
+        // If it's a new note (-1), check if we already have a real ID from a previous auto-save
+        val noteId = if (expandedId == -1 && lastCreatedNoteId != null) lastCreatedNoteId!! else expandedId
 
         val title = state.value.editingTitle
         val content = if (state.value.editingNoteType == "TEXT") {
@@ -1243,7 +1249,7 @@ class NotesViewModel @Inject constructor(
             }
         } else {
             val currentTime = System.currentTimeMillis()
-            val note = if (noteId == -1) { // New note
+            val note = if (noteId == -1) { // New note (truly new, first save)
                 Note(
                     title = title,
                     content = content,
@@ -1346,14 +1352,21 @@ class NotesViewModel @Inject constructor(
                     repository.insertAttachment(attachment.copy(noteId = currentNoteId.toInt()))
                 }
 
-                // Update expandedNoteId if it was a new note
-                if (noteId == -1 && !shouldCollapse) {
-                    _state.value = state.value.copy(expandedNoteId = currentNoteId.toInt())
+                // If it was a new note, we now have a real ID. 
+                // We update editingIsNewNote to false so next saves know it's not new anymore.
+                // But we DO NOT update expandedNoteId yet if it was -1, to avoid the 'jolt' in AnimatedContent.
+                if (expandedId == -1 && lastCreatedNoteId == null) {
+                    _state.value = state.value.copy(
+                        editingIsNewNote = false,
+                        expandedNoteId = -1 // Keep it -1 to avoid triggering NoteTransition in NotesScreen
+                    )
+                    lastCreatedNoteId = currentNoteId.toInt()
                 }
             }
         }
 
         if (shouldCollapse) {
+            lastCreatedNoteId = null
             // Reset editing state and collapse
             _state.value = state.value.copy(
                 expandedNoteId = null,
