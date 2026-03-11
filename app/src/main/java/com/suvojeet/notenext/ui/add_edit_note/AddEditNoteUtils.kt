@@ -13,16 +13,22 @@ fun createImageFile(context: Context): Uri {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
     val imageFileName = "JPEG_${timeStamp}_"
 
-    // Use external pictures dir first, fall back to cache/pictures if unavailable
-    val storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
-        ?: File(context.cacheDir, "pictures")
-
-    // Ensure the directory actually exists on disk before creating the temp file
-    if (!storageDir.exists()) {
-        storageDir.mkdirs()
+    // Use cacheDir as primary — always guaranteed to exist and be writable.
+    // getExternalFilesDir is unreliable on Android 16+ due to storage restrictions.
+    val storageDir = File(context.cacheDir, "camera_photos").apply {
+        if (!exists()) mkdirs()
     }
 
-    val image = File.createTempFile(imageFileName, ".jpg", storageDir)
+    // Absolute fallback to filesDir if cacheDir somehow fails
+    val resolvedDir = if (storageDir.exists() && storageDir.canWrite()) {
+        storageDir
+    } else {
+        File(context.filesDir, "camera_photos").apply {
+            if (!exists()) mkdirs()
+        }
+    }
+
+    val image = File.createTempFile(imageFileName, ".jpg", resolvedDir)
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", image)
 }
 

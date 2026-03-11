@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <paths>
-        <!-- Camera photos stored via getExternalFilesDir(DIRECTORY_PICTURES) -->
-        <external-files-path name="camera_images" path="Pictures" />
+        <!-- Camera photos stored in cacheDir/camera_photos (primary) -->
+        <cache-path name="camera_photos" path="camera_photos" />
 
-        <!-- Fallback: camera photos stored in cacheDir/pictures -->
-        <cache-path name="camera_cache_images" path="pictures" />
+        <!-- Camera photos fallback in filesDir/camera_photos -->
+        <files-path name="camera_photos_internal" path="camera_photos" />
 
         <!-- Logcat sharing -->
         <cache-path name="logs" path="logs" />
