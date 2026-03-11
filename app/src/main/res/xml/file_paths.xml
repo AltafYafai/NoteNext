@@ -1,7 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <paths>
-        <external-path name="my_images" path="Android/data/com.suvojeet.notenext/files/Pictures" />
-        <cache-path name="qr_codes" path="qr_codes" />
+        <!-- Camera photos stored via getExternalFilesDir(DIRECTORY_PICTURES) -->
+        <external-files-path name="camera_images" path="Pictures" />
+
+        <!-- Fallback: camera photos stored in cacheDir/pictures -->
+        <cache-path name="camera_cache_images" path="pictures" />
+
+        <!-- Logcat sharing -->
         <cache-path name="logs" path="logs" />
     </paths>
 </resources>

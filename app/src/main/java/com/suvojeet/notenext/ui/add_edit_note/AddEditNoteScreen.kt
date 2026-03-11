@@ -258,9 +258,13 @@ fun AddEditNoteScreen(
                             showMoreOptions = { showMoreOptions = it },
                             onImageClick = { getContent.launch("image/*") },
                             onTakePhotoClick = {
-                                val uri = com.suvojeet.notenext.ui.add_edit_note.createImageFile(context)
-                                photoUri = uri
-                                takePictureLauncher.launch(uri)
+                                try {
+                                    val uri = createImageFile(context)
+                                    photoUri = uri
+                                    takePictureLauncher.launch(uri)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
                             },
                             onAudioClick = {
                                 Toast.makeText(context, "Audio recording not implemented yet", Toast.LENGTH_SHORT).show()

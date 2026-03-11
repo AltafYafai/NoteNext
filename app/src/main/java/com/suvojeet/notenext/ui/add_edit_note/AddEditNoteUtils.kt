@@ -11,13 +11,18 @@ import java.util.Locale
 
 fun createImageFile(context: Context): Uri {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val imageFileName = "JPEG_" + timeStamp + "_"
+    val imageFileName = "JPEG_${timeStamp}_"
+
+    // Use external pictures dir first, fall back to cache/pictures if unavailable
     val storageDir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
-    val image = File.createTempFile(
-        imageFileName, 
-        ".jpg", 
-        storageDir 
-    )
+        ?: File(context.cacheDir, "pictures")
+
+    // Ensure the directory actually exists on disk before creating the temp file
+    if (!storageDir.exists()) {
+        storageDir.mkdirs()
+    }
+
+    val image = File.createTempFile(imageFileName, ".jpg", storageDir)
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", image)
 }
 
