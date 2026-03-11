@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,14 +26,20 @@ fun AiAssistantButton(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 16.dp), // Added vertical spacing ("thoda niche kr")
+            .padding(vertical = 16.dp), // Added vertical spacing
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(24.dp), // Extra large pill-shape
             color = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            shadowElevation = 2.dp
+            shadowElevation = 4.dp,
+            modifier = Modifier.animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -38,30 +47,34 @@ fun AiAssistantButton(
                 Row(
                     modifier = Modifier
                         .clickable { onClick() }
-                        .padding(start = 24.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+                        .padding(start = 24.dp, end = 12.dp, top = 14.dp, bottom = 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.AutoAwesome,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Create Checklist with AI",
-                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 16.sp)
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontSize = 16.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                            letterSpacing = (-0.25).sp // tighter
+                        )
                     )
                 }
                 IconButton(
                     onClick = onDismiss,
                     modifier = Modifier
                         .padding(end = 12.dp)
-                        .size(24.dp)
+                        .size(32.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Dismiss",
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

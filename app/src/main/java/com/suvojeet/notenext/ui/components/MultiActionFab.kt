@@ -93,10 +93,13 @@ fun MultiActionFab(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        val bouncySpringSpec = spring<Float>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+        val bouncyIntOffsetSpec = spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+
         // Items in reverse order (top to bottom)
         AnimatedVisibility(
             visible = showProject && showProjectButton,
-            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            enter = fadeIn(bouncySpringSpec) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = bouncyIntOffsetSpec) + scaleIn(initialScale = 0.5f, animationSpec = bouncySpringSpec),
             exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
@@ -114,7 +117,7 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showTodo,
-            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            enter = fadeIn(bouncySpringSpec) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = bouncyIntOffsetSpec) + scaleIn(initialScale = 0.5f, animationSpec = bouncySpringSpec),
             exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
@@ -130,7 +133,7 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showChecklist,
-            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            enter = fadeIn(bouncySpringSpec) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = bouncyIntOffsetSpec) + scaleIn(initialScale = 0.5f, animationSpec = bouncySpringSpec),
             exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
@@ -146,7 +149,7 @@ fun MultiActionFab(
 
         AnimatedVisibility(
             visible = showNote,
-            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
+            enter = fadeIn(bouncySpringSpec) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = bouncyIntOffsetSpec) + scaleIn(initialScale = 0.5f, animationSpec = bouncySpringSpec),
             exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
         ) {
             FabItem(
