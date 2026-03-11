@@ -57,7 +57,12 @@ fun LazyListScope.ChecklistEditor(
     val checkedItems = state.editingChecklist.filter { it.isChecked }.sortedBy { it.position }
 
     itemsIndexed(uncheckedItems, key = { _, item -> item.id }) { index, item ->
-        // ... (drag logic remains same)
+        val dragOffset = remember { mutableStateOf(0f) }
+        val isDragging = dragOffset.value != 0f
+        
+        val currentUncheckedItems by rememberUpdatedState(uncheckedItems)
+        val currentIndex by rememberUpdatedState(index)
+        
         val dragModifier = Modifier
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(

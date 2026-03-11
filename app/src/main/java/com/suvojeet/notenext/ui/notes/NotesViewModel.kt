@@ -53,6 +53,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import com.suvojeet.notenext.widget.NoteWidgetProvider
 import com.suvojeet.notenext.R
+import com.suvojeet.notenext.ui.theme.NoteGradients
 import javax.inject.Inject
 
 @HiltViewModel
