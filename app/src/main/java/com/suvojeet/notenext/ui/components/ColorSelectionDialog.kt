@@ -79,7 +79,7 @@ fun ColorSelectionDialog(
                                 shape = CircleShape
                             )
                             .clickable {
-                                onColorSelected(0) // 0 represents default/no color
+                                onColorSelected(NoteGradients.NO_COLOR) // Use constant instead of 0
                             },
                         contentAlignment = Alignment.Center
                     ) {

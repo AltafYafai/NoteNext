@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.toArgb
 
 object NoteGradients {
+    const val NO_COLOR = -1
 
     // Unified light theme colors (index-matched with darkNoteColors)
     val lightNoteColors = listOf(
@@ -46,7 +47,7 @@ object NoteGradients {
      * If a dark color is stored but user is in light mode, returns the light equivalent.
      */
     fun getAdaptiveColor(storedColor: Int, isDarkTheme: Boolean): Int {
-        if (storedColor == 0) return 0 // No color set
+        if (storedColor == NO_COLOR || storedColor == 0) return 0 // No color set
         
         // Check if color exists in light palette
         val lightIndex = lightNoteColors.indexOf(storedColor)
@@ -72,7 +73,7 @@ object NoteGradients {
     }
 
     fun getContentColor(colorInt: Int): Color {
-        if (colorInt == 0) return Color.Unspecified // Default color, let theme handle it
+        if (colorInt == NO_COLOR || colorInt == 0) return Color.Unspecified // Default color, let theme handle it
         
         val color = Color(colorInt)
         val luminance = (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue)

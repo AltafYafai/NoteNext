@@ -13,6 +13,8 @@ import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.data.NoteVersion
 
+import com.suvojeet.notenext.ui.theme.NoteGradients
+
 data class NotesState(
     val notes: List<NoteWithAttachments> = emptyList(),
     val layoutType: LayoutType = LayoutType.GRID,
@@ -27,7 +29,7 @@ data class NotesState(
     // Properties from AddEditNoteState
     val editingTitle: String = "",
     val editingContent: TextFieldValue = TextFieldValue(),
-    val editingColor: Int = 0,
+    val editingColor: Int = NoteGradients.NO_COLOR,
     val editingIsNewNote: Boolean = true,
     val editingLastEdited: Long = 0,
     val isPinned: Boolean = false,

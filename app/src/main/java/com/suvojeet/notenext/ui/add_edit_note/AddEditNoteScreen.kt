@@ -383,7 +383,8 @@ fun AddEditNoteScreen(
                                     state = state,
                                     onEvent = onEvent,
                                     isCheckedItemsExpanded = state.isCheckedItemsExpanded,
-                                    onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) }
+                                    onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) },
+                                    backgroundColor = backgroundColor
                                 )
                             } else {
                                 item { 
