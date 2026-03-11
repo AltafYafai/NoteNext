@@ -1,0 +1,28 @@
+<resources>
+    <string name="support_notenext">NoteNext का समर्थन करें</string>
+    <string name="made_with_love_free">सभी के लिए ❤️ के साथ बनाया गया</string>
+    <string name="donation_description">NoteNext 100% मुफ़्त, ओपन-सोर्स है और इसमें कोई विज्ञापन नहीं है। आपका समर्थन इसे इसी तरह बनाए रखने में मदद करता है और मुझे और भी बेहतर फीचर्स बनाने के लिए प्रेरित करता है!</string>
+    <string name="why_donate">समर्थन क्यों करें?</string>
+    <string name="reason_independent_title">स्वतंत्र और मानवीय</string>
+    <string name="reason_independent_desc">एक अकेले डेवलपर द्वारा बनाया गया जो आपके अनुभव की परवाह करता है, किसी कॉर्पोरेशन द्वारा नहीं।</string>
+    <string name="reason_privacy_title">गोपनीयता पहले</string>
+    <string name="reason_privacy_desc">कोई विज्ञापन नहीं, कोई ट्रैकिंग नहीं, आपका डेटा कभी नहीं बेचा जाएगा। आपके नोट्स आपके डिवाइस पर निजी रहते हैं।</string>
+    <string name="reason_updates_title">निरंतर विकास</string>
+    <string name="reason_updates_desc">आपका योगदान नए फीचर्स, बग फिक्स और NoteNext को बेहतर बनाने के लिए नियमित अपडेट को बढ़ावा देता है।</string>
+    <string name="choose_amount">राशि चुनें</string>
+    <string name="donate_small_label">मुझे एक कॉफी पिलाएं</string>
+    <string name="donate_small_desc">प्रशंसा का एक छोटा सा प्रतीक</string>
+    <string name="donate_medium_label">मुझे एक नाश्ता कराएं</string>
+    <string name="donate_medium_desc">आप वास्तव में शानदार हैं!</string>
+    <string name="donate_large_label">NoteNext को सुपरचार्ज करें</string>
+    <string name="donate_large_desc">पौराणिक समर्थक स्तर!</string>
+    <string name="thank_you_title">धन्यवाद! 🎉</string>
+    <string name="thank_you_msg">आपका समर्थन मेरे लिए बहुत मायने रखता है! ❤️\nNoteNext आपकी जैसे अद्भुत लोगों की वजह से बढ़ता रहेगा।</string>
+    <string name="thank_you_confirm">आपका स्वागत है! 😊</string>
+    <string name="connecting_play_store">Play Store से जुड़ रहा है…</string>
+    <string name="could_not_connect_play_store">Play Store से कनेक्ट नहीं हो सका</string>
+    <string name="check_internet_try_again">अपना इंटरनेट कनेक्शन जांचें और फिर से प्रयास करें।</string>
+    <string name="loading_options">दान के विकल्प लोड हो रहे हैं…</string>
+    <string name="secure_google_play">सभी खरीदारी Google Play के माध्यम से सुरक्षित रूप से संसाधित की जाती हैं।</string>
+    <string name="purchase_failed">खरीदारी विफल रही: %1$s</string>
+</resources>

@@ -415,7 +415,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AboutScreen(
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onDonateClick = { navController.navigate(Destination.Donate) }
                     )
                 }
 
@@ -747,7 +748,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AboutScreen(
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onDonateClick = { navController.navigate(Destination.Donate) }
                     )
                 }
 

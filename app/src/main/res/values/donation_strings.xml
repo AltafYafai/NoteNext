@@ -1,0 +1,28 @@
+<resources>
+    <string name="support_notenext">Support NoteNext</string>
+    <string name="made_with_love_free">Made with ❤️ for everyone</string>
+    <string name="donation_description">NoteNext is 100% free, open-source, and has zero ads. Your support helps me keep it that way and motivates me to build even better features!</string>
+    <string name="why_donate">Why Support?</string>
+    <string name="reason_independent_title">Independent &amp; Human</string>
+    <string name="reason_independent_desc">Built by a single developer who cares about your experience, not by a corporation.</string>
+    <string name="reason_privacy_title">Privacy First</string>
+    <string name="reason_privacy_desc">No ads, no tracking, no selling your data. Ever. Your notes stay private on your device.</string>
+    <string name="reason_updates_title">Continuous Growth</string>
+    <string name="reason_updates_desc">Your contribution fuels new features, bug fixes, and regular updates to make NoteNext better.</string>
+    <string name="choose_amount">Choose an amount</string>
+    <string name="donate_small_label">Buy me a coffee</string>
+    <string name="donate_small_desc">A small token of appreciation</string>
+    <string name="donate_medium_label">Buy me a snack</string>
+    <string name="donate_medium_desc">You\'re genuinely awesome!</string>
+    <string name="donate_large_label">Supercharge NoteNext</string>
+    <string name="donate_large_desc">Legendary supporter tier!</string>
+    <string name="thank_you_title">Thank You! 🎉</string>
+    <string name="thank_you_msg">Your support means the world! ❤️\nNoteNext will keep growing because of amazing people like you.</string>
+    <string name="thank_you_confirm">You\'re welcome! 😊</string>
+    <string name="connecting_play_store">Connecting to Play Store…</string>
+    <string name="could_not_connect_play_store">Could not connect to Play Store</string>
+    <string name="check_internet_try_again">Check your internet connection and try again.</string>
+    <string name="loading_options">Loading donation options…</string>
+    <string name="secure_google_play">All purchases are processed securely through Google Play.</string>
+    <string name="purchase_failed">Purchase failed: %1$s</string>
+</resources>

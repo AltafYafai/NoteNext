@@ -38,7 +38,10 @@ import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.util.NetworkUtils
 
 @Composable
-fun AboutScreen(onBackClick: () -> Unit) {
+fun AboutScreen(
+    onBackClick: () -> Unit,
+    onDonateClick: () -> Unit
+) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     val isInternetAvailable = NetworkUtils.isInternetAvailable(context)
@@ -222,16 +225,11 @@ fun AboutScreen(onBackClick: () -> Unit) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         ActionCard(
                             icon = Icons.Default.Favorite,
-                            title = "Make a Donation",
+                            title = stringResource(id = R.string.support_notenext),
                             description = "Support development via Google Play",
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            onClick = { 
-                                // Launch donation screen/flow
-                                // Since we already added DonationScreen elsewhere,
-                                // we'll just leave this as a placeholder or remove it entirely
-                                // for now we'll just keep the structure and let the Settings/Donate screen handle it.
-                            }
+                            onClick = onDonateClick
                         )
                     }
                 }
