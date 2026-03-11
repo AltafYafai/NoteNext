@@ -67,6 +67,7 @@ import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.repository.SettingsRepository
+import com.suvojeet.notenext.ui.settings.BackupScreen
 import com.suvojeet.notenext.ui.todo.TodoScreen
 
 import kotlinx.coroutines.launch
@@ -615,7 +616,6 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         themeMode = themeMode,
                         settingsRepository = settingsRepository,
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onScanQrClick = { navController.navigate(Destination.QrScanner) },
                         onTodoClick = { navController.navigate(Destination.Todo) },
                         events = notesViewModel.events
                     )

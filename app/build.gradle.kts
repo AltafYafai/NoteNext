@@ -74,6 +74,8 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":data"))
 
+    implementation(libs.androidx.appcompat)
+
     // BOM — ek jagah version, baaki sab auto
     val bom = platform(libs.compose.bom)
     implementation(bom)
