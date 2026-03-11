@@ -37,8 +37,7 @@ sealed interface Destination {
     @Serializable
     data object About : Destination
     
-    @Serializable
-    data object QrScanner : Destination
+
     
     @Serializable
     data object Todo : Destination

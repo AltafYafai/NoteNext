@@ -76,7 +76,6 @@ fun NotesScreen(
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit,
-    onScanQrClick: () -> Unit = {},
     onTodoClick: () -> Unit = {},
     events: SharedFlow<NotesUiEvent>
 ) {
@@ -276,10 +275,6 @@ fun NotesScreen(
                                     showCreateProjectDialog = true
                                     isFabExpanded = false
                                 },
-                                onScanQrClick = {
-                                    onScanQrClick()
-                                    isFabExpanded = false
-                                },
                                 onTodoClick = {
                                     onTodoClick()
                                     isFabExpanded = false
@@ -370,45 +365,15 @@ fun NotesScreen(
                             WhatsNewDialog(onDismiss = { showWhatsNewDialog = false })
                         }
 
-                        var showQrDisplayDialog by remember { mutableStateOf(false) }
-                        var qrNoteTitle by remember { mutableStateOf("") }
-                        var qrNoteContent by remember { mutableStateOf("") }
-
                         if (showShareOptionsDialog) {
                             ShareOptionsDialog(
                                 onDismiss = { 
                                     showShareOptionsDialog = false 
                                 },
-                                onShareAsQr = {
-                                    val selectedNotes = state.notes.filter { state.selectedNoteIds.contains(it.note.id) }
-                                    if (selectedNotes.isNotEmpty()) {
-                                        val firstNote = selectedNotes.first()
-                                        qrNoteTitle = firstNote.note.title
-                                        fun stripHtml(html: String): String = html.replace(Regex("<[^>]*>"), "").trim()
-                                        qrNoteContent = if (selectedNotes.size == 1) {
-                                            stripHtml(firstNote.note.content)
-                                        } else {
-                                            selectedNotes.joinToString("\n\n---\n\n") { note ->
-                                                "${note.note.title}\n${stripHtml(note.note.content)}"
-                                            }
-                                        }
-                                        showQrDisplayDialog = true
-                                    }
-                                    showShareOptionsDialog = false
-                                    viewModel.onEvent(NotesEvent.ClearSelection)
-                                },
                                 onShareAsText = {
                                     viewModel.onEvent(NotesEvent.SendSelectedNotes)
                                     showShareOptionsDialog = false
                                 }
-                            )
-                        }
-
-                        if (showQrDisplayDialog) {
-                            QrCodeDisplayDialog(
-                                noteTitle = qrNoteTitle,
-                                noteContent = qrNoteContent,
-                                onDismiss = { showQrDisplayDialog = false }
                             )
                         }
 

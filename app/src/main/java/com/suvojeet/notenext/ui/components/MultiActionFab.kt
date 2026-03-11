@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Note
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material3.*
@@ -48,7 +47,6 @@ fun MultiActionFab(
     onNoteClick: () -> Unit,
     onChecklistClick: () -> Unit,
     onProjectClick: () -> Unit,
-    onScanQrClick: () -> Unit = {},
     onTodoClick: () -> Unit = {},
     showProjectButton: Boolean = true,
     themeMode: ThemeMode,
@@ -62,7 +60,6 @@ fun MultiActionFab(
 
     var showProject by remember { mutableStateOf(false) }
     var showTodo by remember { mutableStateOf(false) }
-    var showScanQr by remember { mutableStateOf(false) }
     var showChecklist by remember { mutableStateOf(false) }
     var showNote by remember { mutableStateOf(false) }
 
@@ -74,13 +71,9 @@ fun MultiActionFab(
             kotlinx.coroutines.delay(40)
             showTodo = true
             kotlinx.coroutines.delay(40)
-            showScanQr = true
-            kotlinx.coroutines.delay(40)
             showProject = true
         } else {
             showProject = false
-            kotlinx.coroutines.delay(30)
-            showScanQr = false
             kotlinx.coroutines.delay(30)
             showTodo = false
             kotlinx.coroutines.delay(30)
@@ -117,21 +110,7 @@ fun MultiActionFab(
             )
         }
 
-        AnimatedVisibility(
-            visible = showScanQr,
-            enter = fadeIn(spring()) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = spring()) + scaleIn(initialScale = 0.8f, animationSpec = spring()),
-            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
-        ) {
-            FabItem(
-                icon = Icons.Default.QrCodeScanner,
-                label = stringResource(id = R.string.scan_qr),
-                onClick = {
-                    onScanQrClick()
-                    onExpandedChange(false)
-                },
-                themeMode = themeMode
-            )
-        }
+
 
         AnimatedVisibility(
             visible = showTodo,

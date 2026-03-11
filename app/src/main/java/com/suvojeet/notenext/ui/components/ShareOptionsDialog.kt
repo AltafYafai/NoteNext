@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -28,7 +27,6 @@ import androidx.compose.ui.window.Dialog
 @Composable
 fun ShareOptionsDialog(
     onDismiss: () -> Unit,
-    onShareAsQr: () -> Unit,
     onShareAsText: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -64,14 +62,7 @@ fun ShareOptionsDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    ShareOptionCard(
-                        icon = Icons.Default.QrCode2,
-                        title = "QR Code",
-                        description = "Scan to share",
-                        iconColor = Color(0xFF6200EE), // Purple
-                        modifier = Modifier.weight(1f),
-                        onClick = { onShareAsQr(); onDismiss() }
-                    )
+
 
                     ShareOptionCard(
                         icon = Icons.Default.TextFields,

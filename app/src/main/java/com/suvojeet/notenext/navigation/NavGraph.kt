@@ -67,8 +67,6 @@ import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.repository.SettingsRepository
-import com.suvojeet.notenext.ui.settings.BackupScreen
-import com.suvojeet.notenext.ui.qr.QrScannerScreen
 import com.suvojeet.notenext.ui.todo.TodoScreen
 
 import kotlinx.coroutines.launch
@@ -306,7 +304,6 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         themeMode = themeMode,
                         settingsRepository = settingsRepository,
                         onMenuClick = { scope.launch { drawerState.open() } },
-                        onScanQrClick = { navController.navigate(Destination.QrScanner) },
                         onTodoClick = { navController.navigate(Destination.Todo) },
                         events = notesViewModel.events
                     )
@@ -407,18 +404,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable<Destination.QrScanner>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
-                ) {
-                    QrScannerScreen(
-                        onBackClick = { navController.popBackStack() },
-                        onNoteScanned = { title, content ->
-                            notesViewModel.onEvent(NotesEvent.CreateNoteFromQr(title, content))
-                            navController.popBackStack()
-                        }
-                    )
-                }
+
                 composable<Destination.Todo>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
@@ -730,18 +716,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onBackClick = { navController.popBackStack() }
                     )
                 }
-                composable<Destination.QrScanner>(
-                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
-                ) {
-                    QrScannerScreen(
-                        onBackClick = { navController.popBackStack() },
-                        onNoteScanned = { title, content ->
-                            notesViewModel.onEvent(NotesEvent.CreateNoteFromQr(title, content))
-                            navController.popBackStack()
-                        }
-                    )
-                }
+
                 composable<Destination.Todo>(
                     enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
