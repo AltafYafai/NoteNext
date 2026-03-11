@@ -100,6 +100,11 @@ fun NoteContentEditor(
 ) {
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     val interactionSource = remember { MutableInteractionSource() }
+
+    // Hold latest references for use inside pointerInput(Unit) coroutine
+    val currentOnUrlClick by rememberUpdatedState(onUrlClick)
+    val currentOnEvent by rememberUpdatedState(onEvent)
+    val currentContent by rememberUpdatedState(state.editingContent)
     
     val infiniteTransition = rememberInfiniteTransition(label = "cursor_glow")
     val glowAlpha by infiniteTransition.animateFloat(
@@ -168,21 +173,22 @@ fun NoteContentEditor(
                         }
                     }
                 }
-                .pointerInput(state.editingContent) {
+                .pointerInput(Unit) {
                     detectTapGestures { offset ->
                             textLayoutResult?.let { layoutResult ->
                                 val position = layoutResult.getOffsetForPosition(offset)
-                                
-                                val urlAnnotation = state.editingContent.annotatedString.getStringAnnotations("URL", position, position).firstOrNull()
-                                    ?: state.editingContent.annotatedString.getStringAnnotations("EMAIL", position, position).firstOrNull()
-                                    ?: state.editingContent.annotatedString.getStringAnnotations("PHONE", position, position).firstOrNull()
+                                val content = currentContent
+
+                                val urlAnnotation = content.annotatedString.getStringAnnotations("URL", position, position).firstOrNull()
+                                    ?: content.annotatedString.getStringAnnotations("EMAIL", position, position).firstOrNull()
+                                    ?: content.annotatedString.getStringAnnotations("PHONE", position, position).firstOrNull()
 
                                 if (urlAnnotation != null) {
-                                    onUrlClick(urlAnnotation.item)
+                                    currentOnUrlClick(urlAnnotation.item)
                                 } else {
-                                    state.editingContent.annotatedString.getStringAnnotations("NOTE_LINK", position, position)
+                                    content.annotatedString.getStringAnnotations("NOTE_LINK", position, position)
                                         .firstOrNull()?.let { annotation ->
-                                            onEvent(NotesEvent.NavigateToNoteByTitle(annotation.item))
+                                            currentOnEvent(NotesEvent.NavigateToNoteByTitle(annotation.item))
                                         }
                                 }
                             }
