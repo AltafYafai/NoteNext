@@ -27,14 +27,19 @@ fun AutoSaveIndicator(
     modifier: Modifier = Modifier
 ) {
     var showIndicator by remember { mutableStateOf(false) }
-    var displayText by remember { mutableStateOf("Saved") }
+    var isSaving by remember { mutableStateOf(false) }
+    var displayText by remember { mutableStateOf("Saving...") }
     
     // Trigger indicator when save time changes
     LaunchedEffect(lastSaveTime) {
         if (lastSaveTime > 0) {
-            displayText = "Saved"
+            isSaving = true
+            displayText = "Saving..."
             showIndicator = true
-            delay(2000) // Show for 2 seconds
+            delay(1500) // Show LoadingIndicator for 1.5s
+            isSaving = false
+            displayText = "Saved"
+            delay(1500) // Show "Saved" for 1.5s
             showIndicator = false
         }
     }
@@ -56,26 +61,19 @@ fun AutoSaveIndicator(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                // Animated checkmark
-                val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                val alpha by infiniteTransition.animateFloat(
-                    initialValue = 0.7f,
-                    targetValue = 1f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(500),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "pulse_alpha"
-                )
-                
-                Icon(
-                    imageVector = Icons.Default.CloudDone,
-                    contentDescription = "Saved",
-                    modifier = Modifier
-                        .size(16.dp)
-                        .alpha(alpha),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                if (isSaving) {
+                    LoadingIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.CloudDone,
+                        contentDescription = "Saved",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = displayText,

@@ -42,13 +42,6 @@ fun FormatToolbar(
     themeMode: ThemeMode,
     modifier: Modifier = Modifier
 ) {
-    val systemInDarkTheme = isSystemInDarkTheme()
-    val useDarkTheme = when (themeMode) {
-        ThemeMode.DARK, ThemeMode.AMOLED -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.SYSTEM -> systemInDarkTheme
-    }
-
     var showHeadingPicker by remember { mutableStateOf(false) }
 
     Surface(
@@ -68,20 +61,18 @@ fun FormatToolbar(
             if (state.editingNoteType == "CHECKLIST") {
                 item {
                     FormatToggleButton(
-                        onClick = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.OutdentChecklistItem(it)) } },
+                        onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.OutdentChecklistItem(it)) } },
                         icon = Icons.AutoMirrored.Filled.FormatIndentDecrease,
                         description = "Outdent",
-                        isActive = false,
-                        useDarkTheme = useDarkTheme
+                        isActive = false
                     )
                 }
                 item {
                     FormatToggleButton(
-                        onClick = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.IndentChecklistItem(it)) } },
+                        onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.IndentChecklistItem(it)) } },
                         icon = Icons.AutoMirrored.Filled.FormatIndentIncrease,
                         description = "Indent",
-                        isActive = false,
-                        useDarkTheme = useDarkTheme
+                        isActive = false
                     )
                 }
                 item {
@@ -91,29 +82,26 @@ fun FormatToolbar(
 
             item {
                 FormatToggleButton(
-                    onClick = { onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(fontWeight = FontWeight.Bold))) },
+                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(fontWeight = FontWeight.Bold))) },
                     icon = Icons.Default.FormatBold,
                     description = stringResource(id = R.string.bold_description),
-                    isActive = state.isBoldActive,
-                    useDarkTheme = useDarkTheme
+                    isActive = state.isBoldActive
                 )
             }
             item {
                 FormatToggleButton(
-                    onClick = { onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(fontStyle = FontStyle.Italic))) },
+                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(fontStyle = FontStyle.Italic))) },
                     icon = Icons.Default.FormatItalic,
                     description = stringResource(id = R.string.italic_description),
-                    isActive = state.isItalicActive,
-                    useDarkTheme = useDarkTheme
+                    isActive = state.isItalicActive
                 )
             }
             item {
                 FormatToggleButton(
-                    onClick = { onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(textDecoration = TextDecoration.Underline))) },
+                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(textDecoration = TextDecoration.Underline))) },
                     icon = Icons.Default.FormatUnderlined,
                     description = stringResource(id = R.string.underline_description),
-                    isActive = state.isUnderlineActive,
-                    useDarkTheme = useDarkTheme
+                    isActive = state.isUnderlineActive
                 )
             }
 
@@ -124,11 +112,10 @@ fun FormatToolbar(
             item {
                 Box {
                     FormatToggleButton(
-                        onClick = { showHeadingPicker = true },
+                        onCheckedChange = { showHeadingPicker = true },
                         icon = Icons.Default.FormatSize,
                         description = stringResource(id = R.string.heading_style_description),
-                        isActive = state.activeHeadingStyle != 0,
-                        useDarkTheme = useDarkTheme
+                        isActive = state.activeHeadingStyle != 0
                     )
                     DropdownMenu(
                         expanded = showHeadingPicker,
@@ -151,11 +138,10 @@ fun FormatToolbar(
             
             item {
                 FormatToggleButton(
-                    onClick = onGrammarFixClick,
+                    onCheckedChange = { _ -> onGrammarFixClick() },
                     icon = Icons.Default.AutoAwesome,
                     description = "Fix Grammar",
-                    isActive = isFixingGrammar,
-                    useDarkTheme = useDarkTheme
+                    isActive = isFixingGrammar
                 )
             }
         }
@@ -164,26 +150,16 @@ fun FormatToolbar(
 
 @Composable
 private fun FormatToggleButton(
-    onClick: () -> Unit,
+    onCheckedChange: (Boolean) -> Unit,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     description: String,
-    isActive: Boolean,
-    useDarkTheme: Boolean
+    isActive: Boolean
 ) {
-    val containerColor = if (isActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-    val contentColor = if (isActive) {
-         MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-         MaterialTheme.colorScheme.onSurface
-    }
-
-    IconButton(
-        onClick = onClick,
+    IconToggleButton(
+        checked = isActive,
+        onCheckedChange = onCheckedChange,
         modifier = Modifier.size(40.dp).springPress(),
-        colors = IconButtonDefaults.iconButtonColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        )
+        shapes = IconToggleButtonDefaults.animatedShapes()
     ) {
         Icon(icon, contentDescription = description, modifier = Modifier.size(22.dp))
     }

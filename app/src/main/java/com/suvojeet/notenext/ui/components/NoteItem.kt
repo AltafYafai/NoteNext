@@ -61,9 +61,10 @@ fun NoteItem(
         contentColor.copy(alpha = 0.7f)
     }
 
+    val motionScheme = MaterialTheme.motionScheme
     val elevation by animateDpAsState(
         targetValue = if (isSelected) 4.dp else (if (isDefaultColor) 1.dp else 0.dp),
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        animationSpec = motionScheme.fastSpatialSpec(),
         label = "Elevation"
     )
 
@@ -89,7 +90,7 @@ fun NoteItem(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
             )
-            .animateContentSize(animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f)),
+            .animateContentSize(animationSpec = motionScheme.defaultSpatialSpec()),
         shape = cardShape,
         colors = CardDefaults.cardColors(
             containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent

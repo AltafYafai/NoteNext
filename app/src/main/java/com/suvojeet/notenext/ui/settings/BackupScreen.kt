@@ -614,9 +614,7 @@ fun ManualDriveBackupCard(
                         if (state.isBackingUp && state.backupResult?.contains("Drive") == true) {
                             WavyProgressIndicator(
                                 modifier = Modifier.width(48.dp).height(16.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp,
-                                amplitude = 3.dp
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(Modifier.width(8.dp))
                              Text(state.uploadProgress ?: "Backing up...")
