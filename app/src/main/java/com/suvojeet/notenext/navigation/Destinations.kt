@@ -36,6 +36,9 @@ sealed interface Destination {
     
     @Serializable
     data object About : Destination
+
+    @Serializable
+    data object Donate : Destination
     
 
     

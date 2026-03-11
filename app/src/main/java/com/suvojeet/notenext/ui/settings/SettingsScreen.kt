@@ -221,6 +221,13 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                 description = "Information and bug reproduction",
                 items = listOf(
                     SettingsItemData(
+                        icon = Icons.Rounded.VolunteerActivism,
+                        title = "Support NoteNext ❤️",
+                        subtitle = "Buy me a coffee — it means a lot!",
+                        iconColor = Color(0xFFE91E63),
+                        onClick = { onNavigate("donate") }
+                    ),
+                    SettingsItemData(
                         icon = Icons.Rounded.Info,
                         title = "App Info",
                         subtitle = "v1.2.7 Stable Build",

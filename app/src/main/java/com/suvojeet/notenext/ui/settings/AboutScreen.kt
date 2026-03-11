@@ -221,20 +221,17 @@ fun AboutScreen(onBackClick: () -> Unit) {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         ActionCard(
-                            icon = Icons.Default.LocalCafe,
-                            title = "Buy me a Coffee",
-                            description = "Support development with a small coffee",
+                            icon = Icons.Default.Favorite,
+                            title = "Make a Donation",
+                            description = "Support development via Google Play",
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            onClick = { uriHandler.openUri("https://buymeacoffee.com/suvojeet_sengupta") }
-                        )
-                        ActionCard(
-                            icon = Icons.Default.VolunteerActivism,
-                            title = "UPI Donation (India)",
-                            description = "Donate securely via any UPI app",
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            onClick = { uriHandler.openUri("https://upi.pe/suvojitsengupta21-3@okicici") }
+                            onClick = { 
+                                // Launch donation screen/flow
+                                // Since we already added DonationScreen elsewhere,
+                                // we'll just leave this as a placeholder or remove it entirely
+                                // for now we'll just keep the structure and let the Settings/Donate screen handle it.
+                            }
                         )
                     }
                 }

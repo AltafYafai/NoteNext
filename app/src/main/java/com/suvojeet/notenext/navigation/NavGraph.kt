@@ -58,6 +58,7 @@ import com.suvojeet.notenext.ui.settings.SettingsScreen
 import com.suvojeet.notenext.ui.reminder.ReminderScreen
 import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
 import com.suvojeet.notenext.ui.settings.AboutScreen
+import com.suvojeet.notenext.ui.donate.DonationScreen
 import com.suvojeet.notenext.ui.project.ProjectScreen
 import com.suvojeet.notenext.ui.project.ProjectViewModel
 import com.suvojeet.notenext.ui.project.ProjectNotesScreen
@@ -331,6 +332,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                              when(route) {
                                  "backup" -> navController.navigate(Destination.Backup)
                                  "about" -> navController.navigate(Destination.About)
+                                 "donate" -> navController.navigate(Destination.Donate)
                                  else -> {}
                              }
                         }
@@ -413,6 +415,15 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AboutScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Destination.Donate>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
+                    DonationScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }
@@ -653,6 +664,7 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                             when(route) {
                                  "backup" -> navController.navigate(Destination.Backup)
                                  "about" -> navController.navigate(Destination.About)
+                                 "donate" -> navController.navigate(Destination.Donate)
                                  else -> {}
                              }
                         }
@@ -735,6 +747,15 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
                 ) {
                     AboutScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Destination.Donate>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
+                    DonationScreen(
                         onBackClick = { navController.popBackStack() }
                     )
                 }

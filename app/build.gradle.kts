@@ -172,6 +172,9 @@ dependencies {
     implementation(libs.app.update)
     implementation(libs.app.update.ktx)
 
+    // Google Play Billing (Donations)
+    implementation(libs.billing)
+
 
     
     // ACRA
