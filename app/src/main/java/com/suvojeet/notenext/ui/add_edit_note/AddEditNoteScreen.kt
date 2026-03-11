@@ -175,6 +175,29 @@ fun AddEditNoteScreen(
         }
     }
 
+    // Helper to launch camera after permission is granted
+    val launchCamera: () -> Unit = {
+        try {
+            val uri = createImageFile(context)
+            photoUri = uri
+            takePictureLauncher.launch(uri)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                launchCamera()
+            } else {
+                Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_LONG).show()
+            }
+        }
+    )
+
     BackHandler {
         if (showImageViewer) {
             showImageViewer = false
@@ -258,12 +281,13 @@ fun AddEditNoteScreen(
                             showMoreOptions = { showMoreOptions = it },
                             onImageClick = { getContent.launch("image/*") },
                             onTakePhotoClick = {
-                                try {
-                                    val uri = createImageFile(context)
-                                    photoUri = uri
-                                    takePictureLauncher.launch(uri)
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
+                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (hasCameraPermission) {
+                                    launchCamera()
+                                } else {
+                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                                 }
                             },
                             onAudioClick = {
