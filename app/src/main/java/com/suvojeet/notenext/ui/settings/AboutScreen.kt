@@ -215,6 +215,66 @@ fun AboutScreen(onBackClick: () -> Unit) {
             }
 
             item {
+                ExpressiveSection(
+                    title = "Support Our Work",
+                    description = "Help us keep NoteNext free, open & ad-free"
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ActionCard(
+                            icon = Icons.Default.LocalCafe,
+                            title = "Buy me a Coffee",
+                            description = "Support development with a small coffee",
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            onClick = { uriHandler.openUri("https://buymeacoffee.com/suvojeet_sengupta") }
+                        )
+                        ActionCard(
+                            icon = Icons.Default.VolunteerActivism,
+                            title = "UPI Donation (India)",
+                            description = "Donate securely via any UPI app",
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            onClick = { uriHandler.openUri("https://upi.pe/suvojitsengupta21-3@okicici") }
+                        )
+                    }
+                }
+            }
+
+            item {
+                ExpressiveSection(
+                    title = "Help & Community",
+                    description = "Get involved and spread the word"
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ActionCard(
+                            icon = Icons.Default.Share,
+                            title = "Share NoteNext",
+                            description = "Tell your friends about NoteNext!",
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            onClick = {
+                                val sendIntent = android.content.Intent().apply {
+                                    action = android.content.Intent.ACTION_SEND
+                                    putExtra(android.content.Intent.EXTRA_TEXT, "Check out NoteNext, an amazing open-source local-first note app! https://github.com/suvojeet-sengupta/notenext")
+                                    type = "text/plain"
+                                }
+                                val shareIntent = android.content.Intent.createChooser(sendIntent, null)
+                                context.startActivity(shareIntent)
+                            }
+                        )
+                        ActionCard(
+                            icon = Icons.Default.BugReport,
+                            title = "Report a Bug / Request Feature",
+                            description = "Help us improve on GitHub",
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            onClick = { uriHandler.openUri("https://github.com/suvojeet-sengupta/notenext/issues") }
+                        )
+                    }
+                }
+            }
+
+            item {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -423,3 +483,57 @@ private fun ModernTeamMemberCard(
     }
 }
 
+@Composable
+private fun ActionCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .springPress()
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = containerColor,
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(contentColor.copy(0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = contentColor, modifier = Modifier.size(24.dp))
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title, 
+                    style = MaterialTheme.typography.titleMedium, 
+                    fontWeight = FontWeight.Bold, 
+                    color = contentColor
+                )
+                Text(
+                    text = description, 
+                    style = MaterialTheme.typography.bodyMedium, 
+                    color = contentColor.copy(0.8f),
+                    lineHeight = 20.sp
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.OpenInNew, 
+                contentDescription = null, 
+                modifier = Modifier.size(20.dp),
+                tint = contentColor.copy(0.7f)
+            )
+        }
+    }
+}
