@@ -292,7 +292,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
                         modifier = Modifier.alpha(0.7f)
                     ) {
                         Text(
-                            "Version 1.2.7 Stable",
+                            "Version 1.2.8 Stable",
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             fontWeight = FontWeight.Bold,
