@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.automirrored.outlined.Label
@@ -229,6 +230,16 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         selected = currentDestination?.route?.contains("Reminder") == true,
                         onClick = {
                             navController.navigate(Destination.Reminder)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) },
+                        label = { Text(stringResource(id = R.string.todos), fontWeight = FontWeight.Bold) },
+                        selected = currentDestination?.route?.contains("Todo") == true,
+                        onClick = {
+                            navController.navigate(Destination.Todo)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
@@ -530,6 +541,17 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Destination.Reminder)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) },
+                        label = { Text(stringResource(id = R.string.todos), fontWeight = FontWeight.Bold) },
+                        selected = currentDestination?.route?.contains("Todo") == true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.Todo)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )

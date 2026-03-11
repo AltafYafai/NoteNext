@@ -4,22 +4,35 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.data.TodoRepository
+import com.suvojeet.notenext.data.repository.GroqRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed class TodoUiEvent {
+    data class ShowToast(val message: String) : TodoUiEvent()
+}
+
 @HiltViewModel
 class TodoViewModel @Inject constructor(
-    private val repository: TodoRepository
+    private val repository: TodoRepository,
+    private val groqRepository: GroqRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TodoState())
     val state: StateFlow<TodoState> = _state.asStateFlow()
+
+    private val _events = MutableSharedFlow<TodoUiEvent>()
+    val events: SharedFlow<TodoUiEvent> = _events.asSharedFlow()
 
     init {
         observeTodos()
@@ -132,6 +145,39 @@ class TodoViewModel @Inject constructor(
                         showAddEditDialog = false,
                         editingTodo = null
                     )
+                }
+            }
+            is TodoEvent.ShowAiTodoDialog -> {
+                _state.value = _state.value.copy(showAiTodoDialog = true)
+            }
+            is TodoEvent.DismissAiTodoDialog -> {
+                _state.value = _state.value.copy(showAiTodoDialog = false)
+            }
+            is TodoEvent.GenerateAiTodos -> {
+                viewModelScope.launch {
+                    groqRepository.generateTodos(event.input)
+                        .onStart { _state.value = _state.value.copy(isGenerating = true) }
+                        .collect { result ->
+                            result.onSuccess { todos ->
+                                todos.forEach { (title, description) ->
+                                    val todo = TodoItem(
+                                        title = title,
+                                        description = description,
+                                        priority = 1,
+                                        createdAt = System.currentTimeMillis()
+                                    )
+                                    repository.insertTodo(todo)
+                                }
+                                _state.value = _state.value.copy(
+                                    isGenerating = false,
+                                    showAiTodoDialog = false
+                                )
+                                _events.emit(TodoUiEvent.ShowToast("Successfully generated ${todos.size} tasks"))
+                            }.onFailure {
+                                _state.value = _state.value.copy(isGenerating = false)
+                                _events.emit(TodoUiEvent.ShowToast("Failed to generate tasks: ${it.message}"))
+                            }
+                        }
                 }
             }
         }

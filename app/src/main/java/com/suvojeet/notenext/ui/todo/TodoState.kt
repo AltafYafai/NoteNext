@@ -9,5 +9,10 @@ data class TodoState(
     val showAddEditDialog: Boolean = false,
     val editingTodo: TodoItem? = null,
     val activeCount: Int = 0,
-    val completedCount: Int = 0
+    val completedCount: Int = 0,
+    
+    // AI Todo
+    val isGenerating: Boolean = false,
+    val showAiTodoDialog: Boolean = false,
+    val aiTodoResult: List<Pair<String, String>> = emptyList()
 )

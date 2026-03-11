@@ -13,4 +13,9 @@ sealed class TodoEvent {
     data class ShowEditDialog(val todo: TodoItem) : TodoEvent()
     object DismissDialog : TodoEvent()
     data class SaveTodo(val title: String, val description: String, val priority: Int, val dueDate: Long?) : TodoEvent()
+    
+    // AI Todo
+    object ShowAiTodoDialog : TodoEvent()
+    object DismissAiTodoDialog : TodoEvent()
+    data class GenerateAiTodos(val input: String) : TodoEvent()
 }

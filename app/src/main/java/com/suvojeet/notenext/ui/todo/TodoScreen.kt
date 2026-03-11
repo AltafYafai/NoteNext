@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Menu
@@ -25,12 +26,26 @@ import com.suvojeet.notenext.ui.components.ExpressiveLoading
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.springPress
 
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+
 @Composable
 fun TodoScreen(
     onBackClick: () -> Unit,
     viewModel: TodoViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is TodoUiEvent.ShowToast -> {
+                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -51,6 +66,16 @@ fun TodoScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { viewModel.onEvent(TodoEvent.ShowAiTodoDialog) },
+                        modifier = Modifier.springPress()
+                    ) {
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = "AI Todo",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     if (state.completedCount > 0) {
                         IconButton(onClick = { viewModel.onEvent(TodoEvent.DeleteAllCompleted) }, modifier = Modifier.springPress()) {
                             Icon(
@@ -145,6 +170,82 @@ fun TodoScreen(
             }
         )
     }
+
+    if (state.showAiTodoDialog) {
+        AiTodoDialog(
+            isGenerating = state.isGenerating,
+            onDismiss = { viewModel.onEvent(TodoEvent.DismissAiTodoDialog) },
+            onGenerate = { input ->
+                viewModel.onEvent(TodoEvent.GenerateAiTodos(input))
+            }
+        )
+    }
+}
+
+@Composable
+fun AiTodoDialog(
+    isGenerating: Boolean,
+    onDismiss: () -> Unit,
+    onGenerate: (String) -> Unit
+) {
+    var input by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = if (isGenerating) ({}) else onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("AI Todo Generator")
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    "Paste a paragraph or messy notes, and AI will convert them into point-by-point tasks.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    label = { Text("Enter text...") },
+                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                    enabled = !isGenerating,
+                    shape = MaterialTheme.shapes.large
+                )
+                if (isGenerating) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Thinking...", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onGenerate(input) },
+                enabled = input.isNotBlank() && !isGenerating,
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Generate")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isGenerating
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

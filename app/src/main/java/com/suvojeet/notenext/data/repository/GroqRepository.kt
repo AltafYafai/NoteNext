@@ -145,6 +145,36 @@ class GroqRepository @Inject constructor(
         emit(result)
     }
 
+    fun generateTodos(input: String): Flow<Result<List<Pair<String, String>>>> = flow {
+        val messages = listOf(
+            Message(
+                role = "system", 
+                content = "You are a helpful assistant that converts paragraphs or messy notes into clear, point-by-point todo tasks. For each task, provide a concise title and a short description if needed. Return ONLY a pure JSON array of objects, each with 'title' and 'description' keys. Example: [{\"title\": \"Buy milk\", \"description\": \"Get full cream milk from store\"}, {\"title\": \"Call mom\", \"description\": \"Wish her happy birthday\"}]. Do not include markdown code blocks or any other text."
+            ),
+            Message(role = "user", content = "Convert this into a todo list:\n\n$input")
+        )
+
+        val result = executeWithRetry(largeModels, messages) { content ->
+            val cleaned = content.replace("```json", "").replace("```", "").trim()
+            try {
+                // Parse JSON array of objects
+                val todoList = json.decodeFromString<List<Map<String, String>>>(cleaned)
+                todoList.map { 
+                    it["title"].orEmpty() to it["description"].orEmpty()
+                }
+            } catch (e: Exception) {
+                // Fallback: split by newlines if JSON fails
+                content.lines()
+                    .filter { it.isNotBlank() }
+                    .map { 
+                        val text = it.trim().removePrefix("- ").removePrefix("* ")
+                        text to ""
+                    }
+            }
+        }
+        emit(result)
+    }
+
     /**
      * Fixes grammar, typos, and punctuation in the given text.
      * Preserves original meaning and formatting.
