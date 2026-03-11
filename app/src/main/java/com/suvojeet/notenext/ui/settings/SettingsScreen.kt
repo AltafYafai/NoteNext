@@ -619,7 +619,7 @@ private fun CheckForUpdateItem(context: android.content.Context) {
     SettingsItem(
         icon = Icons.Rounded.Update,
         title = stringResource(R.string.check_for_updates),
-        subtitle = if (isChecking) stringResource(R.string.checking_for_updates) else if (errorMessage != null) errorMessage!! else "Current: v$currentVersionName",
+        subtitle = if (isChecking) stringResource(R.string.checking_for_updates) else errorMessage ?: "Current: v$currentVersionName",
         iconColor = Color(0xFF2196F3),
         onClick = {
             if (isChecking) return@SettingsItem
@@ -640,8 +640,8 @@ private fun CheckForUpdateItem(context: android.content.Context) {
         }
     )
     
-    if (showResultDialog && updateResult != null) {
-        val result = updateResult!!
+    if (showResultDialog) {
+        val result = updateResult ?: return
         AlertDialog(
             onDismissRequest = { showResultDialog = false },
             shape = MaterialTheme.shapes.extraLarge,

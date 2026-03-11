@@ -179,9 +179,9 @@ fun PasswordSetDialog(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    if (error != null) {
+                    error?.let { errorText ->
                         Text(
-                            text = error!!,
+                            text = errorText,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp)

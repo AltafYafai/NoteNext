@@ -88,16 +88,20 @@ fun AddEditNoteBottomAppBar(
                         Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.add_attachment), modifier = Modifier.size(20.dp))
                     }
 
-                    if (showAttachmentMenu && fabCoordinates != null && fabSize != null) {
-                        AttachmentMenu(
-                            expanded = showAttachmentMenu,
-                            onDismissRequest = { showAttachmentMenu = false },
-                            offset = IntOffset(x = fabCoordinates!!.x, y = fabCoordinates!!.y - fabSize!!.height),
-                            themeMode = themeMode,
-                            onImageClick = onImageClick,
-                            onTakePhotoClick = onTakePhotoClick,
-                            onAudioClick = onAudioClick
-                        )
+                    if (showAttachmentMenu) {
+                        val coords = fabCoordinates
+                        val size = fabSize
+                        if (coords != null && size != null) {
+                            AttachmentMenu(
+                                expanded = showAttachmentMenu,
+                                onDismissRequest = { showAttachmentMenu = false },
+                                offset = IntOffset(x = coords.x, y = coords.y - size.height),
+                                themeMode = themeMode,
+                                onImageClick = onImageClick,
+                                onTakePhotoClick = onTakePhotoClick,
+                                onAudioClick = onAudioClick
+                            )
+                        }
                     }
                 }
                 FloatingActionButton(

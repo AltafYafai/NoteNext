@@ -109,8 +109,9 @@ fun QrScannerScreen(
                         scanner.process(inputImage)
                             .addOnSuccessListener { barcodes ->
                                 val qr = barcodes.firstOrNull { it.format == Barcode.FORMAT_QR_CODE }
-                                if (qr?.rawValue != null) {
-                                    handleScannedData(qr.rawValue!!)
+                                val rawValue = qr?.rawValue
+                                if (rawValue != null) {
+                                    handleScannedData(rawValue)
                                 } else {
                                     Toast.makeText(context, "No QR code found in image", Toast.LENGTH_SHORT).show()
                                     isScanning = true

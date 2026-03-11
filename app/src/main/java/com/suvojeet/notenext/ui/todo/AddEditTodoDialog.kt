@@ -123,9 +123,9 @@ fun AddEditTodoDialog(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = if (dueDate != null) {
-                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(dueDate!!))
-                            } else "Set due date",
+                            text = dueDate?.let {
+                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
+                            } ?: "Set due date",
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )

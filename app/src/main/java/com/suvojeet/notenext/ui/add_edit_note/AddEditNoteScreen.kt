@@ -494,13 +494,15 @@ fun AddEditNoteScreen(
              createMdLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.md")
         }
     )
-    if (showImageViewer && selectedImageData != null) {
-        ImageViewerScreen(
-            imageUri = selectedImageData!!.uri,
-            attachmentTempId = selectedImageData!!.tempId,
-            onDismiss = { showImageViewer = false },
-            onEvent = onEvent
-        )
+    if (showImageViewer) {
+        selectedImageData?.let { data ->
+            ImageViewerScreen(
+                imageUri = data.uri,
+                attachmentTempId = data.tempId,
+                onDismiss = { showImageViewer = false },
+                onEvent = onEvent
+            )
+        }
     }
     
     if (showReminderDialog) {
