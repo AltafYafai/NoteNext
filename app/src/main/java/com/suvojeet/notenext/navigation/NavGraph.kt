@@ -447,7 +447,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         settingsRepository = settingsRepository
                     )
                 }
-                composable<Destination.AddEditNote> {
+                composable<Destination.AddEditNote>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
                     val viewModel: ProjectNotesViewModel = hiltViewModel()
                     AddEditNoteScreen(
                         state = viewModel.state.collectAsState().value.toNotesState(),
@@ -780,7 +783,10 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         settingsRepository = settingsRepository
                     )
                 }
-                composable<Destination.AddEditNote> {
+                composable<Destination.AddEditNote>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
                     val viewModel: ProjectNotesViewModel = hiltViewModel()
                     AddEditNoteScreen(
                         state = viewModel.state.collectAsState().value.toNotesState(),

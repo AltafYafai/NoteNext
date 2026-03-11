@@ -32,7 +32,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -82,12 +81,6 @@ fun MultiActionFab(
             showNote = false
         }
     }
-
-    val pressScale by animateFloatAsState(
-        targetValue = 1f, // Standard M3E buttons should handle their own press
-        animationSpec = spring(),
-        label = "MainFabPressScale"
-    )
 
     Column(
         horizontalAlignment = Alignment.End,
@@ -191,7 +184,7 @@ fun MultiActionFab(
             expanded = isScrollExpanded && !isExpanded,
             containerColor = if (isExpanded) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primary,
             contentColor = if (isExpanded) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.scale(pressScale).springPress(),
+            modifier = Modifier.springPress(),
             shape = MaterialTheme.shapes.extraLarge
         )
     }
