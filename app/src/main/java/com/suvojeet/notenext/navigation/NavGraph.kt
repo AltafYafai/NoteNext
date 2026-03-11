@@ -203,6 +203,26 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
 
                     NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
+                        label = { Text(stringResource(id = R.string.reminders), fontWeight = FontWeight.Bold) },
+                        selected = currentDestination?.route?.contains("Reminder") == true,
+                        onClick = {
+                            navController.navigate(Destination.Reminder)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) },
+                        label = { Text(stringResource(id = R.string.todos), fontWeight = FontWeight.Bold) },
+                        selected = currentDestination?.route?.contains("Todo") == true,
+                        onClick = {
+                            navController.navigate(Destination.Todo)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+                    )
+
+                    NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) },
                         label = { Text(stringResource(id = R.string.bin), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Bin") == true,
@@ -221,26 +241,6 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         selected = currentDestination?.route?.contains("Settings") == true,
                         onClick = {
                             navController.navigate(Destination.Settings)
-                        },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-                    )
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
-                        label = { Text(stringResource(id = R.string.reminders), fontWeight = FontWeight.Bold) },
-                        selected = currentDestination?.route?.contains("Reminder") == true,
-                        onClick = {
-                            navController.navigate(Destination.Reminder)
-                        },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-                    )
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) },
-                        label = { Text(stringResource(id = R.string.todos), fontWeight = FontWeight.Bold) },
-                        selected = currentDestination?.route?.contains("Todo") == true,
-                        onClick = {
-                            navController.navigate(Destination.Todo)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
@@ -522,6 +522,28 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     )
 
                     NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
+                        label = { Text(stringResource(id = R.string.reminders), fontWeight = FontWeight.Bold) },
+                        selected = currentDestination?.route?.contains("Reminder") == true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.Reminder)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+                    )
+
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) },
+                        label = { Text(stringResource(id = R.string.todos), fontWeight = FontWeight.Bold) },
+                        selected = currentDestination?.route?.contains("Todo") == true,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate(Destination.Todo)
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+                    )
+
+                    NavigationDrawerItem(
                         icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) },
                         label = { Text(stringResource(id = R.string.bin), fontWeight = FontWeight.Bold) },
                         selected = currentDestination?.route?.contains("Bin") == true,
@@ -542,28 +564,6 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                         onClick = {
                             scope.launch { drawerState.close() }
                             navController.navigate(Destination.Settings)
-                        },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-                    )
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) },
-                        label = { Text(stringResource(id = R.string.reminders), fontWeight = FontWeight.Bold) },
-                        selected = currentDestination?.route?.contains("Reminder") == true,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate(Destination.Reminder)
-                        },
-                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-                    )
-
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) },
-                        label = { Text(stringResource(id = R.string.todos), fontWeight = FontWeight.Bold) },
-                        selected = currentDestination?.route?.contains("Todo") == true,
-                        onClick = {
-                            scope.launch { drawerState.close() }
-                            navController.navigate(Destination.Todo)
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
                     )
