@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import androidx.compose.foundation.clickable
@@ -22,7 +23,6 @@ data class SlashCommand(
     val action: () -> Unit
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SlashCommandSheetContent(
     onDismissRequest: () -> Unit,

@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.archive
 
 import androidx.compose.foundation.layout.*
@@ -23,7 +23,6 @@ import com.suvojeet.notenext.ui.components.NoteItem
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.springPress
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArchiveScreen(
     onMenuClick: () -> Unit

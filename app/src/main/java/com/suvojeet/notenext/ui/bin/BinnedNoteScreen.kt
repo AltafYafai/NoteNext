@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.bin
 
 import androidx.activity.compose.BackHandler
@@ -35,7 +36,6 @@ import com.suvojeet.notenext.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.produceState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BinnedNoteScreen(
     state: BinState,

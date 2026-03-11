@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import android.content.Context
@@ -37,7 +38,6 @@ private const val PREFS_NAME = "ai_checklist_prefs"
 private const val KEY_PROMPT_HISTORY = "prompt_history"
 private const val MAX_HISTORY_SIZE = 5
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiChecklistSheet(
     isVisible: Boolean,
@@ -320,9 +320,8 @@ fun AiChecklistSheet(
                             )
                         ) {
                             if (isGenerating) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
+                                LoadingIndicator(
+                                    modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Creating...")

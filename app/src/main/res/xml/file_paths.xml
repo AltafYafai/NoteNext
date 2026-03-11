@@ -2,5 +2,6 @@
     <paths>
         <external-path name="my_images" path="Android/data/com.suvojeet.notenext/files/Pictures" />
         <cache-path name="qr_codes" path="qr_codes" />
+        <cache-path name="logs" path="logs" />
     </paths>
 </resources>

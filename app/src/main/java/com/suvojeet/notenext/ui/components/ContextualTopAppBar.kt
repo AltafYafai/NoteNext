@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.animation.AnimatedContent
@@ -71,7 +72,6 @@ import com.suvojeet.notenext.R
  * @param onLabelClick Lambda for the label action.
  * @param onMoveToProjectClick Lambda for moving items to a project.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContextualTopAppBar(
     selectedItemCount: Int,

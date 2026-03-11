@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.setup
 
 import android.Manifest
@@ -50,7 +50,6 @@ private enum class SignInAction {
     RESTORE, ENABLE_BACKUP, CONNECT_ONLY
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(
     onSetupComplete: () -> Unit
@@ -295,7 +294,10 @@ fun SetupScreen(
                                             backupState.googleAccountEmail?.let { 
                                                  backupViewModel.toggleAutoBackup(enabled, it)
                                             }
-                                        }
+                                        },
+                                        thumbContent = if (backupState.isAutoBackupEnabled) {
+                                            { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                                        } else null
                                     )
                                 }
                             }

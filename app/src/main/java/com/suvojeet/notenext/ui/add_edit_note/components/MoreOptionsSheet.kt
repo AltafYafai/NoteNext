@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import android.content.Intent
@@ -25,7 +26,6 @@ import com.suvojeet.notenext.ui.notes.NotesState
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreOptionsSheet(
     state: NotesState,

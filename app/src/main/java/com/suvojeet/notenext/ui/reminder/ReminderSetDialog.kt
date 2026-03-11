@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.reminder
 
 import androidx.compose.foundation.layout.*
@@ -20,7 +20,6 @@ import com.suvojeet.notenext.ui.components.springPress
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReminderSheetContent(
     initialDate: LocalDate? = null,

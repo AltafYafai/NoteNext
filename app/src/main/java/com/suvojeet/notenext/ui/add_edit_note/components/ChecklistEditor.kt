@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import androidx.compose.animation.*
@@ -45,7 +46,6 @@ import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
 fun LazyListScope.ChecklistEditor(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
@@ -195,7 +195,6 @@ fun LazyListScope.ChecklistEditor(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChecklistItemRow(
     item: ChecklistItem,

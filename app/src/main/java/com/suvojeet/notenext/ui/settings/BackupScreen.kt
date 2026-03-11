@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.settings
 
 import android.app.Activity
@@ -238,7 +239,7 @@ fun BackupScreen(
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
+                    LoadingIndicator()
                 }
             }
 
@@ -630,7 +631,7 @@ fun ManualDriveBackupCard(
                              shape = RoundedCornerShape(12.dp)
                          ) {
                             if (state.isRestoring && state.restoreResult?.contains("latest") == true) {
-                                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                 LoadingIndicator(modifier = Modifier.size(16.dp))
                             } else {
                                  Text("Restore Latest")
                             }
@@ -657,7 +658,7 @@ fun ManualDriveBackupCard(
                      }
                  } else if (state.isLoadingVersions) {
                       Spacer(Modifier.height(16.dp))
-                      LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                      LoadingIndicator(modifier = Modifier.fillMaxWidth())
                  }
 
                  Spacer(Modifier.height(8.dp))
@@ -791,7 +792,7 @@ fun ManualLocalBackupCard(
                 shape = RoundedCornerShape(12.dp)
             ) {
                  if (state.isBackingUp && state.backupResult?.contains("SD Card") == true) {
-                     CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                     LoadingIndicator(modifier = Modifier.size(16.dp))
                      Spacer(Modifier.width(8.dp))
                      Text("Backing up...")
                  } else {
@@ -814,7 +815,7 @@ fun ManualLocalBackupCard(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
                 if(state.isRestoring && state.restoreResult?.contains("Local") == true) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onSecondary)
+                    LoadingIndicator(modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.onSecondary)
                      Spacer(Modifier.width(8.dp))
                      Text("Restoring...")
                 } else {
@@ -833,7 +834,7 @@ fun ManualLocalBackupCard(
                 shape = RoundedCornerShape(12.dp)
             ) {
                  if (state.isScanning) {
-                      CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                      LoadingIndicator(modifier = Modifier.size(16.dp))
                       Spacer(Modifier.width(8.dp))
                       Text("Scanning...")
                  } else {
@@ -890,7 +891,10 @@ fun AutoBackupSettingsCard(
                 }
                 Switch(
                     checked = state.isEncryptionEnabled,
-                    onCheckedChange = onToggleEncryption
+                    onCheckedChange = onToggleEncryption,
+                    thumbContent = if (state.isEncryptionEnabled) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null
                 )
             }
             Spacer(Modifier.height(16.dp))
@@ -932,7 +936,10 @@ fun AutoBackupSettingsCard(
                     onCheckedChange = { 
                         val account = GoogleSignIn.getLastSignedInAccount(context)
                         onToggleAutoBackup(it, account?.email)
-                    }
+                    },
+                    thumbContent = if (state.isAutoBackupEnabled) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null
                 )
             }
 
@@ -953,7 +960,10 @@ fun AutoBackupSettingsCard(
                 }
                 Switch(
                     checked = state.isSdCardAutoBackupEnabled,
-                    onCheckedChange = { onToggleSdBackup(it) }
+                    onCheckedChange = { onToggleSdBackup(it) },
+                    thumbContent = if (state.isSdCardAutoBackupEnabled) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null
                 )
             }
             
@@ -1108,7 +1118,7 @@ fun DeleteBackupCard(
             Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error)
             Spacer(Modifier.width(8.dp))
             if (isLoading) {
-                 CircularProgressIndicator(Modifier.size(16.dp), color = MaterialTheme.colorScheme.error)
+                 LoadingIndicator(Modifier.size(16.dp), color = MaterialTheme.colorScheme.error)
             } else {
                  Text("Delete Backup from Drive", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
             }

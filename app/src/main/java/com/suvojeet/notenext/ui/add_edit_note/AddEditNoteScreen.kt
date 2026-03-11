@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note
 
 import android.content.Context
@@ -56,7 +56,6 @@ import kotlinx.coroutines.launch
 
 data class ImageViewerData(val uri: Uri, val tempId: String)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditNoteScreen(
     state: NotesState,

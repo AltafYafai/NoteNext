@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import android.content.ClipData
@@ -24,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiSummarySheet(
     summary: String?,

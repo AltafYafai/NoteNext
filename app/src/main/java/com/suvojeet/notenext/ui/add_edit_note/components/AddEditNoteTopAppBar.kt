@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import androidx.compose.foundation.layout.Column
@@ -19,7 +20,6 @@ import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditNoteTopAppBar(
     state: NotesState,

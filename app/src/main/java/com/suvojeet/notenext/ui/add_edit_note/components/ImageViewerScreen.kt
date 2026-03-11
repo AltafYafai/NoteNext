@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import android.net.Uri
@@ -43,7 +44,6 @@ import com.suvojeet.notenext.ui.notes.NotesEvent
  * @param onDismiss Lambda to be invoked when the viewer is dismissed (e.g., back button clicked).
  * @param onEvent Lambda to dispatch [NotesEvent]s, specifically for [NotesEvent.RemoveAttachment].
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImageViewerScreen(
     imageUri: Uri,

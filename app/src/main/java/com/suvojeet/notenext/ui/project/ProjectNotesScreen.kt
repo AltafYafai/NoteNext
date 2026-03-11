@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class)
 package com.suvojeet.notenext.ui.project
 
 import androidx.activity.compose.BackHandler
@@ -70,7 +70,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun ProjectNotesScreen(
     onBackClick: () -> Unit,
     themeMode: ThemeMode,

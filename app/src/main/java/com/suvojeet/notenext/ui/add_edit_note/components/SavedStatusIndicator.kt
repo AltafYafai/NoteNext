@@ -1,4 +1,4 @@
-
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import androidx.compose.animation.AnimatedVisibility
@@ -16,8 +16,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -69,11 +70,9 @@ fun SavedStatusIndicator(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-             CircularProgressIndicator(
+             LoadingIndicator(
                 modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
-                color = contentColor.copy(alpha = 0.7f),
-                trackColor = Color.Transparent
+                color = contentColor.copy(alpha = 0.7f)
             )
         }
 

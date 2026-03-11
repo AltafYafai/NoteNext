@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,7 +33,6 @@ import com.suvojeet.notenext.R
  * @param onSearchQueryChange Lambda to be invoked when the search query changes.
  * @param onBackClick Lambda to be invoked when the back button is clicked.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchTopAppBar(
     searchQuery: String,

@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.todo
 
 import androidx.compose.animation.animateColorAsState
@@ -36,7 +36,6 @@ object TodoPriorityColors {
     val Low = Color(0xFF4CAF50)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoItemCard(
     todo: TodoItem,

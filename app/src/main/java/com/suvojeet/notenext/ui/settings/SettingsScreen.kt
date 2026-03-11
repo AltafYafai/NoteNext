@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.settings
 
 import org.acra.ACRA
@@ -54,7 +54,6 @@ import androidx.compose.foundation.rememberScrollState
 import com.suvojeet.notenext.util.LogcatManager
 import android.widget.Toast
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
@@ -522,6 +521,9 @@ private fun SettingsItem(
                 Switch(
                     checked = checked,
                     onCheckedChange = onCheckedChange,
+                    thumbContent = if (checked) {
+                        { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null,
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedTrackColor = iconColor

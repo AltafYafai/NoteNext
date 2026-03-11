@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.reminder
 
 import androidx.compose.foundation.layout.Column
@@ -27,7 +27,6 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.springPress
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditReminderScreen(onBackClick: () -> Unit) {
     var title by remember { mutableStateOf("") }

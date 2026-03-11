@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
 import androidx.compose.animation.animateColorAsState
@@ -63,7 +64,6 @@ import com.suvojeet.notenext.R
  * @param linkPreview The [LinkPreview] data to display.
  * @param onEvent Lambda to dispatch [NotesEvent]s, specifically for [NotesEvent.OnRemoveLinkPreview].
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LinkPreviewCard(linkPreview: LinkPreview, onEvent: (NotesEvent) -> Unit) {
     val uriHandler = LocalUriHandler.current

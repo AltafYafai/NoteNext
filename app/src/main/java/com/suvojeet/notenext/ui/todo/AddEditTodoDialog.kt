@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.todo
 
 import androidx.compose.foundation.layout.*
@@ -18,7 +19,6 @@ import com.suvojeet.notenext.ui.components.springPress
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditTodoDialog(
     editingTodo: TodoItem?,

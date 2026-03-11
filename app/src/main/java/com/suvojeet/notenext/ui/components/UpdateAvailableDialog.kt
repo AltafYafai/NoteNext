@@ -1,3 +1,4 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.foundation.layout.*
@@ -15,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UpdateAvailableDialog(
     onUpdateClick: () -> Unit,

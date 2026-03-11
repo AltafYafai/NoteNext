@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.labels
 
 import androidx.compose.foundation.clickable
@@ -27,7 +27,6 @@ import com.suvojeet.notenext.ui.components.SettingsGroupCard
 import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.springPress
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditLabelsScreen(
     onBackPressed: () -> Unit
