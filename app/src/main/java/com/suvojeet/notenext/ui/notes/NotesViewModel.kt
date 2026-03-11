@@ -91,6 +91,7 @@ class NotesViewModel @Inject constructor(
                 saveNote(shouldCollapse = false)
                 _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 e.printStackTrace()
                 _state.value = state.value.copy(saveStatus = SaveStatus.ERROR)
                 _events.emit(NotesUiEvent.ShowToast("Auto-save failed: ${e.message}"))
