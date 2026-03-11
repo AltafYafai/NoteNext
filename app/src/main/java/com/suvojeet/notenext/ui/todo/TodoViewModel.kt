@@ -155,29 +155,35 @@ class TodoViewModel @Inject constructor(
             }
             is TodoEvent.GenerateAiTodos -> {
                 viewModelScope.launch {
-                    groqRepository.generateTodos(event.input)
-                        .onStart { _state.value = _state.value.copy(isGenerating = true) }
-                        .collect { result ->
-                            result.onSuccess { todos ->
-                                todos.forEach { (title, description) ->
-                                    val todo = TodoItem(
-                                        title = title,
-                                        description = description,
-                                        priority = 1,
-                                        createdAt = System.currentTimeMillis()
+                    try {
+                        groqRepository.generateTodos(event.input)
+                            .onStart { _state.value = _state.value.copy(isGenerating = true) }
+                            .collect { result ->
+                                result.onSuccess { todos ->
+                                    todos.forEach { (title, description) ->
+                                        val todo = TodoItem(
+                                            title = title,
+                                            description = description,
+                                            priority = 1,
+                                            createdAt = System.currentTimeMillis()
+                                        )
+                                        repository.insertTodo(todo)
+                                    }
+                                    _state.value = _state.value.copy(
+                                        isGenerating = false,
+                                        showAiTodoDialog = false
                                     )
-                                    repository.insertTodo(todo)
+                                    _events.emit(TodoUiEvent.ShowToast("Successfully generated ${todos.size} tasks"))
+                                }.onFailure {
+                                    _state.value = _state.value.copy(isGenerating = false)
+                                    _events.emit(TodoUiEvent.ShowToast("Failed to generate tasks: ${it.message}"))
                                 }
-                                _state.value = _state.value.copy(
-                                    isGenerating = false,
-                                    showAiTodoDialog = false
-                                )
-                                _events.emit(TodoUiEvent.ShowToast("Successfully generated ${todos.size} tasks"))
-                            }.onFailure {
-                                _state.value = _state.value.copy(isGenerating = false)
-                                _events.emit(TodoUiEvent.ShowToast("Failed to generate tasks: ${it.message}"))
                             }
-                        }
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        e.printStackTrace()
+                        _state.value = _state.value.copy(isGenerating = false)
+                    }
                 }
             }
         }
