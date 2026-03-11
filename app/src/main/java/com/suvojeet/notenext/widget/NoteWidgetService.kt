@@ -29,21 +29,32 @@ class NoteWidgetRemoteViewsFactory(
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var notes: List<Note> = emptyList()
+    private var noteContents: Map<Int, String> = emptyMap()
 
     override fun onCreate() {}
 
     override fun onDataSetChanged() {
         runBlocking {
             try {
-                // Fetch Pinned notes first, if empty then recent notes?
-                // For now, strict "Pinned Notes" as per XML title.
+                // Fetch Pinned notes first
                 val allNotesWithAttachments = repository.getNotes("", com.suvojeet.notenext.data.SortType.DATE_MODIFIED).first()
                 notes = allNotesWithAttachments
                         .map { it.note }
                         .filter { it.isPinned && !it.isArchived && !it.isBinned }
+                
+                // Pre-compute plain text content for all notes to avoid runBlocking in getViewAt
+                noteContents = notes.associate { note ->
+                    val content = if (note.noteType == "CHECKLIST") {
+                        "Checklist..."
+                    } else {
+                        HtmlConverter.htmlToPlainText(note.content)
+                    }
+                    note.id to content
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 notes = emptyList()
+                noteContents = emptyMap()
             }
         }
     }
@@ -60,12 +71,7 @@ class NoteWidgetRemoteViewsFactory(
 
         views.setTextViewText(R.id.widget_item_title, note.title.ifEmpty { "Untitled" })
         
-        // HtmlConverter needs Android context, usually safe here.
-        val plainContent = try {
-            if (note.noteType == "CHECKLIST") "Checklist..." else runBlocking { HtmlConverter.htmlToPlainText(note.content) }
-        } catch (e: Exception) {
-            ""
-        }
+        val plainContent = noteContents[note.id] ?: ""
         views.setTextViewText(R.id.widget_item_content, plainContent)
 
         val fillInIntent = Intent().apply {

@@ -73,5 +73,6 @@ data class NotesState(
 enum class SaveStatus {
     SAVED,
     SAVING,
-    UNSAVED
+    UNSAVED,
+    ERROR
 }

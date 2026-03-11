@@ -26,13 +26,17 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             scope.launch {
-                val notes = repository.getAllReminders().first()
-                val now = System.currentTimeMillis()
-                notes.forEach { note ->
-                    // Only schedule future reminders or repeating reminders
-                    if ((note.reminderTime ?: 0L) > now) {
-                        alarmScheduler.schedule(note)
+                try {
+                    val notes = repository.getAllReminders().first()
+                    val now = System.currentTimeMillis()
+                    notes.forEach { note ->
+                        // Only schedule future reminders or repeating reminders
+                        if ((note.reminderTime ?: 0L) > now) {
+                            alarmScheduler.schedule(note)
+                        }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }

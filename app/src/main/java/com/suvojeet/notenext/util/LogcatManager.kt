@@ -26,7 +26,8 @@ object LogcatManager {
             // Execute logcat filtering by PID
             // -f: write to file
             // --pid: filter by process ID
-            logcatProcess = Runtime.getRuntime().exec("logcat -f ${logFile!!.absolutePath} --pid=$pid *:V")
+            val logPath = logFile?.absolutePath ?: return
+            logcatProcess = Runtime.getRuntime().exec("logcat -f $logPath --pid=$pid *:V")
         } catch (e: IOException) {
             e.printStackTrace()
         }

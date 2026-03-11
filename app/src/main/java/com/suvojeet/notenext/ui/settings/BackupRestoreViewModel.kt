@@ -342,7 +342,7 @@ class BackupRestoreViewModel @Inject constructor(
         var labelsJson: String? = null
         var projectsJson: String? = null
 
-        // Pass 1: Read and validate JSON Data from ZIP
+        // Pass 1: Read JSON Data from ZIP
         try {
             var zipEntry = zis.nextEntry
             while (zipEntry != null) {
@@ -357,57 +357,53 @@ class BackupRestoreViewModel @Inject constructor(
             throw Exception("Failed to read backup contents: ${e.message}")
         }
 
-        // Validation: Ensure at least notes exist (even if empty list)
+        // Pass 2: Deserialize into in-memory objects BEFORE deletion
         if (notesJson == null) {
             throw Exception("Invalid backup: Missing notes.json")
         }
 
-        // Only delete local data AFTER we've verified the backup contents
+        val projectsToRestore = projectsJson?.let {
+            json.decodeFromString(ListSerializer(Project.serializer()), it)
+        } ?: emptyList()
+
+        val labelsToRestore = labelsJson?.let {
+            json.decodeFromString(ListSerializer(Label.serializer()), it)
+        } ?: emptyList()
+
+        val notesToRestore = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), notesJson)
+
+        // Only delete local data AFTER we've verified and parsed the backup contents successfully
         repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
         repository.getNotes().first().forEach { repository.deleteNote(it.note) }
         repository.getLabels().first().forEach { repository.deleteLabel(it) }
         repository.getProjects().first().forEach { repository.deleteProject(it.id) }
 
-        // Pass 2: Restore Data
-        projectsJson?.let {
-            try {
-                val projects: List<Project> = json.decodeFromString(ListSerializer(Project.serializer()), it)
-                projects.forEach { project ->
-                    val oldId = project.id
-                    val newId = repository.insertProject(project.copy(id = 0)).toInt()
-                    oldToNewProjectIds[oldId] = newId
-                }
-            } catch (e: Exception) { e.printStackTrace() }
+        // Pass 3: Restore Data
+        projectsToRestore.forEach { project ->
+            val oldId = project.id
+            val newId = repository.insertProject(project.copy(id = 0))
+            require(newId <= Int.MAX_VALUE) { "Project ID overflow" }
+            oldToNewProjectIds[oldId] = newId.toInt()
         }
 
-        labelsJson?.let {
-            try {
-                val labels: List<Label> = json.decodeFromString(ListSerializer(Label.serializer()), it)
-                labels.forEach { repository.insertLabel(it) }
-            } catch (e: Exception) { e.printStackTrace() }
-        }
+        labelsToRestore.forEach { repository.insertLabel(it) }
 
-        // notesJson is guaranteed not null here
-        try {
-            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), notesJson)
-            notesWithAttachments.forEach { noteWithAttachments ->
-                val oldProjectId = noteWithAttachments.note.projectId
-                val newProjectId = oldToNewProjectIds[oldProjectId]
-                val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
-                val newNoteId = repository.insertNote(newNote).toInt()
-                
-                if (noteWithAttachments.checklistItems.isNotEmpty()) {
-                    val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
-                        checklistItem.copy(
-                            id = java.util.UUID.randomUUID().toString(),
-                            noteId = newNoteId
-                        )
-                    }
-                    repository.insertChecklistItems(newChecklistItems)
+        notesToRestore.forEach { noteWithAttachments ->
+            val oldProjectId = noteWithAttachments.note.projectId
+            val newProjectId = oldToNewProjectIds[oldProjectId]
+            val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
+            val newNoteId = repository.insertNote(newNote)
+            require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
+            
+            if (noteWithAttachments.checklistItems.isNotEmpty()) {
+                val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
+                    checklistItem.copy(
+                        id = java.util.UUID.randomUUID().toString(),
+                        noteId = newNoteId.toInt()
+                    )
                 }
+                repository.insertChecklistItems(newChecklistItems)
             }
-        } catch (e: Exception) {
-            throw Exception("Failed to restore notes: ${e.message}")
         }
     }
 
@@ -471,7 +467,9 @@ class BackupRestoreViewModel @Inject constructor(
             label = keepNote.labels?.firstOrNull()?.name 
         )
         
-        val noteId = repository.insertNote(newNote).toInt()
+        val newIdLong = repository.insertNote(newNote)
+        require(newIdLong <= Int.MAX_VALUE) { "Note ID overflow" }
+        val noteId = newIdLong.toInt()
 
         val listContent = keepNote.listContent
         if (!listContent.isNullOrEmpty()) {

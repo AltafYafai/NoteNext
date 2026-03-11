@@ -80,15 +80,21 @@ class NotesViewModel @Inject constructor(
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
 
     private var autoSaveJob: Job? = null
+    private var selectionActionsJob: Job? = null
 
     private fun scheduleAutoSave() {
         autoSaveJob?.cancel()
         _state.value = state.value.copy(saveStatus = SaveStatus.SAVING)
         autoSaveJob = viewModelScope.launch {
-            delay(1000L) // 1 second debounce
-            _events.emit(NotesUiEvent.ShowToast("Saving...")) // Optional debug
-            saveNote(shouldCollapse = false)
-            _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
+            try {
+                delay(1000L) // 1 second debounce
+                saveNote(shouldCollapse = false)
+                _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _state.value = state.value.copy(saveStatus = SaveStatus.ERROR)
+                _events.emit(NotesUiEvent.ShowToast("Auto-save failed: ${e.message}"))
+            }
         }
     }
 
@@ -114,11 +120,20 @@ class NotesViewModel @Inject constructor(
             )
         }.launchIn(viewModelScope)
 
-        viewModelScope.launch {
-             NoteSelectionManager.actions.collect { style ->
-                 onEvent(NotesEvent.ApplyStyleToContent(style))
-             }
+        selectionActionsJob = viewModelScope.launch {
+            try {
+                 NoteSelectionManager.actions.collect { style ->
+                     onEvent(NotesEvent.ApplyStyleToContent(style))
+                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        selectionActionsJob?.cancel()
     }
 
     fun onEvent(event: NotesEvent) {
@@ -439,6 +454,7 @@ class NotesViewModel @Inject constructor(
                     for (noteWithAttachments in selectedNotes) {
                         val copiedNote = noteWithAttachments.note.copy(id = 0, title = "${noteWithAttachments.note.title} (Copy)")
                         val newNoteId = repository.insertNote(copiedNote)
+                        require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
                         noteWithAttachments.attachments.forEach { attachment ->
                             repository.insertAttachment(attachment.copy(id = 0, noteId = newNoteId.toInt()))
                         }
@@ -959,6 +975,7 @@ class NotesViewModel @Inject constructor(
                         repository.getNoteById(it)?.let { noteWithAttachments ->
                             val copiedNote = noteWithAttachments.note.copy(id = 0, title = "${noteWithAttachments.note.title} (Copy)", createdAt = System.currentTimeMillis(), lastEdited = System.currentTimeMillis())
                             val newNoteId = repository.insertNote(copiedNote)
+                            require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
                             noteWithAttachments.attachments.forEach { attachment ->
                                 repository.insertAttachment(attachment.copy(id = 0, noteId = newNoteId.toInt()))
                             }
@@ -1283,6 +1300,7 @@ class NotesViewModel @Inject constructor(
                     repository.updateNote(note)
                     noteId.toLong() // Convert Int to Long for consistency
                 }
+                require(currentNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
 
                 if (state.value.editingReminderTime != null) {
                     alarmScheduler.schedule(note.copy(id = currentNoteId.toInt()))
