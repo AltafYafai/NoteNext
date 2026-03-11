@@ -5,10 +5,12 @@ import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
@@ -16,7 +18,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.billing.BillingState
 import com.suvojeet.notenext.billing.PurchaseState
+import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.springPress
 
 @Composable
@@ -87,7 +94,6 @@ fun DonationScreen(
         )
     }
 
-    // Failed snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val failedState = purchaseState as? PurchaseState.Failed
     LaunchedEffect(failedState) {
@@ -100,7 +106,7 @@ fun DonationScreen(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             LargeTopAppBar(
@@ -108,7 +114,8 @@ fun DonationScreen(
                     Text(
                         stringResource(R.string.support_notenext),
                         fontWeight = FontWeight.Black,
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineLarge,
+                        letterSpacing = (-1).sp
                     )
                 },
                 navigationIcon = {
@@ -124,189 +131,121 @@ fun DonationScreen(
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.background,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(padding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(28.dp)
         ) {
-            // Header Hero Section
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(vertical = 8.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(28.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(80.dp)
+            item {
+                DonationHeroSection()
+            }
+
+            item {
+                ExpressiveSection(
+                    title = stringResource(R.string.why_donate),
+                    description = stringResource(R.string.donation_description)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Rounded.VolunteerActivism,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(40.dp)
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        DonationFeatureCard(
+                            icon = Icons.Rounded.Person,
+                            title = stringResource(R.string.reason_independent_title),
+                            description = stringResource(R.string.reason_independent_desc),
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
+                        DonationFeatureCard(
+                            icon = Icons.Rounded.Security,
+                            title = stringResource(R.string.reason_privacy_title),
+                            description = stringResource(R.string.reason_privacy_desc),
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+
+                        DonationFeatureCard(
+                            icon = Icons.Rounded.AutoAwesome,
+                            title = stringResource(R.string.reason_updates_title),
+                            description = stringResource(R.string.reason_updates_desc),
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                         )
                     }
                 }
-
-                Text(
-                    stringResource(R.string.made_with_love_free),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center
-                )
-
-                Text(
-                    stringResource(R.string.donation_description),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
             }
 
-            // Why Support Section
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    stringResource(R.string.why_donate),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-
-                ReasonCard(
-                    icon = Icons.Rounded.Person,
-                    title = stringResource(R.string.reason_independent_title),
-                    description = stringResource(R.string.reason_independent_desc)
-                )
-
-                ReasonCard(
-                    icon = Icons.Rounded.Security,
-                    title = stringResource(R.string.reason_privacy_title),
-                    description = stringResource(R.string.reason_privacy_desc)
-                )
-
-                ReasonCard(
-                    icon = Icons.Rounded.AutoAwesome,
-                    title = stringResource(R.string.reason_updates_title),
-                    description = stringResource(R.string.reason_updates_desc)
-                )
-            }
-
-            // Donation Options Section
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    stringResource(R.string.choose_amount),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-
-                when (billingState) {
-                    is BillingState.Loading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(120.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                Spacer(Modifier.height(12.dp))
-                                Text(
-                                    stringResource(R.string.connecting_play_store),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
-                    }
-
-                    is BillingState.Error -> {
-                        Card(
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(20.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            item {
+                ExpressiveSection(
+                    title = stringResource(R.string.choose_amount),
+                    description = stringResource(R.string.secure_google_play)
+                ) {
+                    when (billingState) {
+                        is BillingState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().height(150.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    Icons.Rounded.CloudOff,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Column {
-                                    Text(
-                                        stringResource(R.string.could_not_connect_play_store),
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                    Text(
-                                        stringResource(R.string.check_internet_try_again),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-                                    )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator(strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(stringResource(R.string.connecting_play_store))
                                 }
                             }
                         }
-                    }
 
-                    is BillingState.Ready -> {
-                        AnimatedVisibility(
-                            visible = products.isNotEmpty(),
-                            enter = fadeIn() + scaleIn(initialScale = 0.92f)
-                        ) {
+                        is BillingState.Error -> {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                color = MaterialTheme.colorScheme.errorContainer
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Icon(Icons.Rounded.CloudOff, null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                                    Column {
+                                        Text(stringResource(R.string.could_not_connect_play_store), fontWeight = FontWeight.Bold)
+                                        Text(stringResource(R.string.check_internet_try_again), style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                            }
+                        }
+
+                        is BillingState.Ready -> {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                if (products.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(stringResource(R.string.loading_options))
+                                    }
+                                }
+                                
                                 products.forEach { product ->
                                     val priceStr = product.oneTimePurchaseOfferDetails?.formattedPrice ?: ""
                                     val (emoji, label, subtitle) = when (product.productId) {
-                                        "donate_small" -> Triple(
-                                            "☕",
-                                            stringResource(R.string.donate_small_label),
-                                            stringResource(R.string.donate_small_desc)
-                                        )
-                                        "donate_medium" -> Triple(
-                                            "🍕",
-                                            stringResource(R.string.donate_medium_label),
-                                            stringResource(R.string.donate_medium_desc)
-                                        )
-                                        "donate_large" -> Triple(
-                                            "🚀",
-                                            stringResource(R.string.donate_large_label),
-                                            stringResource(R.string.donate_large_desc)
-                                        )
+                                        "donate_small" -> Triple("☕", stringResource(R.string.donate_small_label), stringResource(R.string.donate_small_desc))
+                                        "donate_medium" -> Triple("🍕", stringResource(R.string.donate_medium_label), stringResource(R.string.donate_medium_desc))
+                                        "donate_large" -> Triple("🚀", stringResource(R.string.donate_large_label), stringResource(R.string.donate_large_desc))
                                         else -> Triple("💙", product.name, "")
                                     }
 
                                     val isPurchasing = purchaseState is PurchaseState.Pending
 
-                                    DonationOptionCard(
+                                    DonationActionCard(
                                         emoji = emoji,
-                                        label = label,
-                                        subtitle = subtitle,
+                                        title = label,
+                                        description = subtitle,
                                         price = priceStr,
                                         isLoading = isPurchasing,
                                         onClick = {
@@ -318,72 +257,73 @@ fun DonationScreen(
                                 }
                             }
                         }
-
-                        if (products.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(120.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator(strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
-                                    Spacer(Modifier.height(12.dp))
-                                    Text(
-                                        stringResource(R.string.loading_options),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
-
-            // Footer
-            Text(
-                stringResource(R.string.secure_google_play),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
-            )
+            
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }
 
 @Composable
-fun ReasonCard(
-    icon: ImageVector,
-    title: String,
-    description: String
-) {
+private fun DonationHeroSection() {
     Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 2.dp
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp)
-            )
-            Column {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(MaterialTheme.shapes.extraLarge)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.secondary
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.VolunteerActivism,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(56.dp)
                 )
+            }
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(
+                stringResource(R.string.made_with_love_free),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            ) {
                 Text(
-                    description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    "Support NoteNext Development",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -391,87 +331,112 @@ fun ReasonCard(
 }
 
 @Composable
-fun DonationOptionCard(
+private fun DonationFeatureCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    containerColor: Color,
+    contentColor: Color
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().springPress(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = containerColor,
+    ) {
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(contentColor.copy(0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = contentColor, modifier = Modifier.size(24.dp))
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = title, 
+                    style = MaterialTheme.typography.titleMedium, 
+                    fontWeight = FontWeight.Bold, 
+                    color = contentColor
+                )
+                Text(
+                    text = description, 
+                    style = MaterialTheme.typography.bodyMedium, 
+                    color = contentColor.copy(0.8f),
+                    lineHeight = 20.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DonationActionCard(
     emoji: String,
-    label: String,
-    subtitle: String,
+    title: String,
+    description: String,
     price: String,
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
-        ),
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .springPress(),
-        enabled = !isLoading
+            .springPress()
+            .clickable(enabled = !isLoading, onClick = onClick),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(MaterialTheme.shapes.large)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.1f),
-                    modifier = Modifier.size(56.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(emoji, fontSize = 28.sp)
-                    }
-                }
-                
-                Column {
+                Text(emoji, fontSize = 28.sp)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                if (description.isNotEmpty()) {
                     Text(
-                        label,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        text = description, 
+                        style = MaterialTheme.typography.bodySmall, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (subtitle.isNotEmpty()) {
-                        Text(
-                            subtitle,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                        )
-                    }
                 }
             }
-
-            Spacer(Modifier.width(12.dp))
-
+            
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 3.dp,
-                    strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                )
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
             } else {
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.height(36.dp),
+                    shadowElevation = 2.dp
                 ) {
-                    Text(
-                        price,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
+                    Box(modifier = Modifier.padding(horizontal = 16.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            price,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                 }
             }
         }
     }
 }
-
