@@ -41,6 +41,7 @@ import androidx.core.os.LocaleListCompat
 import javax.inject.Inject
 import com.suvojeet.notenext.util.UpdateChecker
 import androidx.compose.ui.res.stringResource
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 
@@ -56,6 +57,36 @@ class MainActivity : FragmentActivity() {
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        
+        splashScreen.setOnExitAnimationListener { splashScreenView ->
+            val fadeOut = android.view.animation.AlphaAnimation(1f, 0f).apply {
+                duration = 400L
+                fillAfter = true
+            }
+            val scaleOut = android.view.animation.ScaleAnimation(
+                1f, 1.3f, 1f, 1.3f,
+                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
+                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f
+            ).apply {
+                duration = 400L
+                fillAfter = true
+            }
+
+            val animationSet = android.view.animation.AnimationSet(true).apply {
+                addAnimation(fadeOut)
+                addAnimation(scaleOut)
+                setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                    override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                    override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                        splashScreenView.remove()
+                    }
+                    override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                })
+            }
+            splashScreenView.view.startAnimation(animationSet)
+        }
+
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 

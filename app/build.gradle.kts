@@ -82,6 +82,7 @@ dependencies {
     implementation(project(":changelog"))
 
     implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.core.splashscreen)
 
     // BOM — ek jagah version, baaki sab auto
     val bom = platform(libs.compose.bom)
