@@ -34,17 +34,27 @@ object CryptoUtils {
     fun encryptNote(note: Note): Note {
         if (note.isEncrypted) return note
 
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
+        val secretKey = getSecretKey()
         
-        val iv = Base64.encodeToString(cipher.iv, Base64.DEFAULT)
-        val encryptedTitle = Base64.encodeToString(cipher.doFinal(note.title.toByteArray()), Base64.DEFAULT)
-        val encryptedContent = Base64.encodeToString(cipher.doFinal(note.content.toByteArray()), Base64.DEFAULT)
+        // Encrypt title
+        val cipherTitle = Cipher.getInstance(TRANSFORMATION)
+        cipherTitle.init(Cipher.ENCRYPT_MODE, secretKey)
+        val ivTitle = cipherTitle.iv
+        val encryptedTitle = Base64.encodeToString(cipherTitle.doFinal(note.title.toByteArray()), Base64.DEFAULT)
+
+        // Encrypt content
+        val cipherContent = Cipher.getInstance(TRANSFORMATION)
+        cipherContent.init(Cipher.ENCRYPT_MODE, secretKey)
+        val ivContent = cipherContent.iv
+        val encryptedContent = Base64.encodeToString(cipherContent.doFinal(note.content.toByteArray()), Base64.DEFAULT)
+
+        // Combine IVs: ivTitle:ivContent
+        val combinedIv = Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
 
         return note.copy(
             title = encryptedTitle,
             content = encryptedContent,
-            iv = iv,
+            iv = combinedIv,
             isEncrypted = true
         )
     }
@@ -52,35 +62,74 @@ object CryptoUtils {
     fun decryptNote(note: Note): Note {
         if (!note.isEncrypted || note.iv == null) return note
 
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        val spec = GCMParameterSpec(128, Base64.decode(note.iv, Base64.DEFAULT))
-        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), spec)
+        return try {
+            val ivs = note.iv.split(":")
+            val secretKey = getSecretKey()
+            
+            val (decryptedTitle, decryptedContent) = if (ivs.size == 2) {
+                // New format: separate IVs for title and content
+                val ivTitle = Base64.decode(ivs[0], Base64.DEFAULT)
+                val ivContent = Base64.decode(ivs[1], Base64.DEFAULT)
+                
+                val cipherTitle = Cipher.getInstance(TRANSFORMATION)
+                cipherTitle.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, ivTitle))
+                val title = String(cipherTitle.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
+                
+                val cipherContent = Cipher.getInstance(TRANSFORMATION)
+                cipherContent.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, ivContent))
+                val content = String(cipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                
+                Pair(title, content)
+            } else {
+                // Old (broken) format: same IV for both (likely to fail/crash)
+                val iv = Base64.decode(note.iv, Base64.DEFAULT)
+                val cipher = Cipher.getInstance(TRANSFORMATION)
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
+                val title = String(cipher.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
+                
+                // We MUST re-init the cipher here if we want to try decrypting the content with the same IV
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
+                val content = String(cipher.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                Pair(title, content)
+            }
 
-        val decryptedTitle = String(cipher.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
-        val decryptedContent = String(cipher.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
-
-        return note.copy(
-            title = decryptedTitle,
-            content = decryptedContent,
-            iv = null,
-            isEncrypted = false
-        )
+            note.copy(
+                title = decryptedTitle,
+                content = decryptedContent,
+                iv = null,
+                isEncrypted = false
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Return note as is if decryption fails
+            note
+        }
     }
 
     fun encryptNoteVersion(version: NoteVersion): NoteVersion {
         if (version.isEncrypted) return version
 
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
+        val secretKey = getSecretKey()
+        
+        // Encrypt title
+        val cipherTitle = Cipher.getInstance(TRANSFORMATION)
+        cipherTitle.init(Cipher.ENCRYPT_MODE, secretKey)
+        val ivTitle = cipherTitle.iv
+        val encryptedTitle = Base64.encodeToString(cipherTitle.doFinal(version.title.toByteArray()), Base64.DEFAULT)
 
-        val iv = Base64.encodeToString(cipher.iv, Base64.DEFAULT)
-        val encryptedTitle = Base64.encodeToString(cipher.doFinal(version.title.toByteArray()), Base64.DEFAULT)
-        val encryptedContent = Base64.encodeToString(cipher.doFinal(version.content.toByteArray()), Base64.DEFAULT)
+        // Encrypt content
+        val cipherContent = Cipher.getInstance(TRANSFORMATION)
+        cipherContent.init(Cipher.ENCRYPT_MODE, secretKey)
+        val ivContent = cipherContent.iv
+        val encryptedContent = Base64.encodeToString(cipherContent.doFinal(version.content.toByteArray()), Base64.DEFAULT)
+
+        // Combine IVs: ivTitle:ivContent
+        val combinedIv = Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
 
         return version.copy(
             title = encryptedTitle,
             content = encryptedContent,
-            iv = iv,
+            iv = combinedIv,
             isEncrypted = true
         )
     }
@@ -88,18 +137,43 @@ object CryptoUtils {
     fun decryptNoteVersion(version: NoteVersion): NoteVersion {
         if (!version.isEncrypted || version.iv == null) return version
 
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        val spec = GCMParameterSpec(128, Base64.decode(version.iv, Base64.DEFAULT))
-        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), spec)
+        return try {
+            val ivs = version.iv.split(":")
+            val secretKey = getSecretKey()
+            
+            val (decryptedTitle, decryptedContent) = if (ivs.size == 2) {
+                val ivTitle = Base64.decode(ivs[0], Base64.DEFAULT)
+                val ivContent = Base64.decode(ivs[1], Base64.DEFAULT)
+                
+                val cipherTitle = Cipher.getInstance(TRANSFORMATION)
+                cipherTitle.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, ivTitle))
+                val title = String(cipherTitle.doFinal(Base64.decode(version.title, Base64.DEFAULT)))
+                
+                val cipherContent = Cipher.getInstance(TRANSFORMATION)
+                cipherContent.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, ivContent))
+                val content = String(cipherContent.doFinal(Base64.decode(version.content, Base64.DEFAULT)))
+                
+                Pair(title, content)
+            } else {
+                val iv = Base64.decode(version.iv, Base64.DEFAULT)
+                val cipher = Cipher.getInstance(TRANSFORMATION)
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
+                val title = String(cipher.doFinal(Base64.decode(version.title, Base64.DEFAULT)))
+                
+                cipher.init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, iv))
+                val content = String(cipher.doFinal(Base64.decode(version.content, Base64.DEFAULT)))
+                Pair(title, content)
+            }
 
-        val decryptedTitle = String(cipher.doFinal(Base64.decode(version.title, Base64.DEFAULT)))
-        val decryptedContent = String(cipher.doFinal(Base64.decode(version.content, Base64.DEFAULT)))
-
-        return version.copy(
-            title = decryptedTitle,
-            content = decryptedContent,
-            iv = null,
-            isEncrypted = false
-        )
+            version.copy(
+                title = decryptedTitle,
+                content = decryptedContent,
+                iv = null,
+                isEncrypted = false
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            version
+        }
     }
 }
