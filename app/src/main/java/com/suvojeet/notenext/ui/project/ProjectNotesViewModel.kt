@@ -70,7 +70,7 @@ class ProjectNotesViewModel @Inject constructor(
         _state.value = _state.value.copy(saveStatus = SaveStatus.SAVING)
         autoSaveJob = viewModelScope.launch {
             delay(1500)
-            onEvent(ProjectNotesEvent.OnSaveNoteClick)
+            onEvent(ProjectNotesEvent.OnSaveNoteClick(shouldCollapse = false))
             _state.value = _state.value.copy(saveStatus = SaveStatus.SAVED)
         }
     }
@@ -592,7 +592,7 @@ class ProjectNotesViewModel @Inject constructor(
             }
             is ProjectNotesEvent.AutoSaveNote -> {
                 viewModelScope.launch {
-                    onEvent(ProjectNotesEvent.OnSaveNoteClick)
+                    onEvent(ProjectNotesEvent.OnSaveNoteClick(shouldCollapse = false))
                 }
             }
             is ProjectNotesEvent.SummarizeNote -> {
@@ -814,6 +814,9 @@ class ProjectNotesViewModel @Inject constructor(
                         if (noteId != -1) { // It's an existing note, so delete it
                             repository.getNoteById(noteId)?.let { repository.updateNote(it.note.copy(isBinned = true, binnedOn = System.currentTimeMillis())) }
                         }
+                        if (event.shouldCollapse) {
+                            _state.value = state.value.copy(expandedNoteId = null)
+                        }
                     } else {
                         val currentTime = System.currentTimeMillis()
                         val note = if (noteId == -1) { // New note
@@ -854,7 +857,12 @@ class ProjectNotesViewModel @Inject constructor(
                         }
                         if (note != null) {
                             val currentNoteId = if (noteId == -1) { // New note
-                                repository.insertNote(note)
+                                val newId = repository.insertNote(note).toInt()
+                                _state.value = state.value.copy(
+                                    expandedNoteId = newId,
+                                    editingIsNewNote = false
+                                )
+                                newId.toLong()
                             } else { // Existing note
                                 // Before updating, save current state as a version if it's not a new note
                                 repository.getNoteById(noteId)?.let { oldNoteWithAttachments ->
@@ -921,27 +929,29 @@ class ProjectNotesViewModel @Inject constructor(
                         }
                     }
 
-                    // Reset editing state and collapse
-                    _state.value = state.value.copy(
-                        expandedNoteId = null,
-                        editingTitle = "",
-                        editingContent = TextFieldValue(),
-                        editingColor = 0,
-                        editingIsNewNote = true,
-                        editingLastEdited = 0,
-                        editingHistory = listOf("" to TextFieldValue()),
-                        editingHistoryIndex = 0,
-                        isPinned = false,
-                        isArchived = false,
-                        editingLabel = null,
-                        isBoldActive = false,
-                        isItalicActive = false,
-                        isUnderlineActive = false,
-                        activeStyles = emptySet(),
-                        linkPreviews = emptyList(),
-                        editingChecklist = emptyList(),
-                        editingAttachments = emptyList()
-                    )
+                    if (event.shouldCollapse) {
+                        // Reset editing state and collapse
+                        _state.value = state.value.copy(
+                            expandedNoteId = null,
+                            editingTitle = "",
+                            editingContent = TextFieldValue(),
+                            editingColor = 0,
+                            editingIsNewNote = true,
+                            editingLastEdited = 0,
+                            editingHistory = listOf("" to TextFieldValue()),
+                            editingHistoryIndex = 0,
+                            isPinned = false,
+                            isArchived = false,
+                            editingLabel = null,
+                            isBoldActive = false,
+                            isItalicActive = false,
+                            isUnderlineActive = false,
+                            activeStyles = emptySet(),
+                            linkPreviews = emptyList(),
+                            editingChecklist = emptyList(),
+                            editingAttachments = emptyList()
+                        )
+                    }
                 }
             }
             is ProjectNotesEvent.OnDeleteNoteClick -> {
