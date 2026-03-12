@@ -11,40 +11,24 @@ jobs:
     permissions:
       contents: write # Required to create releases
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: set up JDK 17
-      uses: actions/setup-java@v3
+    - name: set up JDK 21
+      uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
+        cache: 'gradle'
 
     - name: Setup Gradle
-      uses: gradle/gradle-build-action@v2
-      with:
-        gradle-version: 8.14.3
-
-    - name: Setup Gradle Wrapper
-      # This step ensures that the gradle-wrapper.jar is present and correctly configured.
-      # It will download the wrapper if it's not already present.
-      run: |
-        if [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then
-          echo "gradle-wrapper.jar not found. Generating it using the provisioned Gradle."
-          $GRADLE_HOME/bin/gradle wrapper
-        fi
-        chmod +x gradlew
-
-
-
-    - name: Clean project
-      run: ./gradlew clean
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Decode Keystore
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.keystore
 
-    - name: Build and Sign Release APK
-      run: ./gradlew assembleRelease
+    - name: Build and Sign Release (APK & AAB)
+      run: ./gradlew assembleRelease bundleRelease --parallel --no-daemon
       env:
         KEYSTORE_PATH: "my-release-key.keystore"
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -52,20 +36,10 @@ jobs:
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         GROQ_API_1: ${{ secrets.GROQ_API_1 }}
 
-    - name: Find APK files
-      run: find app/build/outputs/apk/release -name "*.apk"
-
-    - name: Build and Sign Release AAB
-      run: ./gradlew bundleRelease
-      env:
-        KEYSTORE_PATH: "my-release-key.keystore"
-        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        GROQ_API_1: ${{ secrets.GROQ_API_1 }}
-
-    - name: Find AAB files
-      run: find app/build/outputs/bundle/release -name "*.aab"
+    - name: Find Build Artifacts
+      run: |
+        find app/build/outputs/apk/release -name "*.apk"
+        find app/build/outputs/bundle/release -name "*.aab"
 
     
 
