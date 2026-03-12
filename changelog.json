@@ -6,23 +6,33 @@
       "items": [
         {
           "title": "M3 Expressive Redesign",
-          "description": "Redesigned the entire app with Material 3 Expressive components and smooth spring animations.",
+          "description": "Redesigned the entire app with Material 3 Expressive components, smooth spring animations, and a modern SplashScreen.",
           "type": "FEATURE"
         },
         {
-          "title": "Dynamic Credits & Changelog",
-          "description": "Moved credits and changelog to separate modules with remote JSON support.",
+          "title": "Performance Optimization",
+          "description": "Optimized note list scrolling with efficient item reuse and removed layout jumping.",
           "type": "IMPROVEMENT"
         },
         {
-          "title": "Smooth Checklist Reordering",
-          "description": "Fixed glitches when reordering checklist items using new animateItem modifier.",
+          "title": "Decorative Top Bar",
+          "description": "Enhanced the Add/Edit screen with decorative M3E buttons and centered alignment.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Project View AI & Sync",
+          "description": "Brought AI summarization, grammar fixes, and live sync indicators to the Project view.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Critical Bug Fixes",
+          "description": "Fixed app crashes when opening locked notes and during AI summarization in projects.",
           "type": "FIX"
         },
         {
-          "title": "Adaptive Bin Screen",
-          "description": "Fixed white flashes in the bin screen with proper theme-adaptive background colors.",
-          "type": "FIX"
+          "title": "Update & Share",
+          "description": "Redesigned the update dialog with wavy indicators and added the Play Store link to share options.",
+          "type": "IMPROVEMENT"
         }
       ]
     }
