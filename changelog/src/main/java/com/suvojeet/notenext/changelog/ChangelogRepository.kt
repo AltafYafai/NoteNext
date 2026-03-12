@@ -22,7 +22,8 @@ object ChangelogRepository {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) return@withContext Result.failure(IOException("Unexpected code $response"))
 
-                val body = response.body?.string() ?: return@withContext Result.failure(IOException("Empty body"))
+                val body = response.body.string()
+                if (body.isEmpty()) return@withContext Result.failure(IOException("Empty body"))
                 val data = json.decodeFromString<ChangelogList>(body)
                 Result.success(data)
             }
