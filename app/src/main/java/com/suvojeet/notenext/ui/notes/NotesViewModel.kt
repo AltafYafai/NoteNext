@@ -932,6 +932,10 @@ class NotesViewModel @Inject constructor(
                 savedStateHandle[KEY_EDITING_TITLE] = event.title
                 scheduleAutoSave()
             }
+            is NotesEvent.OnColorChange -> {
+                _state.value = state.value.copy(editingColor = event.color)
+                scheduleAutoSave()
+            }
             is NotesEvent.OnLabelChange -> {
                 viewModelScope.launch {
                     repository.insertLabel(Label(event.label))

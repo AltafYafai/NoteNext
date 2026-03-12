@@ -350,7 +350,7 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.CollapseNote -> {
-                onEvent(ProjectNotesEvent.OnSaveNoteClick)
+                onEvent(ProjectNotesEvent.OnSaveNoteClick())
             }
             is ProjectNotesEvent.AddChecklistItem -> {
                 val newItem = ChecklistItem(text = "", isChecked = false, position = state.value.editingChecklist.size)
