@@ -769,13 +769,15 @@ class NotesViewModel @Inject constructor(
                         isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                         isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline },
                         summaryResult = null // Invalidate cache on content change
-                        )
+                    )
 
+                    viewModelScope.launch {
                         savedStateHandle[KEY_EDITING_CONTENT] = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
+                    }
 
-                        if (textChanged) {
+                    if (textChanged) {
                         scheduleAutoSave()
-                        }
+                    }
                     // Link detection
                     val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
                     val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet() // Use Set for efficient lookup
