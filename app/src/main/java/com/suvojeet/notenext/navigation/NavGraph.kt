@@ -59,6 +59,7 @@ import com.suvojeet.notenext.ui.reminder.ReminderScreen
 import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
 import com.suvojeet.notenext.ui.settings.AboutScreen
 import com.suvojeet.notenext.ui.settings.CreditsScreen
+import com.suvojeet.notenext.ui.settings.ChangelogScreen
 import com.suvojeet.notenext.ui.donate.DonationScreen
 import com.suvojeet.notenext.ui.project.ProjectScreen
 import com.suvojeet.notenext.ui.project.ProjectViewModel

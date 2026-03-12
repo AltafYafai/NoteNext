@@ -447,7 +447,6 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     if (showImportSourceDialog) ImportSourceDialog({ showImportSourceDialog = false }, { showImportSourceDialog = false; showKeepInstructionsDialog = true })
     if (showKeepInstructionsDialog) KeepInstructionsDialog({ showKeepInstructionsDialog = false }, { showKeepInstructionsDialog = false; importKeepLauncher.launch(arrayOf("application/zip")) })
     if (showRateDialog) RateAppDialog(context) { showRateDialog = false }
-    if (showChangelogDialog) ChangelogDialog { showChangelogDialog = false }
     if (showBugReportDialog) BugReportDialog(issueDescription, { issueDescription = it }, { 
         showBugReportDialog = false 
         ACRA.errorReporter.putCustomData("IssueDescription", issueDescription)
