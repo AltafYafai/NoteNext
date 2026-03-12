@@ -55,7 +55,9 @@ import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.ui.reminder.ReminderSheetContent
 import com.suvojeet.notenext.data.RepeatOption
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 
@@ -567,10 +569,22 @@ fun AddEditNoteScreen(
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
+            val currentReminderDateTime = state.editingReminderTime?.let {
+                java.time.Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())
+            }
             ReminderSheetContent(
+                initialDate = currentReminderDateTime?.toLocalDate(),
+                initialTime = currentReminderDateTime?.toLocalTime(),
+                initialRepeatOption = state.editingRepeatOption?.let { name ->
+                    RepeatOption.entries.find { it.name == name }
+                } ?: RepeatOption.NEVER,
                 onDismissRequest = { showReminderDialog = false },
                 onConfirm = { date: LocalDate, time: LocalTime, repeat: RepeatOption ->
-                    onEvent(NotesEvent.SetReminderForSelectedNotes(date, time, repeat))
+                    val reminderMillis = LocalDateTime.of(date, time)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                    onEvent(NotesEvent.OnReminderChange(reminderMillis, repeat.name))
                     showReminderDialog = false
                 }
             )

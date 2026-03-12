@@ -44,5 +44,7 @@ data class ProjectNotesState(
     val editingIsLocked: Boolean = false,
     val editingNoteVersions: List<com.suvojeet.notenext.data.NoteVersion> = emptyList(),
     val projectName: String = "",
-    val projectDescription: String? = null
+    val projectDescription: String? = null,
+    val editingReminderTime: Long? = null,
+    val editingRepeatOption: String? = null
 )

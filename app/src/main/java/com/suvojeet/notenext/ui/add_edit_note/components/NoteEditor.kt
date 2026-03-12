@@ -235,7 +235,7 @@ fun ReminderDisplay(
         val dateTime = java.time.Instant.ofEpochMilli(reminderTime).atZone(java.time.ZoneId.systemDefault())
         val formatter = java.time.format.DateTimeFormatter.ofPattern("MMM d, HH:mm")
         val formattedTime = formatter.format(dateTime)
-        val repeatText = if (repeatOption != null && repeatOption != "DOES_NOT_REPEAT") ", $repeatOption" else ""
+        val repeatText = if (repeatOption != null && repeatOption != "NEVER") ", $repeatOption" else ""
 
         AssistChip(
             onClick = onClick,

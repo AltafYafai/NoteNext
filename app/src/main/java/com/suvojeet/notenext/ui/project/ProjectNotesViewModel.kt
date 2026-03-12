@@ -303,7 +303,9 @@ class ProjectNotesViewModel @Inject constructor(
                                 editingNoteType = note.noteType,
                                 editingChecklist = checklist,
                                 editingAttachments = noteWithAttachments.attachments.map { it.copy(tempId = java.util.UUID.randomUUID().toString()) },
-                                editingIsLocked = note.isLocked
+                                editingIsLocked = note.isLocked,
+                                editingReminderTime = note.reminderTime,
+                                editingRepeatOption = note.repeatOption
                             )
                         }
                     } else {
@@ -322,7 +324,9 @@ class ProjectNotesViewModel @Inject constructor(
                             editingChecklist = if (event.noteType == "CHECKLIST") listOf(ChecklistItem(text = "", isChecked = false)) else emptyList(),
                             editingAttachments = emptyList(),
                             editingIsLocked = false,
-                            editingNoteVersions = emptyList()
+                            editingNoteVersions = emptyList(),
+                            editingReminderTime = null,
+                            editingRepeatOption = null
                         )
                     }
                 }
@@ -559,6 +563,12 @@ class ProjectNotesViewModel @Inject constructor(
                     _state.value = state.value.copy(editingLabel = event.label)
                 }
             }
+            is ProjectNotesEvent.OnReminderChange -> {
+                _state.value = state.value.copy(
+                    editingReminderTime = event.time,
+                    editingRepeatOption = event.repeatOption
+                )
+            }
             is ProjectNotesEvent.OnTogglePinClick -> {
                 viewModelScope.launch {
                     state.value.expandedNoteId?.let { noteId ->
@@ -662,7 +672,9 @@ class ProjectNotesViewModel @Inject constructor(
                                 linkPreviews = state.value.linkPreviews,
                                 noteType = state.value.editingNoteType,
                                 projectId = projectId,
-                                isLocked = state.value.editingIsLocked
+                                isLocked = state.value.editingIsLocked,
+                                reminderTime = state.value.editingReminderTime,
+                                repeatOption = state.value.editingRepeatOption
                             )
                         } else { // Existing note
                             repository.getNoteById(noteId)?.let { existingNote ->
@@ -677,7 +689,9 @@ class ProjectNotesViewModel @Inject constructor(
                                     linkPreviews = state.value.linkPreviews,
                                     noteType = state.value.editingNoteType,
                                     projectId = projectId,
-                                    isLocked = state.value.editingIsLocked
+                                    isLocked = state.value.editingIsLocked,
+                                    reminderTime = state.value.editingReminderTime,
+                                    repeatOption = state.value.editingRepeatOption
                                 )
                             }
                         }
@@ -704,6 +718,12 @@ class ProjectNotesViewModel @Inject constructor(
                                 }
                                 repository.updateNote(note)
                                 noteId.toLong() // Convert Int to Long for consistency
+                            }
+
+                            if (state.value.editingReminderTime != null) {
+                                alarmScheduler.schedule(note.copy(id = currentNoteId.toInt()))
+                            } else if (noteId != -1) {
+                                alarmScheduler.cancel(note.copy(id = currentNoteId.toInt()))
                             }
 
                             // Handle Checklist Items

@@ -56,6 +56,7 @@ sealed class ProjectNotesEvent {
     object OnAddLabelsToCurrentNoteClick : ProjectNotesEvent()
     data class OnLabelChange(val label: String) : ProjectNotesEvent()
     object DismissLabelDialog : ProjectNotesEvent()
+    data class OnReminderChange(val time: Long?, val repeatOption: String?) : ProjectNotesEvent()
 
     data class OnLinkDetected(val url: String) : ProjectNotesEvent()
     data class OnLinkPreviewFetched(val url: String, val title: String?, val description: String?, val imageUrl: String?) : ProjectNotesEvent()
