@@ -20,8 +20,8 @@
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
         h1,
@@ -81,6 +81,14 @@
             font-size: 0.9em;
             color: #7f8c8d;
         }
+        
+        .highlight {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
     </style>
 </head>
 
@@ -89,7 +97,7 @@
         <div class="header">
             <div class="app-name">NoteNext</div>
             <h1>Privacy Policy</h1>
-            <p class="last-updated">Last updated: January 3, 2026</p>
+            <p class="last-updated">Last updated: March 12, 2026</p>
         </div>
 
         <div class="section">
@@ -101,162 +109,100 @@
                 information with anyone except as described in this Privacy Policy.</p>
         </div>
 
+        <div class="highlight">
+            <strong>Commitment to Privacy:</strong> NoteNext is a "Local-First" application. This means your personal notes and data never leave your device unless you explicitly choose to use cloud backup or AI features.
+        </div>
+
         <div class="section">
             <h2>1. Information Collection and Use</h2>
-            <p>NoteNext is designed with your privacy as a top priority. All of your data, including your notes,
-                checklists, images, and settings, is stored locally on your device and is not uploaded to any external
-                servers.</p>
+            <p>NoteNext is designed with your privacy as a top priority. All of your primary data is stored locally on your device.</p>
 
             <h3>a. Information You Provide</h3>
             <p>We collect the content you create and store within the app, which includes:</p>
             <ul>
                 <li>Notes (titles and content)</li>
-                <li>Checklists</li>
-                <li>Labels</li>
-                <li>Projects</li>
+                <li>Checklists and Todo items</li>
+                <li>Labels and Projects</li>
                 <li>Reminders</li>
-                <li>Attachments such as images and other files you add to your notes.</li>
-                <li>Settings, including your theme preferences and app lock PIN (stored securely).</li>
+                <li>Attachments (images, audio, etc.)</li>
+                <li>Settings, including your theme preferences and app lock status.</li>
             </ul>
-            <p>This data resides solely on your device.</p>
+            <p>This data resides solely on your device's private storage.</p>
 
-            <h3>b. Permissions</h3>
-            <p>NoteNext requests certain permissions to enable its features. All permissions are used only for the
-                stated purpose within the app's functionality:</p>
+            <h3>b. Donations (Optional)</h3>
+            <p>If you choose to support NoteNext via a donation, the transaction is processed securely through <strong>Google Play Billing</strong>. We do not collect or store your credit card, payment details, or any personal identity information during this process.</p>
+
+            <h3>c. Permissions</h3>
+            <p>NoteNext requests certain permissions to enable its features:</p>
             <ul>
-                <li><strong>READ_EXTERNAL_STORAGE / READ_MEDIA_IMAGES:</strong> To allow you to attach images and other
-                    files from your device's storage to your notes.</li>
-                <li><strong>INTERNET & ACCESS_NETWORK_STATE:</strong> To fetch link previews, download Google Fonts, and
-                    perform Google Drive backups (if enabled).</li>
-                <li><strong>USE_BIOMETRIC:</strong> To enable the App Lock feature, allowing you to secure the app with
-                    your fingerprint or other biometric credentials.</li>
-                <li><strong>SCHEDULE_EXACT_ALARM & USE_FULL_SCREEN_INTENT:</strong> To set and display precise reminders
-                    that you create for your notes.</li>
+                <li><strong>READ_MEDIA_IMAGES:</strong> To allow you to attach images from your gallery to your notes.</li>
+                <li><strong>INTERNET & ACCESS_NETWORK_STATE:</strong> To fetch link previews, download expressive Google Fonts, and perform Google Drive backups (if enabled).</li>
+                <li><strong>USE_BIOMETRIC:</strong> To secure the app with your fingerprint or face unlock.</li>
+                <li><strong>SCHEDULE_EXACT_ALARM:</strong> To ensure your note reminders trigger precisely at the time you set.</li>
                 <li><strong>POST_NOTIFICATIONS:</strong> To show notifications for your reminders.</li>
-                <li><strong>FOREGROUND_SERVICE & FOREGROUND_SERVICE_DATA_SYNC:</strong> To ensure reliable data backups
-                    to Google Drive, preventing the system from interrupting the upload process during long-running
-                    operations.</li>
             </ul>
         </div>
 
         <div class="section">
-            <h2>2. How We Use Your Information</h2>
-            <p>Your information is used exclusively to provide and enhance your experience with NoteNext. This includes:
-            </p>
+            <h2>2. Cloud Backup (Google Drive)</h2>
+            <p>NoteNext offers an <strong>optional</strong> feature to backup your notes to Google Drive. If you choose to use this feature:</p>
             <ul>
-                <li>Storing, displaying, and organizing your notes and other content.</li>
-                <li>Enabling features like reminders, app lock, and rich link previews.</li>
-                <li>Personalizing your experience through themes and layout settings.</li>
-                <li><strong>Data Backup:</strong> If you choose to use the Google Drive Backup feature, your data is
-                    securely zipped and uploaded to your personal Google Drive account.</li>
-                <li><strong>AI Summarization:</strong> If you use the summary feature, your note content is sent to
-                    Groq's API to generate a summary.</li>
+                <li>The app requests access <em>only</em> to the files it creates (using restricted scopes). It cannot read your other Drive files.</li>
+                <li>Your data is compressed and uploaded directly to <strong>your personal</strong> Google Drive. We do not have a private server and never see your files.</li>
+                <li><strong>Encryption:</strong> You can set a password to encrypt your backups using <strong>AES-256 encryption</strong> before they are uploaded.</li>
             </ul>
-            <p><strong>All data processing occurs locally on your device, unless you explicitly choose to backup your
-                    data to Google Drive.</strong></p>
         </div>
 
         <div class="section">
-            <h2>3. Google Drive Backup</h2>
-            <p>NoteNext offers an optional feature to backup your notes to Google Drive. If you choose to use this
-                feature:</p>
+            <h2>3. AI Features (Groq API)</h2>
+            <p>NoteNext includes AI-powered tools like "Note Summarization" and "Grammar Fix" powered by the Groq API:</p>
             <ul>
-                <li><strong>Authentication:</strong> You will be asked to sign in with your Google account.</li>
-                <li><strong>Restricted Access:</strong> The app requests access <em>only</em> to the files it creates
-                    (using the <code>drive.file</code> and <code>drive.appdata</code> scopes). It cannot read or access
-                    any other files in your Google Drive.</li>
-                <li><strong>Data Handling:</strong> Your notes and attachments are compressed into a standard zip file
-                    and uploaded directly to your Google Drive. We do not have access to this data, nor is it sent to
-                    any third-party servers other than your own Google Drive storage.</li>
-                <li><strong>Encryption:</strong> You have the option to encrypt your backups with a password. If
-                    enabled,
-                    your backup data is encrypted using <strong>AES-256 encryption</strong> before being uploaded.</li>
-                <li><strong>User Control:</strong> You have full control to link or unlink your account and delete your
-                    backups at any time.</li>
+                <li><strong>Explicit Action:</strong> Content is only sent to Groq when you manually trigger an AI action (e.g., clicking "Summarize").</li>
+                <li><strong>Data Sent:</strong> Only the text content of the specific note you are editing is sent.</li>
+                <li><strong>Privacy:</strong> Data is processed according to <a href="https://groq.com/privacy" target="_blank">Groq's Privacy Policy</a>. We do not store your AI queries on any server.</li>
             </ul>
         </div>
 
         <div class="section">
-            <h2>4. AI Summarization</h2>
-            <p>NoteNext includes an optional AI-powered summarization feature powered by Groq. If you choose to use this
-                feature:</p>
+            <h2>4. Crash Reporting</h2>
+            <p>To improve app stability, NoteNext uses ACRA (Application Crash Reports for Android). If the app crashes:</p>
             <ul>
-                <li><strong>On-Demand:</strong> Data is only sent when you explicitly tap the "Summary" button in a
-                    note.
-                </li>
-                <li><strong>Data Transmission:</strong> The text content of that specific note is sent to Groq's API for
-                    processing.</li>
-                <li><strong>Privacy:</strong> Please review <a href="https://groq.com/privacy" target="_blank">Groq's
-                        Privacy Policy</a> to understand how they handle data. NoteNext does not store any response
-                    permanently beyond what is displayed to you.</li>
+                <li>A technical report containing device info and stack traces may be sent to the developer.</li>
+                <li><strong>User Consent:</strong> Depending on your settings, you may be prompted before a report is sent.</li>
+                <li>These reports do <strong>not</strong> include your personal note content.</li>
             </ul>
         </div>
 
         <div class="section">
-            <h2>5. Data Sharing and Disclosure</h2>
-            <p>I do not share, sell, rent, or trade your personal information with any third parties. Since all your
-                data is stored locally on your device (or in your personal Google Drive if backup is enabled), I do not
-                have access to it. The only exception is when you voluntary choose to share a note using the app's
-                "Share" functionality.</p>
+            <h2>5. Data Retention and Deletion</h2>
+            <p>Your data is yours. You can:</p>
+            <ul>
+                <li>Delete individual notes (moved to Bin).</li>
+                <li>Empty the Bin to permanently delete data.</li>
+                <li>Uninstall the app to wipe all local data from your device.</li>
+                <li>Delete your Google Drive backups via the app settings or Google Drive directly.</li>
+            </ul>
         </div>
 
         <div class="section">
             <h2>6. Third-Party Services</h2>
-            <p>NoteNext uses a few third-party libraries to provide its features:</p>
+            <p>NoteNext uses these services:</p>
             <ul>
-                <li><strong>Google Drive API:</strong> Used strictly for the optional backup and restore functionality.
-                </li>
-                <li><strong>Google Play Services:</strong> Used to check for app updates directly from the Play Store.</li>
-                <li><strong>Google Fonts:</strong> To provide a better visual experience, the app may download fonts
-                    from Google Fonts.</li>
-                <li><strong>Jsoup:</strong> To generate rich link previews, the app makes a network request to the URL
-                    you provide in a note.</li>
-                <li><strong>Groq:</strong> Used to provide AI-powered note summaries.</li>
+                <li><strong>Google Drive API:</strong> For optional backups.</li>
+                <li><strong>Google Fonts:</strong> For typography.</li>
+                <li><strong>Groq API:</strong> For optional AI features.</li>
+                <li><strong>Jsoup:</strong> For local generation of link previews (fetches metadata from URLs you type).</li>
             </ul>
-            <p>These services have their own privacy policies, and I encourage you to review them. NoteNext does not
-                send any of your personal note content to these services (except for the user-initiated Google Drive
-                backup).</p>
         </div>
 
         <div class="section">
-            <h2>7. Data Security, Retention, and Deletion</h2>
-            <p>I value your trust in providing us your Personal Information. I have implemented the following measures
-                to protect it:</p>
-            <ul>
-                <li><strong>Local Storage:</strong> All your note data is stored in a private, local database on your
-                    device.</li>
-                <li><strong>Secure Backup:</strong> Cloud backups are stored in your personal Google Drive, protected by
-                    your Google Account credentials. Optional AES-256 encryption adds an extra layer of security.</li>
-                <li><strong>App Lock:</strong> You can enable an additional layer of security by setting up a PIN or
-                    using biometric authentication to protect access to the app.</li>
-            </ul>
-            <p>Your data is retained on your device for as long as you use the app. You can delete notes at any time,
-                which moves them to the Bin. Uninstalling the app will also delete all of its local data. You can
-                manually delete your Google Drive backups through the app settings or via Google Drive directly.</p>
-        </div>
-
-        <div class="section">
-            <h2>8. Children’s Privacy</h2>
-            <p>NoteNext does not knowingly collect personally identifiable information from children under 13. If you
-                are a parent or guardian and you are aware that your child has provided us with personal information,
-                please contact me so that I will be able to take necessary actions.</p>
-        </div>
-
-        <div class="section">
-            <h2>9. Changes to This Privacy Policy</h2>
-            <p>I may update our Privacy Policy from time to time. Thus, you are advised to review this page periodically
-                for any changes. I will notify you of any changes by posting the new Privacy Policy on this page. These
-                changes are effective immediately after they are posted.</p>
-        </div>
-
-        <div class="section">
-            <h2>10. Contact Us</h2>
+            <h2>7. Contact Us</h2>
             <p>If you have any questions or suggestions about my Privacy Policy, do not hesitate to contact me at <a
                     href="mailto:suvojeetsengupta@zohomail.in">suvojeetsengupta@zohomail.in</a>.</p>
         </div>
 
         <div class="footer">
-            <p>This privacy policy was generated for the NoteNext Android application.</p>
+            <p>This privacy policy is tailored for the NoteNext Open Source application.</p>
         </div>
     </div>
 </body>

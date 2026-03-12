@@ -60,6 +60,14 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val settingsRepository = remember { SettingsRepository(context) }
     val scope = rememberCoroutineScope()
 
+    val versionName = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+
     val selectedThemeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
     val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsState(initial = false)
@@ -90,9 +98,17 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
 
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
+    // Pre-capture colors to avoid @Composable invocation inside remember
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+    val errorColor = MaterialTheme.colorScheme.error
+    val surfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     val sections = remember(
         selectedThemeMode, autoDeleteDays, enableRichLinkPreview, enableAppLock, 
-        selectedLanguage, disallowScreenshots, showBugReportDialog, isLoggingActive
+        selectedLanguage, disallowScreenshots, showBugReportDialog, isLoggingActive,
+        primaryColor, secondaryColor, tertiaryColor, errorColor, surfaceVariantColor
     ) {
         listOf(
             SettingsSectionData(
@@ -103,7 +119,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         icon = Icons.Rounded.Palette,
                         title = context.getString(R.string.theme),
                         subtitle = selectedThemeMode.name.lowercase().replaceFirstChar { it.uppercase() },
-                        iconColor = Color(0xFF2196F3),
+                        iconColor = primaryColor,
                         onClick = { showThemeDialog = true }
                     ),
                     SettingsItemData(
@@ -112,14 +128,14 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = context.getString(R.string.rich_link_preview_subtitle),
                         hasSwitch = true,
                         checked = enableRichLinkPreview,
-                        iconColor = Color(0xFF03A9F4),
+                        iconColor = secondaryColor,
                         onCheckedChange = { scope.launch { settingsRepository.saveEnableRichLinkPreview(it) } }
                     ),
                     SettingsItemData(
                         icon = Icons.Rounded.Language,
                         title = context.getString(R.string.language),
                         subtitle = if (selectedLanguage == "hi") "Hindi (भारत)" else "English (US)",
-                        iconColor = Color(0xFF3F51B5),
+                        iconColor = tertiaryColor,
                         onClick = { showLanguageDialog = true }
                     )
                 )
@@ -134,7 +150,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = context.getString(R.string.app_lock_subtitle),
                         hasSwitch = true,
                         checked = enableAppLock,
-                        iconColor = Color(0xFF4CAF50),
+                        iconColor = primaryColor,
                         onCheckedChange = { isChecked ->
                             if (isChecked) {
                                 val biometricManager = BiometricManager.from(context)
@@ -184,7 +200,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = "Protect content from screen capture",
                         hasSwitch = true,
                         checked = disallowScreenshots,
-                        iconColor = Color(0xFFF44336),
+                        iconColor = errorColor,
                         onCheckedChange = { scope.launch { settingsRepository.saveDisallowScreenshots(it) } }
                     )
                 )
@@ -197,21 +213,21 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         icon = Icons.Rounded.Delete,
                         title = "Auto Cleanup",
                         subtitle = "Clean bin after $autoDeleteDays days",
-                        iconColor = Color(0xFF607D8B),
+                        iconColor = secondaryColor,
                         onClick = { showAutoDeleteDialog = true }
                     ),
                     SettingsItemData(
                         icon = Icons.Rounded.Backup,
                         title = "Backup & Restore",
                         subtitle = "Cloud and local data management",
-                        iconColor = Color(0xFFFF9800),
+                        iconColor = primaryColor,
                         onClick = { onNavigate("backup") }
                     ),
                     SettingsItemData(
                         icon = Icons.Rounded.ImportExport,
                         title = "Import Notes",
                         subtitle = "Import from Google Keep ZIP",
-                        iconColor = Color(0xFFE91E63),
+                        iconColor = tertiaryColor,
                         onClick = { showImportSourceDialog = true }
                     )
                 )
@@ -224,21 +240,21 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         icon = Icons.Rounded.VolunteerActivism,
                         title = context.getString(R.string.support_notenext),
                         subtitle = context.getString(R.string.donate_small_label),
-                        iconColor = Color(0xFFE91E63),
+                        iconColor = errorColor,
                         onClick = { onNavigate("donate") }
                     ),
                     SettingsItemData(
                         icon = Icons.Rounded.Info,
                         title = "App Info",
-                        subtitle = "v1.2.8 Stable Build",
-                        iconColor = Color(0xFF9C27B0),
+                        subtitle = "v$versionName Stable Build",
+                        iconColor = primaryColor,
                         onClick = { onNavigate("about") }
                     ),
                     SettingsItemData(
                         icon = if (isLoggingActive) Icons.Rounded.StopCircle else Icons.Rounded.PlayCircle,
                         title = if (isLoggingActive) "Stop Logging" else "Start Logging",
                         subtitle = if (isLoggingActive) "Logging active. Reproduce bug now." else "Record app logs to report bugs",
-                        iconColor = if (isLoggingActive) Color(0xFFF44336) else Color(0xFF4CAF50),
+                        iconColor = if (isLoggingActive) errorColor else primaryColor,
                         onClick = {
                             if (isLoggingActive) {
                                 val logFile = LogcatManager.stopLogging()
@@ -258,7 +274,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         icon = Icons.Rounded.Code,
                         title = "Source Code",
                         subtitle = "Check out our GitHub repository",
-                        iconColor = Color(0xFF24292E),
+                        iconColor = surfaceVariantColor,
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/suvojeet-sengupta/NoteNext"))
                             context.startActivity(intent)
@@ -403,7 +419,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                                 icon = Icons.Rounded.Star,
                                 title = "Rate NoteNext",
                                 subtitle = "Show some love on Play Store",
-                                iconColor = Color(0xFFFFC107),
+                                iconColor = MaterialTheme.colorScheme.primary,
                                 onClick = { showRateDialog = true }
                             )
                             CheckForUpdateItem(context = context)
@@ -411,8 +427,8 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                                 icon = Icons.Rounded.NewReleases,
                                 title = "What's New",
                                 subtitle = "View latest changelog",
-                                iconColor = Color(0xFFE91E63),
-                                onClick = { showChangelogDialog = true }
+                                iconColor = MaterialTheme.colorScheme.secondary,
+                                onClick = { onNavigate("changelog") }
                             )
                         }
                     }
@@ -623,11 +639,14 @@ private fun CheckForUpdateItem(context: android.content.Context) {
         catch (e: Exception) { "Unknown" }
     }
 
+    // Pre-capture color
+    val updateIconColor = MaterialTheme.colorScheme.primary
+
     SettingsItem(
         icon = Icons.Rounded.Update,
         title = stringResource(R.string.check_for_updates),
         subtitle = if (isChecking) stringResource(R.string.checking_for_updates) else errorMessage ?: "Current: v$currentVersionName",
-        iconColor = Color(0xFF2196F3),
+        iconColor = updateIconColor,
         onClick = {
             if (isChecking) return@SettingsItem
             isChecking = true
@@ -682,14 +701,17 @@ private fun CheckForUpdateItem(context: android.content.Context) {
 
 @Composable
 fun ImportSourceDialog(onDismiss: () -> Unit, onSelectKeep: () -> Unit) {
+    val keepColor = MaterialTheme.colorScheme.primary
+    val evernoteColor = MaterialTheme.colorScheme.secondary
+
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = MaterialTheme.shapes.extraLarge,
         title = { Text("Import from...") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                ImportOptionItem("Google Keep", Icons.Rounded.Description, Color(0xFFFFBB00), onSelectKeep)
-                ImportOptionItem("Evernote", Icons.Rounded.Description, Color(0xFF00A82D), enabled = false)
+                ImportOptionItem("Google Keep", Icons.Rounded.Description, keepColor, onSelectKeep)
+                ImportOptionItem("Evernote", Icons.Rounded.Description, evernoteColor, enabled = false)
             }
         },
         confirmButton = {},

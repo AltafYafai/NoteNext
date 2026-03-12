@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.suvojeet.notenext.ui.components.springPress
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -191,11 +192,14 @@ fun LabelDialog(
             }
         },
         confirmButton = {
-             TextButton(onClick = onDismiss) {
+             TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.springPress()
+            ) {
                 Text(stringResource(id = R.string.cancel))
             }
         },
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         titleContentColor = MaterialTheme.colorScheme.onSurface
     )

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.suvojeet.notenext.ui.components.springPress
 
 @Composable
 fun PasswordSetDialog(
@@ -194,7 +195,10 @@ fun PasswordSetDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = onDismiss) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.springPress()
+                        ) {
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
@@ -208,6 +212,7 @@ fun PasswordSetDialog(
                                     onConfirm(password)
                                 }
                             },
+                            modifier = Modifier.springPress(),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Text(confirmText)
@@ -326,12 +331,16 @@ fun PasswordInputDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = onDismiss) {
+                        TextButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.springPress()
+                        ) {
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = { onConfirm(password) },
+                            modifier = Modifier.springPress(),
                             shape = RoundedCornerShape(12.dp),
                             enabled = password.isNotEmpty()
                         ) {
@@ -384,10 +393,14 @@ fun EncryptionInfoDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.springPress()
+            ) {
                 Text("Got it")
             }
-        }
+        },
+        shape = MaterialTheme.shapes.extraLarge
     )
 }
 

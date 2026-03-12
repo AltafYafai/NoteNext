@@ -84,6 +84,7 @@ fun AddEditNoteScreen(
     val slashCommandSheetState = rememberModalBottomSheetState()
 
     var showMoreOptions by remember { mutableStateOf(false) }
+    var showLabelDialog by remember { mutableStateOf(false) }
     var showSaveAsDialog by remember { mutableStateOf(false) }
     var showInsertLinkDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
@@ -515,6 +516,8 @@ fun AddEditNoteScreen(
         onShowDeleteDialogChange = { showDeleteDialog = it },
         showMoreOptions = showMoreOptions,
         onShowMoreOptionsChange = { showMoreOptions = it },
+        showLabelDialog = showLabelDialog,
+        onShowLabelDialogChange = { showLabelDialog = it },
         showSaveAsDialog = showSaveAsDialog,
         onShowSaveAsDialogChange = { showSaveAsDialog = it },
         showHistoryDialog = showHistoryDialog,
@@ -529,9 +532,13 @@ fun AddEditNoteScreen(
         scope = scope,
         onSaveAsPdf = {
             scope.launch {
-                val htmlContent = com.suvojeet.notenext.util.HtmlConverter.annotatedStringToHtml(state.editingContent.annotatedString)
-                val fullHtml = "<h1>${state.editingTitle}</h1><br>$htmlContent"
-                com.suvojeet.notenext.util.printNote(context, fullHtml)
+                val fullHtml = com.suvojeet.notenext.util.NoteHtmlGenerator.generateNoteHtml(
+                    context,
+                    state.editingTitle,
+                    state.editingContent.annotatedString,
+                    state.editingAttachments
+                )
+                com.suvojeet.notenext.util.printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })
             }
         },
         onSaveAsTxt = {

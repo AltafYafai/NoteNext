@@ -34,8 +34,13 @@ import com.suvojeet.notenext.util.HtmlConverter
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.runtime.produceState
+import com.suvojeet.notenext.ui.theme.NoteGradients
+import com.suvojeet.notenext.ui.components.springPress
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun BinnedNoteScreen(
@@ -43,11 +48,16 @@ fun BinnedNoteScreen(
     onDismiss: () -> Unit
 ) {
     val noteWithAttachments = state.notes.find { it.note.id == state.expandedNoteId }
+    val isDark = isSystemInDarkTheme()
 
     BackHandler { onDismiss() }
 
     if (noteWithAttachments != null) {
         val note = noteWithAttachments.note
+        val adaptiveColor = NoteGradients.getAdaptiveColor(note.color, isDark)
+        val backgroundColor = if (adaptiveColor != 0) Color(adaptiveColor) else MaterialTheme.colorScheme.surface
+        val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
+
         val annotatedContent = produceState<AnnotatedString>(initialValue = AnnotatedString(""), note.content) {
             value = HtmlConverter.htmlToAnnotatedString(note.content)
         }
@@ -57,28 +67,33 @@ fun BinnedNoteScreen(
                 TopAppBar(
                     title = { },
                     navigationIcon = {
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
+                        IconButton(onClick = onDismiss, modifier = Modifier.springPress()) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                                contentDescription = stringResource(id = R.string.back),
+                                tint = contentColor
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(note.color)
+                        containerColor = backgroundColor
                     )
                 )
-            }
+            },
+            containerColor = backgroundColor
         ) { padding ->
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .background(Color(note.color))
             ) {
                 item {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = note.title,
                             style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontWeight = FontWeight.Bold,
+                            color = contentColor
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -91,13 +106,13 @@ fun BinnedNoteScreen(
                                     Icon(
                                         imageVector = if (item.isChecked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
                                         contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurface
+                                        tint = contentColor
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = item.text,
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        color = contentColor,
                                         textDecoration = if (item.isChecked) androidx.compose.ui.text.style.TextDecoration.LineThrough else null
                                     )
                                 }
@@ -106,22 +121,25 @@ fun BinnedNoteScreen(
                             Text(
                                 text = annotatedContent.value,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = contentColor
                             )
                         }
 
                         if (noteWithAttachments.attachments.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            // Simple attachment list for now, ideally reused attachment component
+                            Spacer(modifier = Modifier.height(24.dp))
                             noteWithAttachments.attachments.forEach { attachment ->
                                 if (attachment.type == "IMAGE") {
-                                    coil.compose.AsyncImage(
-                                        model = attachment.uri,
-                                        contentDescription = null,
-                                        modifier = Modifier.fillMaxWidth().height(200.dp),
-                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    androidx.compose.material3.Card(
+                                        shape = MaterialTheme.shapes.large,
+                                        modifier = Modifier.padding(vertical = 8.dp)
+                                    ) {
+                                        coil.compose.AsyncImage(
+                                            model = attachment.uri,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                                        )
+                                    }
                                 }
                             }
                         }

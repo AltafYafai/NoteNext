@@ -93,21 +93,14 @@ fun NoteItem(
             .animateContentSize(animationSpec = motionScheme.defaultSpatialSpec()),
         shape = cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
+            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color(adaptiveColor),
+            contentColor = contentColor
         ),
         border = borderStroke,
         elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (!isDefaultColor) {
-                        Modifier.background(brush = NoteGradients.getColorBrush(adaptiveColor))
-                    } else {
-                        Modifier
-                    }
-                )
+            modifier = Modifier.fillMaxSize()
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)

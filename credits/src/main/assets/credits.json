@@ -1,0 +1,60 @@
+{
+  "contributors": [
+    {
+      "name": "Jendermine",
+      "role": "Feedback & Testing",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/92355621",
+      "githubUrl": "https://github.com/jendermine"
+    },
+    {
+      "name": "Xiaomiraphealin",
+      "role": "Feedback & Testing",
+      "avatarUrl": "https://lh3.googleusercontent.com/pw/AP1GczM2HgzvZx9GihpbNQX3hQpEnZ4vz0IdOK6hE0k0FtQ5-p7O_pO_os3Pfhts6AvrsbYS3J2MFjcXaYLzzd47conMZ639PVVeZsuJm4SuEYFwqRJjIrYB3ngSUpvKeyN-Puz6wzwo7iv6CzVGiGCrPoC5DQ=w640-h640-s-no-gm?authuser=0",
+      "telegramUrl": "https://t.me/Xiaomiraphealin"
+    }
+  ],
+  "libraries": [
+    {
+      "name": "Jetpack Compose",
+      "description": "Android's modern toolkit for building native UI"
+    },
+    {
+      "name": "Material 3 Expressive",
+      "description": "Next-gen design system for interactive apps"
+    },
+    {
+      "name": "Room Database",
+      "description": "Robust persistence layer for offline-first storage"
+    },
+    {
+      "name": "Hilt / Dagger",
+      "description": "Dependency injection for scalable architecture"
+    },
+    {
+      "name": "Kotlin Coroutines",
+      "description": "Seamless asynchronous programming"
+    },
+    {
+      "name": "Coil",
+      "description": "Fast and lightweight image loading for Android"
+    },
+    {
+      "name": "Google Drive API",
+      "description": "Secure cloud synchronization"
+    },
+    {
+      "name": "ACRA",
+      "description": "Application Crash Reports for Android"
+    }
+  ],
+  "resources": [
+    {
+      "name": "Material Symbols",
+      "description": "Beautifully crafted icons by Google"
+    },
+    {
+      "name": "Google Fonts",
+      "description": "Expressive typography for everyone"
+    }
+  ]
+}

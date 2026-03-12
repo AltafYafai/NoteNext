@@ -19,3 +19,5 @@ rootProject.name = "NotesApp"
 include(":app")
 include(":core")
 include(":data")
+include(":credits")
+include(":changelog")

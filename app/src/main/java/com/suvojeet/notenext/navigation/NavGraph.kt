@@ -58,6 +58,7 @@ import com.suvojeet.notenext.ui.settings.SettingsScreen
 import com.suvojeet.notenext.ui.reminder.ReminderScreen
 import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
 import com.suvojeet.notenext.ui.settings.AboutScreen
+import com.suvojeet.notenext.ui.settings.CreditsScreen
 import com.suvojeet.notenext.ui.donate.DonationScreen
 import com.suvojeet.notenext.ui.project.ProjectScreen
 import com.suvojeet.notenext.ui.project.ProjectViewModel
@@ -416,7 +417,26 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 ) {
                     AboutScreen(
                         onBackClick = { navController.popBackStack() },
-                        onDonateClick = { navController.navigate(Destination.Donate) }
+                        onDonateClick = { navController.navigate(Destination.Donate) },
+                        onCreditsClick = { navController.navigate(Destination.Credits) }
+                    )
+                }
+
+                composable<Destination.Credits>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
+                    CreditsScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Destination.Changelog>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
+                    ChangelogScreen(
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 
@@ -752,7 +772,26 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                 ) {
                     AboutScreen(
                         onBackClick = { navController.popBackStack() },
-                        onDonateClick = { navController.navigate(Destination.Donate) }
+                        onDonateClick = { navController.navigate(Destination.Donate) },
+                        onCreditsClick = { navController.navigate(Destination.Credits) }
+                    )
+                }
+
+                composable<Destination.Credits>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
+                    CreditsScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Destination.Changelog>(
+                    enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
+                    exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+                ) {
+                    ChangelogScreen(
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
 

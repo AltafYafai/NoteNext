@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import kotlinx.coroutines.delay
 
@@ -39,7 +40,8 @@ fun AiSummarySheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface 
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(
             modifier = Modifier
@@ -136,7 +138,7 @@ fun AiSummarySheet(
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).springPress()
                     ) {
                         Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
@@ -152,7 +154,7 @@ fun AiSummarySheet(
                             }
                             context.startActivity(Intent.createChooser(shareIntent, "Share Summary"))
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).springPress()
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
@@ -164,7 +166,7 @@ fun AiSummarySheet(
                 
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().springPress()
                 ) {
                     Text("Done")
                 }

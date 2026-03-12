@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,12 +41,20 @@ import com.suvojeet.notenext.util.NetworkUtils
 @Composable
 fun AboutScreen(
     onBackClick: () -> Unit,
-    onDonateClick: () -> Unit
+    onDonateClick: () -> Unit,
+    onCreditsClick: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     val isInternetAvailable = NetworkUtils.isInternetAvailable(context)
-    val isDark = isSystemInDarkTheme()
+    
+    val versionName = remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
     
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -142,10 +151,10 @@ fun AboutScreen(
 
             item {
                 ExpressiveSection(
-                    title = stringResource(id = R.string.meet_the_team),
-                    description = "The people behind NoteNext"
+                    title = "The Developer",
+                    description = "Core maintainer of NoteNext"
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         ModernTeamMemberCard(
                             name = "Suvojeet Sengupta",
                             role = stringResource(id = R.string.core_developer),
@@ -155,14 +164,31 @@ fun AboutScreen(
                             uriHandler = uriHandler
                         )
                         
-                        ModernTeamMemberCard(
-                            name = "Jendermine",
-                            role = stringResource(id = R.string.feedback_provider),
-                            avatarUrl = "https://avatars.githubusercontent.com/u/92355621",
-                            githubUrl = "https://github.com/jendermine",
-                            isInternetAvailable = isInternetAvailable,
-                            uriHandler = uriHandler
-                        )
+                        // Credits Button
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .springPress()
+                                .clickable(onClick = onCreditsClick),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 20.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Rounded.Groups, contentDescription = null)
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    text = "View Full Credits",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -290,7 +316,7 @@ fun AboutScreen(
                         modifier = Modifier.alpha(0.7f)
                     ) {
                         Text(
-                            "Version 1.2.8 Stable",
+                            "Version $versionName Stable",
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                             fontWeight = FontWeight.Bold,
@@ -414,11 +440,12 @@ private fun FeatureCard(
 }
 
 @Composable
-private fun ModernTeamMemberCard(
+fun ModernTeamMemberCard(
     name: String,
     role: String,
     avatarUrl: String,
-    githubUrl: String,
+    githubUrl: String? = null,
+    telegramUrl: String? = null,
     isInternetAvailable: Boolean,
     uriHandler: androidx.compose.ui.platform.UriHandler
 ) {
@@ -426,7 +453,10 @@ private fun ModernTeamMemberCard(
         modifier = Modifier
             .fillMaxWidth()
             .springPress()
-            .clickable(onClick = { uriHandler.openUri(githubUrl) }),
+            .clickable(onClick = { 
+                val url = telegramUrl ?: githubUrl
+                url?.let { uriHandler.openUri(it) }
+            }),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
@@ -464,14 +494,22 @@ private fun ModernTeamMemberCard(
                     fontWeight = FontWeight.Bold
                 )
             }
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.size(40.dp),
-                shadowElevation = 1.dp
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.ArrowOutward, null, modifier = Modifier.size(18.dp))
+            
+            if (githubUrl != null || telegramUrl != null) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier.size(40.dp),
+                    shadowElevation = 1.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (telegramUrl != null) Icons.Default.Send else Icons.Default.ArrowOutward, 
+                            null, 
+                            modifier = Modifier.size(18.dp),
+                            tint = if (telegramUrl != null) Color(0xFF24A1DE) else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }

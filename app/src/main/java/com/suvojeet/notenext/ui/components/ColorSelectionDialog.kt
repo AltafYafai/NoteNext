@@ -25,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.suvojeet.notenext.ui.components.springPress
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -111,10 +112,14 @@ fun ColorSelectionDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.springPress()
+            ) {
                 Text(stringResource(id = R.string.cancel))
             }
-        }
+        },
+        shape = MaterialTheme.shapes.extraLarge
     )
 }
 

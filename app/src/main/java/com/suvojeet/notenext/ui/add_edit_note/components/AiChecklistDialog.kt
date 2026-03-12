@@ -33,6 +33,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.suvojeet.notenext.ui.components.springPress
 
 private const val PREFS_NAME = "ai_checklist_prefs"
 private const val KEY_PROMPT_HISTORY = "prompt_history"
@@ -96,7 +97,8 @@ fun AiChecklistSheet(
             onDismissRequest = onDismiss,
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            dragHandle = { BottomSheetDefaults.DragHandle() }
+            dragHandle = { BottomSheetDefaults.DragHandle() },
+            shape = MaterialTheme.shapes.extraLarge
         ) {
             Column(
                 modifier = Modifier
@@ -170,7 +172,7 @@ fun AiChecklistSheet(
                                             overflow = TextOverflow.Ellipsis
                                         ) 
                                     },
-                                    modifier = Modifier.widthIn(max = 150.dp)
+                                    modifier = Modifier.widthIn(max = 150.dp).springPress()
                                 )
                             }
                         }
@@ -317,7 +319,8 @@ fun AiChecklistSheet(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            ),
+                            modifier = Modifier.springPress()
                         ) {
                             if (isGenerating) {
                                 LoadingIndicator(
@@ -341,7 +344,8 @@ fun AiChecklistSheet(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            ),
+                            modifier = Modifier.springPress()
                         ) {
                             Text("Insert ${editableItems.count { it.isNotBlank() }} items")
                         }

@@ -43,7 +43,7 @@ fun MoreOptionsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(

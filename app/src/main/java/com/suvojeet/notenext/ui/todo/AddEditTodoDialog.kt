@@ -133,7 +133,7 @@ fun AddEditTodoDialog(
                             Spacer(modifier = Modifier.weight(1f))
                             TextButton(
                                 onClick = { dueDate = null },
-                                modifier = Modifier.height(32.dp)
+                                modifier = Modifier.height(32.dp).springPress()
                             ) {
                                 Text("Clear")
                             }
@@ -165,16 +165,21 @@ fun AddEditTodoDialog(
         )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
+            shape = MaterialTheme.shapes.extraLarge,
             confirmButton = {
                 TextButton(
                     onClick = {
                         dueDate = datePickerState.selectedDateMillis
                         showDatePicker = false
-                    }
+                    },
+                    modifier = Modifier.springPress()
                 ) { Text("OK") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(
+                    onClick = { showDatePicker = false },
+                    modifier = Modifier.springPress()
+                ) { Text("Cancel") }
             }
         ) {
             DatePicker(state = datePickerState)

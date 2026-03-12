@@ -71,7 +71,8 @@ fun LazyListScope.ChecklistEditor(
                         change.consume()
                         dragOffset.value += dragAmount.y
                         
-                        val threshold = 100f 
+                        // Use a smaller threshold for faster response
+                        val threshold = 80f 
                         val items = currentUncheckedItems
                         val i = currentIndex
 
@@ -92,36 +93,26 @@ fun LazyListScope.ChecklistEditor(
                 )
             }
 
-        var isVisible by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) { isVisible = true }
-        
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = slideInVertically(
-                animationSpec = spring(dampingRatio = 0.8f, stiffness = 300f),
-                initialOffsetY = { -40 }
-            ) + fadeIn(animationSpec = spring())
-        ) {
-            ChecklistItemRow(
-                item = item,
-                inputValue = state.checklistInputValues[item.id],
-                onEvent = onEvent,
-                isChecked = false,
-                isNewlyAdded = state.newlyAddedChecklistItemId == item.id,
-                backgroundColor = backgroundColor,
-                modifier = Modifier
-                    .offset { IntOffset(0, dragOffset.value.roundToInt()) }
-                    .zIndex(if (isDragging) 1f else 0f)
-                    .graphicsLayer {
-                        if (isDragging) {
-                            scaleX = 1.03f
-                            scaleY = 1.03f
-                            shadowElevation = 8f
-                        }
-                    },
-                dragModifier = dragModifier
-            )
-        }
+        ChecklistItemRow(
+            item = item,
+            inputValue = state.checklistInputValues[item.id],
+            onEvent = onEvent,
+            isChecked = false,
+            isNewlyAdded = state.newlyAddedChecklistItemId == item.id,
+            backgroundColor = backgroundColor,
+            modifier = Modifier
+                .animateItem() // Built-in smooth animation for list reordering
+                .offset { IntOffset(0, dragOffset.value.roundToInt()) }
+                .zIndex(if (isDragging) 1f else 0f)
+                .graphicsLayer {
+                    if (isDragging) {
+                        scaleX = 1.04f
+                        scaleY = 1.04f
+                        shadowElevation = 12f
+                    }
+                },
+            dragModifier = dragModifier
+        )
     }
 
     item {
@@ -191,7 +182,8 @@ fun LazyListScope.ChecklistEditor(
                     inputValue = state.checklistInputValues[item.id],
                     onEvent = onEvent,
                     isChecked = true,
-                    backgroundColor = backgroundColor
+                    backgroundColor = backgroundColor,
+                    modifier = Modifier.animateItem()
                 )
             }
         }

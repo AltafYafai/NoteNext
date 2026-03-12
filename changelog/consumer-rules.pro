@@ -1,0 +1,3 @@
+-keep class com.suvojeet.notenext.changelog.ChangelogList { *; }
+-keep class com.suvojeet.notenext.changelog.Release { *; }
+-keep class com.suvojeet.notenext.changelog.ChangelogEntry { *; }

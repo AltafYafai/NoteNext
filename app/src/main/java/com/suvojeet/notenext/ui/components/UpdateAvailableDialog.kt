@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
+import com.suvojeet.notenext.ui.components.springPress
 
 @Composable
 fun UpdateAvailableDialog(
@@ -23,7 +24,8 @@ fun UpdateAvailableDialog(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(
             modifier = Modifier
@@ -60,7 +62,7 @@ fun UpdateAvailableDialog(
             
             Button(
                 onClick = onUpdateClick,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().springPress(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
@@ -77,7 +79,7 @@ fun UpdateAvailableDialog(
             
             TextButton(
                 onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().springPress()
             ) {
                 Text(stringResource(R.string.cancel))
             }

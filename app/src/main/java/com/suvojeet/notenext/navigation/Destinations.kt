@@ -38,6 +38,12 @@ sealed interface Destination {
     data object About : Destination
 
     @Serializable
+    data object Credits : Destination
+
+    @Serializable
+    data object Changelog : Destination
+
+    @Serializable
     data object Donate : Destination
     
 

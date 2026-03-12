@@ -41,6 +41,8 @@ import androidx.core.os.LocaleListCompat
 import javax.inject.Inject
 import com.suvojeet.notenext.util.UpdateChecker
 import androidx.compose.ui.res.stringResource
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
@@ -123,6 +125,14 @@ class MainActivity : FragmentActivity() {
             }
 
             var unlocked by remember { mutableStateOf(false) }
+            var showSplash by remember { mutableStateOf(true) }
+
+            LaunchedEffect(isSetupCompleteLoaded, enableAppLockLoaded) {
+                if (isSetupCompleteLoaded != null && enableAppLockLoaded != null) {
+                    kotlinx.coroutines.delay(2000L) // Show splash for 2 seconds
+                    showSplash = false
+                }
+            }
 
             // In-App Update Handling
             val updateStatus by updateChecker.updateStatus.collectAsState()
@@ -178,15 +188,25 @@ class MainActivity : FragmentActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         val unusedPadding = paddingValues
-                        if (enableAppLockLoaded == null || isSetupCompleteLoaded == null) {
-                            Surface(modifier = Modifier.fillMaxSize()) {}
-                        } else if (isSetupCompleteLoaded == false) {
-                            SetupScreen { }
-                        } else if (enableAppLockLoaded!! && !unlocked) {
-                            LockScreen(onUnlock = { unlocked = true })
-                        } else {
-                            val startNoteId by _startNoteIdFlow.collectAsState()
-                            NavGraph(themeMode = themeMode, windowSizeClass = windowSizeClass, startNoteId = startNoteId, startAddNote = startAddNote, sharedText = sharedText)
+                        
+                        androidx.compose.animation.AnimatedContent(
+                            targetState = showSplash || enableAppLockLoaded == null || isSetupCompleteLoaded == null,
+                            transitionSpec = {
+                                (androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = 0.92f))
+                                    .togetherWith(androidx.compose.animation.fadeOut())
+                            },
+                            label = "AppStartupTransition"
+                        ) { isInitialLoading ->
+                            if (isInitialLoading) {
+                                com.suvojeet.notenext.ui.components.SetupLoadingScreen()
+                            } else if (isSetupCompleteLoaded == false) {
+                                SetupScreen { }
+                            } else if (enableAppLockLoaded!! && !unlocked) {
+                                LockScreen(onUnlock = { unlocked = true })
+                            } else {
+                                val startNoteId by _startNoteIdFlow.collectAsState()
+                                NavGraph(themeMode = themeMode, windowSizeClass = windowSizeClass, startNoteId = startNoteId, startAddNote = startAddNote, sharedText = sharedText)
+                            }
                         }
                     }
                 }

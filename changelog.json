@@ -1,0 +1,30 @@
+{
+  "releases": [
+    {
+      "version": "1.3.1",
+      "date": "March 12, 2026",
+      "items": [
+        {
+          "title": "M3 Expressive Redesign",
+          "description": "Redesigned the entire app with Material 3 Expressive components and smooth spring animations.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Dynamic Credits & Changelog",
+          "description": "Moved credits and changelog to separate modules with remote JSON support.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Smooth Checklist Reordering",
+          "description": "Fixed glitches when reordering checklist items using new animateItem modifier.",
+          "type": "FIX"
+        },
+        {
+          "title": "Adaptive Bin Screen",
+          "description": "Fixed white flashes in the bin screen with proper theme-adaptive background colors.",
+          "type": "FIX"
+        }
+      ]
+    }
+  ]
+}
