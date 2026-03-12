@@ -42,7 +42,8 @@ import com.suvojeet.notenext.util.NetworkUtils
 fun AboutScreen(
     onBackClick: () -> Unit,
     onDonateClick: () -> Unit,
-    onCreditsClick: () -> Unit
+    onCreditsClick: () -> Unit,
+    onChangelogClick: () -> Unit
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
@@ -198,47 +199,58 @@ fun AboutScreen(
                     title = "Transparency",
                     description = "NoteNext is fully Open Source"
                 ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .springPress()
-                            .clickable { uriHandler.openUri("https://github.com/suvojeet-sengupta/notenext") },
-                        shape = MaterialTheme.shapes.extraLarge,
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(20.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .springPress()
+                                .clickable { uriHandler.openUri("https://github.com/suvojeet-sengupta/notenext") },
+                            shape = MaterialTheme.shapes.extraLarge,
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                modifier = Modifier.padding(20.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(id = R.string.open_source_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                                }
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(id = R.string.open_source_title),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "View source code on GitHub",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew, 
+                                    contentDescription = null, 
+                                    modifier = Modifier.size(20.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                Text(
-                                    text = "View source code on GitHub",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
                             }
-                            Icon(
-                                imageVector = Icons.Default.OpenInNew, 
-                                contentDescription = null, 
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
                         }
+
+                        ActionCard(
+                            icon = Icons.Default.NewReleases,
+                            title = "What's New",
+                            description = "View the latest app changelog",
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                            onClick = onChangelogClick
+                        )
                     }
                 }
             }

@@ -335,6 +335,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                  "backup" -> navController.navigate(Destination.Backup)
                                  "about" -> navController.navigate(Destination.About)
                                  "donate" -> navController.navigate(Destination.Donate)
+                                 "changelog" -> navController.navigate(Destination.Changelog)
+                                 "credits" -> navController.navigate(Destination.Credits)
                                  else -> {}
                              }
                         }
@@ -419,7 +421,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     AboutScreen(
                         onBackClick = { navController.popBackStack() },
                         onDonateClick = { navController.navigate(Destination.Donate) },
-                        onCreditsClick = { navController.navigate(Destination.Credits) }
+                        onCreditsClick = { navController.navigate(Destination.Credits) },
+                        onChangelogClick = { navController.navigate(Destination.Changelog) }
                     )
                 }
 
@@ -690,6 +693,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                                  "backup" -> navController.navigate(Destination.Backup)
                                  "about" -> navController.navigate(Destination.About)
                                  "donate" -> navController.navigate(Destination.Donate)
+                                 "changelog" -> navController.navigate(Destination.Changelog)
+                                 "credits" -> navController.navigate(Destination.Credits)
                                  else -> {}
                              }
                         }
@@ -774,7 +779,8 @@ fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId
                     AboutScreen(
                         onBackClick = { navController.popBackStack() },
                         onDonateClick = { navController.navigate(Destination.Donate) },
-                        onCreditsClick = { navController.navigate(Destination.Credits) }
+                        onCreditsClick = { navController.navigate(Destination.Credits) },
+                        onChangelogClick = { navController.navigate(Destination.Changelog) }
                     )
                 }
 
