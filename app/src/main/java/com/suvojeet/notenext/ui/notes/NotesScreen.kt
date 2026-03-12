@@ -377,7 +377,7 @@ fun NotesScreen(
                             )
                         }
 
-                        Column(modifier = Modifier.padding(padding).clickable(
+                        Column(modifier = Modifier.fillMaxSize().padding(padding).clickable(
                             onClick = {
                                 if (isFabExpanded) {
                                     isFabExpanded = false
@@ -436,7 +436,7 @@ fun NotesScreen(
                                     LayoutType.GRID -> {
                                         LazyVerticalStaggeredGrid(
                                             columns = StaggeredGridCells.Fixed(2),
-                                            modifier = Modifier.fillMaxSize(),
+                                            modifier = Modifier.weight(1f).fillMaxWidth(),
                                             state = gridState,
                                             contentPadding = PaddingValues(8.dp),
                                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -503,7 +503,7 @@ fun NotesScreen(
                                     }
                                     LayoutType.LIST -> {
                                         LazyColumn(
-                                            modifier = Modifier.fillMaxSize(),
+                                            modifier = Modifier.weight(1f).fillMaxWidth(),
                                             state = listState,
                                             contentPadding = PaddingValues(8.dp),
                                             verticalArrangement = Arrangement.spacedBy(8.dp)
