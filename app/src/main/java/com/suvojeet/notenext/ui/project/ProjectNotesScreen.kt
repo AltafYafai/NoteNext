@@ -69,6 +69,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 
+import com.suvojeet.notenext.util.findActivity
+
 @Composable
 fun ProjectNotesScreen(
     onBackClick: () -> Unit,
@@ -86,6 +88,14 @@ fun ProjectNotesScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val activity = context.findActivity() as? androidx.fragment.app.FragmentActivity
+    val biometricAuthManager = if (activity != null) {
+        remember(activity) {
+            com.suvojeet.notenext.util.BiometricAuthManager(context, activity)
+        }
+    } else {
+        null
+    }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -154,7 +164,18 @@ fun ProjectNotesScreen(
                             onSendClick = { viewModel.onEvent(ProjectNotesEvent.SendSelectedNotes) },
                             onLabelClick = { showLabelDialog = true },
                             onMoveToProjectClick = { },
-                            onLockClick = { viewModel.onEvent(ProjectNotesEvent.ToggleLockForSelectedNotes) },
+                            onLockClick = { 
+                                val selectedNotes = state.notes.filter { state.selectedNoteIds.contains(it.note.id) }
+                                val isAnyNoteLocked = selectedNotes.any { it.note.isLocked }
+                                if (isAnyNoteLocked) {
+                                    biometricAuthManager?.showBiometricPrompt(
+                                        onAuthSuccess = { viewModel.onEvent(ProjectNotesEvent.ToggleLockForSelectedNotes) },
+                                        onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                                    )
+                                } else {
+                                    viewModel.onEvent(ProjectNotesEvent.ToggleLockForSelectedNotes)
+                                }
+                            },
                             onSelectAllClick = { viewModel.onEvent(ProjectNotesEvent.SelectAllNotes) }
                         )
                     } else {

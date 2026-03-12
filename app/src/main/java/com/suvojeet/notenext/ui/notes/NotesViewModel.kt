@@ -64,10 +64,23 @@ class NotesViewModel @Inject constructor(
     private val alarmScheduler: AlarmScheduler,
     private val richTextController: RichTextController,
     private val groqRepository: com.suvojeet.notenext.data.repository.GroqRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(NotesState())
+    companion object {
+        private const val KEY_EDITING_TITLE = "editing_title"
+        private const val KEY_EDITING_CONTENT = "editing_content"
+        private const val KEY_EXPANDED_NOTE_ID = "expanded_note_id"
+    }
+
+    private val _state = MutableStateFlow(
+        NotesState(
+            editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
+            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
+            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
+        )
+    )
     val state = _state.asStateFlow()
 
     private val _events = MutableSharedFlow<NotesUiEvent>()
@@ -547,6 +560,10 @@ class NotesViewModel @Inject constructor(
                             val contentValue = TextFieldValue(content)
                             undoRedoManager.reset(note.title to contentValue)
 
+                            savedStateHandle[KEY_EXPANDED_NOTE_ID] = event.noteId
+                            savedStateHandle[KEY_EDITING_TITLE] = note.title
+                            savedStateHandle[KEY_EDITING_CONTENT] = note.content
+
                             _state.value = state.value.copy(
                                 expandedNoteId = event.noteId,
                                 editingTitle = note.title,
@@ -575,6 +592,9 @@ class NotesViewModel @Inject constructor(
                         }
                     } else {
                         undoRedoManager.reset("" to TextFieldValue())
+                        savedStateHandle[KEY_EXPANDED_NOTE_ID] = -1
+                        savedStateHandle[KEY_EDITING_TITLE] = ""
+                        savedStateHandle[KEY_EDITING_CONTENT] = ""
                         _state.value = state.value.copy(
                             expandedNoteId = -1,
                             editingTitle = "",
@@ -619,6 +639,9 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.CollapseNote -> {
                 onEvent(NotesEvent.OnSaveNoteClick)
+                savedStateHandle.remove<Int>(KEY_EXPANDED_NOTE_ID)
+                savedStateHandle.remove<String>(KEY_EDITING_TITLE)
+                savedStateHandle.remove<String>(KEY_EDITING_CONTENT)
             }
 
             is NotesEvent.AddChecklistItem -> {
@@ -702,6 +725,7 @@ class NotesViewModel @Inject constructor(
                     canRedo = undoRedoManager.canRedo.value,
                     summaryResult = null // Invalidate cache on title change
                 )
+                savedStateHandle[KEY_EDITING_TITLE] = event.title
                 scheduleAutoSave()
             }
             is NotesEvent.OnContentChange -> {
@@ -745,12 +769,13 @@ class NotesViewModel @Inject constructor(
                         isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                         isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline },
                         summaryResult = null // Invalidate cache on content change
-                    )
-                    
-                    if (textChanged) {
-                        scheduleAutoSave()
-                    }
+                        )
 
+                        savedStateHandle[KEY_EDITING_CONTENT] = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
+
+                        if (textChanged) {
+                        scheduleAutoSave()
+                        }
                     // Link detection
                     val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
                     val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet() // Use Set for efficient lookup
@@ -900,8 +925,9 @@ class NotesViewModel @Inject constructor(
                     )
                 }
             }
-            is NotesEvent.OnColorChange -> {
-                _state.value = state.value.copy(editingColor = event.color)
+            is NotesEvent.OnTitleChange -> {
+                _state.value = state.value.copy(editingTitle = event.title)
+                savedStateHandle[KEY_EDITING_TITLE] = event.title
                 scheduleAutoSave()
             }
             is NotesEvent.OnLabelChange -> {

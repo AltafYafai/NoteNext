@@ -29,10 +29,33 @@ object AppModule {
     @Provides
     @Singleton
     fun provideNoteDatabase(app: Application): NoteDatabase {
-        // NoteDatabase.getDatabase(app) handles the singleton logic internally,
-        // but for Hilt we can just call it or use Room.databaseBuilder directly.
-        // Since NoteDatabase.getDatabase includes migrations, it's safer to use that for now to ensure consistency.
-        return NoteDatabase.getDatabase(app)
+        return Room.databaseBuilder(
+            app,
+            NoteDatabase::class.java,
+            "note_database"
+        ).addMigrations(
+            NoteDatabase.MIGRATION_1_2,
+            NoteDatabase.MIGRATION_2_3,
+            NoteDatabase.MIGRATION_3_4,
+            NoteDatabase.MIGRATION_4_5,
+            NoteDatabase.MIGRATION_5_6,
+            NoteDatabase.MIGRATION_6_7,
+            NoteDatabase.MIGRATION_7_8,
+            NoteDatabase.MIGRATION_8_9,
+            NoteDatabase.MIGRATION_9_10,
+            NoteDatabase.MIGRATION_10_11,
+            NoteDatabase.MIGRATION_11_12,
+            NoteDatabase.MIGRATION_12_13,
+            NoteDatabase.MIGRATION_13_14,
+            NoteDatabase.MIGRATION_14_15,
+            NoteDatabase.MIGRATION_15_16,
+            NoteDatabase.MIGRATION_16_17,
+            NoteDatabase.MIGRATION_17_18,
+            NoteDatabase.MIGRATION_18_19,
+            NoteDatabase.MIGRATION_19_20,
+            NoteDatabase.MIGRATION_20_21,
+            NoteDatabase.MIGRATION_21_22
+        ).build()
     }
 
     @Provides

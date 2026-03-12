@@ -28,5 +28,7 @@ data class Note(
     val projectId: Int? = null,
     val isLocked: Boolean = false,
     val position: Int = 0,
-    val aiSummary: String? = null
+    val aiSummary: String? = null,
+    val iv: String? = null,
+    val isEncrypted: Boolean = false
 )

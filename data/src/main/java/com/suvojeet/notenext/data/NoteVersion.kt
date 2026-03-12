@@ -24,5 +24,7 @@ data class NoteVersion(
     val title: String,
     val content: String,
     val timestamp: Long,
-    val noteType: String = "TEXT"
+    val noteType: String = "TEXT",
+    val iv: String? = null,
+    val isEncrypted: Boolean = false
 )

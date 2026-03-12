@@ -1,6 +1,8 @@
 package com.suvojeet.notenext.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import com.suvojeet.notenext.util.CryptoUtils
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,7 +15,7 @@ class NoteRepositoryImpl @Inject constructor(
 ) : NoteRepository {
 
     override fun getNotes(searchQuery: String, sortType: SortType): Flow<List<NoteWithAttachments>> {
-        return if (searchQuery.isBlank()) {
+        val flow = if (searchQuery.isBlank()) {
             when (sortType) {
                 SortType.DATE_MODIFIED -> noteDao.getNotesOrderedByDateModified()
                 SortType.DATE_CREATED -> noteDao.getNotesOrderedByDateCreated()
@@ -29,20 +31,30 @@ class NoteRepositoryImpl @Inject constructor(
                 SortType.CUSTOM -> noteDao.searchNotesOrderedByPosition(formattedQuery)
             }
         }
+        return flow.map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
     }
 
-    override fun getArchivedNotes(): Flow<List<NoteWithAttachments>> = noteDao.getArchivedNotes()
+    override fun getArchivedNotes(): Flow<List<NoteWithAttachments>> = 
+        noteDao.getArchivedNotes().map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
 
-    override fun getBinnedNotes(): Flow<List<NoteWithAttachments>> = noteDao.getBinnedNotes()
+    override fun getBinnedNotes(): Flow<List<NoteWithAttachments>> = 
+        noteDao.getBinnedNotes().map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
 
     override fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>> = 
-        noteDao.getNotesByProjectId(projectId)
+        noteDao.getNotesByProjectId(projectId).map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
 
-    override suspend fun getNoteById(id: Int): NoteWithAttachments? = noteDao.getNoteById(id)
+    override suspend fun getNoteById(id: Int): NoteWithAttachments? = 
+        noteDao.getNoteById(id)?.let { it.copy(note = CryptoUtils.decryptNote(it.note)) }
 
-    override suspend fun insertNote(note: Note): Long = noteDao.insertNote(note)
+    override suspend fun insertNote(note: Note): Long {
+        val noteToInsert = if (note.isLocked) CryptoUtils.encryptNote(note) else note
+        return noteDao.insertNote(noteToInsert)
+    }
 
-    override suspend fun updateNote(note: Note) = noteDao.updateNote(note)
+    override suspend fun updateNote(note: Note) {
+        val noteToUpdate = if (note.isLocked) CryptoUtils.encryptNote(note) else note
+        noteDao.updateNote(noteToUpdate)
+    }
 
     override suspend fun updateNotePosition(id: Int, position: Int) = noteDao.updateNotePosition(id, position)
 
@@ -99,9 +111,14 @@ class NoteRepositoryImpl @Inject constructor(
 
     override suspend fun deleteChecklistForNote(noteId: Int) = checklistItemDao.deleteChecklistForNote(noteId)
 
-    override suspend fun insertNoteVersion(version: NoteVersion) = noteDao.insertNoteVersion(version)
+    override suspend fun insertNoteVersion(version: NoteVersion) {
+        val note = noteDao.getNoteById(version.noteId)
+        val versionToInsert = if (note?.note?.isLocked == true) CryptoUtils.encryptNoteVersion(version) else version
+        noteDao.insertNoteVersion(versionToInsert)
+    }
 
-    override fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>> = noteDao.getNoteVersions(noteId)
+    override fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>> = 
+        noteDao.getNoteVersions(noteId).map { list -> list.map { CryptoUtils.decryptNoteVersion(it) } }
 
     override suspend fun limitNoteVersions(noteId: Int, limit: Int) = noteDao.limitNoteVersions(noteId, limit)
 

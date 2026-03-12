@@ -10,7 +10,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 20, exportSchema = false)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 22, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -21,23 +21,21 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: NoteDatabase? = null
-
-        fun getDatabase(context: Context): NoteDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    NoteDatabase::class.java,
-                    "note_database"
-                )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_15_16, MIGRATION_16_17, MIGRATION_17_18, MIGRATION_18_19, MIGRATION_19_20)
-                .build()
-                INSTANCE = instance
-                instance
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE note_versions ADD COLUMN iv TEXT")
+                db.execSQL("ALTER TABLE note_versions ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
             }
         }
-        private val MIGRATION_19_20 = object : Migration(19, 20) {
+
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE notes ADD COLUMN iv TEXT")
+                db.execSQL("ALTER TABLE notes ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        val MIGRATION_19_20 = object : Migration(19, 20) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `todos` (
@@ -54,13 +52,13 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_18_19 = object : Migration(18, 19) {
+        val MIGRATION_18_19 = object : Migration(18, 19) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN aiSummary TEXT")
             }
         }
 
-        private val MIGRATION_17_18 = object : Migration(17, 18) {
+        val MIGRATION_17_18 = object : Migration(17, 18) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Drop the old FTS table with incorrect options
                 db.execSQL("DROP TABLE IF EXISTS notes_fts")
@@ -71,20 +69,20 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_16_17 = object : Migration(16, 17) {
+        val MIGRATION_16_17 = object : Migration(16, 17) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE projects ADD COLUMN description TEXT")
             }
         }
 
-        private val MIGRATION_14_15 = object : Migration(14, 15) {
+        val MIGRATION_14_15 = object : Migration(14, 15) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE labels ADD COLUMN parentName TEXT")
                 db.execSQL("ALTER TABLE notes ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
             }
         }
 
-        private val MIGRATION_15_16 = object : Migration(15, 16) {
+        val MIGRATION_15_16 = object : Migration(15, 16) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Drop the old FTS table
                 db.execSQL("DROP TABLE IF EXISTS notes_fts")
@@ -95,7 +93,7 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_13_14 = object : Migration(13, 14) {
+        val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `note_versions` (
@@ -112,13 +110,13 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_12_13 = object : Migration(12, 13) {
+        val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN isLocked INTEGER NOT NULL DEFAULT 0")
             }
         }
 
-        private val MIGRATION_11_12 = object : Migration(11, 12) {
+        val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `checklist_items` (
@@ -163,7 +161,7 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_10_11 = object : Migration(10, 11) {
+        val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Create the FTS4 virtual table, using 'notes' as the content table
                 db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `notes_fts` USING FTS4(`title`, `content`, content='notes')")
@@ -172,13 +170,13 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_9_10 = object : Migration(9, 10) {
+        val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN projectId INTEGER")
             }
         }
 
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes RENAME COLUMN timestamp TO createdAt")
                 db.execSQL("ALTER TABLE notes ADD COLUMN lastEdited INTEGER NOT NULL DEFAULT 0")
@@ -186,7 +184,7 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN isPinned BOOLEAN NOT NULL DEFAULT false")
                 db.execSQL("ALTER TABLE notes ADD COLUMN isArchived BOOLEAN NOT NULL DEFAULT false")
@@ -195,37 +193,37 @@ abstract class NoteDatabase : RoomDatabase() {
             }
         }
 
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
+        val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN label TEXT")
             }
         }
 
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
+        val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `labels` (`name` TEXT NOT NULL, PRIMARY KEY(`name`))")
             }
         }
 
-        private val MIGRATION_5_6 = object : Migration(5, 6) {
+        val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN isBinned BOOLEAN NOT NULL DEFAULT false")
             }
         }
 
-        private val MIGRATION_6_7 = object : Migration(6, 7) {
+        val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN linkPreviews TEXT NOT NULL DEFAULT '[]'")
             }
         }
 
-        private val MIGRATION_7_8 = object : Migration(7, 8) {
+        val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE notes ADD COLUMN noteType TEXT NOT NULL DEFAULT 'TEXT'")
             }
         }
 
-        private val MIGRATION_8_9 = object : Migration(8, 9) {
+        val MIGRATION_8_9 = object : Migration(8, 9) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS `attachments` (
