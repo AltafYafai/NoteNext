@@ -286,15 +286,16 @@ fun AboutScreen(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                             contentColor = MaterialTheme.colorScheme.onSurface,
                             onClick = {
+                                val playStoreUrl = "https://play.google.com/store/apps/details?id=com.suvojeet.notenext"
+                                val githubUrl = "https://github.com/suvojeet-sengupta/notenext"
                                 val sendIntent = android.content.Intent().apply {
                                     action = android.content.Intent.ACTION_SEND
-                                    putExtra(android.content.Intent.EXTRA_TEXT, "Check out NoteNext, an amazing open-source local-first note app! https://github.com/suvojeet-sengupta/notenext")
+                                    putExtra(android.content.Intent.EXTRA_TEXT, "Check out NoteNext, an amazing open-source local-first note app!\n\nGet it on Play Store: $playStoreUrl\n\nGitHub: $githubUrl")
                                     type = "text/plain"
                                 }
-                                val shareIntent = android.content.Intent.createChooser(sendIntent, null)
+                                val shareIntent = android.content.Intent.createChooser(sendIntent, "Share NoteNext via")
                                 context.startActivity(shareIntent)
-                            }
-                        )
+                            }                        )
                         ActionCard(
                             icon = Icons.Default.BugReport,
                             title = "Report a Bug / Request Feature",
