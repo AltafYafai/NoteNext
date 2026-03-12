@@ -1,7 +1,7 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
@@ -12,9 +12,12 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
@@ -33,21 +36,32 @@ fun AddEditNoteTopAppBar(
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             if (state.editingIsNewNote) {
                 Text(
                     text = if (editingNoteType == "CHECKLIST") stringResource(id = R.string.add_checklist) else stringResource(id = R.string.add_note),
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold
                 )
             }
         },
         navigationIcon = {
-            IconButton(onClick = onDismiss, modifier = Modifier.springPress()) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back), tint = contentColor)
+            FilledIconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .springPress(),
+                shape = MaterialTheme.shapes.medium,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = contentColor
+                )
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = backgroundColor,
             titleContentColor = contentColor,
             actionIconContentColor = contentColor,
@@ -55,39 +69,57 @@ fun AddEditNoteTopAppBar(
         ),
         scrollBehavior = scrollBehavior,
         actions = {
-            SavedStatusIndicator(status = state.saveStatus, contentColor = contentColor)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                SavedStatusIndicator(status = state.saveStatus, contentColor = contentColor)
 
-            if (editingNoteType == "TEXT" && !state.editingIsNewNote) {
-                IconButton(onClick = { onEvent(NotesEvent.SummarizeNote) }, modifier = Modifier.springPress()) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Note", tint = contentColor)
+                if (editingNoteType == "TEXT" && !state.editingIsNewNote) {
+                    IconButton(
+                        onClick = { onEvent(NotesEvent.SummarizeNote) },
+                        modifier = Modifier.springPress()
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Note", tint = contentColor)
+                    }
                 }
-            }
-            
-            IconButton(onClick = onToggleFocusMode, modifier = Modifier.springPress()) {
-                Icon(
-                    imageVector = if (isFocusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = "Toggle Focus Mode",
-                    tint = contentColor
-                )
-            }
-
-            if (!state.editingIsNewNote) {
-                IconButton(onClick = { onEvent(NotesEvent.OnTogglePinClick) }, modifier = Modifier.springPress()) {
+                
+                IconButton(onClick = onToggleFocusMode, modifier = Modifier.springPress()) {
                     Icon(
-                        imageVector = Icons.Filled.PushPin,
-                        contentDescription = if (state.isPinned) stringResource(id = R.string.unpin_note) else stringResource(id = R.string.pin_note),
-                        tint = if (state.isPinned) MaterialTheme.colorScheme.primary else contentColor
+                        imageVector = if (isFocusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = "Toggle Focus Mode",
+                        tint = contentColor
                     )
                 }
-                IconButton(onClick = { onEvent(NotesEvent.OnToggleArchiveClick) }, modifier = Modifier.springPress()) {
-                    Icon(
-                        imageVector = Icons.Filled.Archive,
-                        contentDescription = if (state.isArchived) stringResource(id = R.string.unarchive_note) else stringResource(id = R.string.archive_note),
-                        tint = if (state.isArchived) MaterialTheme.colorScheme.primary else contentColor
-                    )
-                }
-                IconButton(onClick = { showDeleteDialog(true) }, modifier = Modifier.springPress()) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.delete_note), tint = contentColor)
+
+                if (!state.editingIsNewNote) {
+                    FilledTonalIconButton(
+                        onClick = { onEvent(NotesEvent.OnTogglePinClick) },
+                        modifier = Modifier.springPress(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = if (state.isPinned) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                            contentColor = if (state.isPinned) MaterialTheme.colorScheme.primary else contentColor
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PushPin,
+                            contentDescription = if (state.isPinned) stringResource(id = R.string.unpin_note) else stringResource(id = R.string.pin_note)
+                        )
+                    }
+                    
+                    IconButton(onClick = { onEvent(NotesEvent.OnToggleArchiveClick) }, modifier = Modifier.springPress()) {
+                        Icon(
+                            imageVector = Icons.Filled.Archive,
+                            contentDescription = if (state.isArchived) stringResource(id = R.string.unarchive_note) else stringResource(id = R.string.archive_note),
+                            tint = if (state.isArchived) MaterialTheme.colorScheme.primary else contentColor
+                        )
+                    }
+                    
+                    IconButton(onClick = { showDeleteDialog(true) }, modifier = Modifier.springPress()) {
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.delete_note), tint = contentColor)
+                    }
                 }
             }
         }

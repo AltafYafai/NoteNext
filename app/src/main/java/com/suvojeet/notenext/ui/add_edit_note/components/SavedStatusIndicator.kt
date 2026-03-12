@@ -64,16 +64,16 @@ fun SavedStatusIndicator(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(end = 8.dp)
+        modifier = Modifier.padding(end = 4.dp)
     ) {
         AnimatedVisibility(
             visible = status == SaveStatus.SAVING,
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = fadeIn() + androidx.compose.animation.scaleIn(),
+            exit = fadeOut() + androidx.compose.animation.scaleOut()
         ) {
              LoadingIndicator(
-                modifier = Modifier.size(18.dp),
-                color = contentColor.copy(alpha = 0.7f)
+                modifier = Modifier.size(20.dp),
+                color = contentColor
             )
         }
 
@@ -82,12 +82,20 @@ fun SavedStatusIndicator(
             enter = fadeIn() + androidx.compose.animation.scaleIn(),
             exit = fadeOut() + androidx.compose.animation.scaleOut()
         ) {
-            Icon(
-                imageVector = Icons.Default.CloudDone,
-                contentDescription = "Saved",
-                modifier = Modifier.size(24.dp),
-                tint = contentColor.copy(alpha = 0.7f)
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Saved",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
         }
     }
 }
