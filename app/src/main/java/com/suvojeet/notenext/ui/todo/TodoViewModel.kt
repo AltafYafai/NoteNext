@@ -2,10 +2,13 @@ package com.suvojeet.notenext.ui.todo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.data.TodoRepository
 import com.suvojeet.notenext.data.repository.GroqRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -13,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -31,6 +35,17 @@ class TodoViewModel @Inject constructor(
     private val _state = MutableStateFlow(TodoState())
     val state: StateFlow<TodoState> = _state.asStateFlow()
 
+    private val _filter = MutableStateFlow<TodoFilter>(TodoFilter.All)
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    val pagedTodos: Flow<PagingData<TodoItem>> = _filter.flatMapLatest { filter ->
+        when (filter) {
+            is TodoFilter.All -> repository.getPagedTodos()
+            is TodoFilter.Active -> repository.getPagedActiveTodos()
+            is TodoFilter.Completed -> repository.getPagedCompletedTodos()
+        }
+    }.cachedIn(viewModelScope)
+
     private val _events = MutableSharedFlow<TodoUiEvent>()
     val events: SharedFlow<TodoUiEvent> = _events.asSharedFlow()
 
@@ -40,20 +55,15 @@ class TodoViewModel @Inject constructor(
 
     private fun observeTodos() {
         combine(
-            repository.getAllTodos(),
             repository.getActiveCount(),
-            repository.getCompletedCount()
-        ) { todos, activeCount, completedCount ->
-            val filteredTodos = when (_state.value.filter) {
-                is TodoFilter.All -> todos
-                is TodoFilter.Active -> todos.filter { !it.isCompleted }
-                is TodoFilter.Completed -> todos.filter { it.isCompleted }
-            }
+            repository.getCompletedCount(),
+            _filter
+        ) { activeCount, completedCount, filter ->
             _state.value = _state.value.copy(
-                todos = filteredTodos,
                 isLoading = false,
                 activeCount = activeCount,
-                completedCount = completedCount
+                completedCount = completedCount,
+                filter = filter
             )
         }.launchIn(viewModelScope)
     }
@@ -92,8 +102,7 @@ class TodoViewModel @Inject constructor(
                 }
             }
             is TodoEvent.SetFilter -> {
-                _state.value = _state.value.copy(filter = event.filter)
-                observeTodos() // Re-observe with new filter
+                _filter.value = event.filter
             }
             is TodoEvent.DeleteAllCompleted -> {
                 viewModelScope.launch {

@@ -1,11 +1,14 @@
 package com.suvojeet.notenext.data
 
 import kotlinx.coroutines.flow.Flow
+import androidx.paging.PagingData
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 
 interface TodoRepository {
-    fun getAllTodos(): Flow<List<TodoItem>>
-    fun getActiveTodos(): Flow<List<TodoItem>>
-    fun getCompletedTodos(): Flow<List<TodoItem>>
+    fun getPagedTodos(): Flow<PagingData<TodoItem>>
+    fun getPagedActiveTodos(): Flow<PagingData<TodoItem>>
+    fun getPagedCompletedTodos(): Flow<PagingData<TodoItem>>
     suspend fun getTodoById(id: Int): TodoItem?
     suspend fun insertTodo(todo: TodoItem): Long
     suspend fun updateTodo(todo: TodoItem)
@@ -19,11 +22,26 @@ class TodoRepositoryImpl(
     private val todoDao: TodoDao
 ) : TodoRepository {
     
-    override fun getAllTodos(): Flow<List<TodoItem>> = todoDao.getAllTodos()
-    
-    override fun getActiveTodos(): Flow<List<TodoItem>> = todoDao.getActiveTodos()
-    
-    override fun getCompletedTodos(): Flow<List<TodoItem>> = todoDao.getCompletedTodos()
+    override fun getPagedTodos(): Flow<PagingData<TodoItem>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20),
+            pagingSourceFactory = { todoDao.getAllTodos() }
+        ).flow
+    }
+
+    override fun getPagedActiveTodos(): Flow<PagingData<TodoItem>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20),
+            pagingSourceFactory = { todoDao.getActiveTodos() }
+        ).flow
+    }
+
+    override fun getPagedCompletedTodos(): Flow<PagingData<TodoItem>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20),
+            pagingSourceFactory = { todoDao.getCompletedTodos() }
+        ).flow
+    }
     
     override suspend fun getTodoById(id: Int): TodoItem? = todoDao.getTodoById(id)
     

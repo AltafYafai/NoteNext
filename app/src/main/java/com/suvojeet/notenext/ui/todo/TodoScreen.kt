@@ -20,6 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.ExpressiveLoading
@@ -35,6 +38,7 @@ fun TodoScreen(
     viewModel: TodoViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val pagedTodos = viewModel.pagedTodos.collectAsLazyPagingItems()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -120,7 +124,7 @@ fun TodoScreen(
 
             if (state.isLoading) {
                 ExpressiveLoading()
-            } else if (state.todos.isEmpty()) {
+            } else if (pagedTodos.itemCount == 0) {
                 EmptyState(
                     icon = Icons.Default.CheckCircle,
                     message = when (state.filter) {
@@ -147,13 +151,19 @@ fun TodoScreen(
                         contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.todos, key = { it.id }) { todo ->
-                            TodoItemCard(
-                                todo = todo,
-                                onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todo)) },
-                                onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todo)) },
-                                onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todo)) }
-                            )
+                        items(
+                            count = pagedTodos.itemCount,
+                            key = pagedTodos.itemKey { it.id },
+                            contentType = pagedTodos.itemContentType { "todo" }
+                        ) { index ->
+                            pagedTodos[index]?.let { todo ->
+                                TodoItemCard(
+                                    todo = todo,
+                                    onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todo)) },
+                                    onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todo)) },
+                                    onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todo)) }
+                                )
+                            }
                         }
                     }
                 }

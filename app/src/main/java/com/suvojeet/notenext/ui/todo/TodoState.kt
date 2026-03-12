@@ -3,7 +3,6 @@ package com.suvojeet.notenext.ui.todo
 import com.suvojeet.notenext.data.TodoItem
 
 data class TodoState(
-    val todos: List<TodoItem> = emptyList(),
     val filter: TodoFilter = TodoFilter.All,
     val isLoading: Boolean = true,
     val showAddEditDialog: Boolean = false,
