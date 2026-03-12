@@ -9,6 +9,7 @@ import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
+import com.suvojeet.notenext.ui.notes.SaveStatus
 
 data class ProjectNotesState(
     val notes: List<NoteWithAttachments> = emptyList(),
@@ -46,5 +47,6 @@ data class ProjectNotesState(
     val projectName: String = "",
     val projectDescription: String? = null,
     val editingReminderTime: Long? = null,
-    val editingRepeatOption: String? = null
+    val editingRepeatOption: String? = null,
+    val saveStatus: SaveStatus = SaveStatus.SAVED
 )

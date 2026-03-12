@@ -25,9 +25,12 @@ import com.suvojeet.notenext.data.AlarmScheduler
 import java.time.LocalDateTime
 import java.time.ZoneId
 import com.suvojeet.notenext.data.RepeatOption
+import com.suvojeet.notenext.ui.notes.SaveStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -52,10 +55,21 @@ class ProjectNotesViewModel @Inject constructor(
     val events = _events.asSharedFlow()
 
     private var recentlyDeletedNote: Note? = null
+    private var autoSaveJob: Job? = null
 
     private val projectId: Int = savedStateHandle.get<Int>("projectId") ?: -1
 
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
+
+    private fun scheduleAutoSave() {
+        autoSaveJob?.cancel()
+        _state.value = _state.value.copy(saveStatus = SaveStatus.SAVING)
+        autoSaveJob = viewModelScope.launch {
+            delay(1500)
+            onEvent(ProjectNotesEvent.OnSaveNoteClick)
+            _state.value = _state.value.copy(saveStatus = SaveStatus.SAVED)
+        }
+    }
 
     init {
         if (projectId != -1) {
@@ -397,6 +411,7 @@ class ProjectNotesViewModel @Inject constructor(
                     editingHistory = newHistory,
                     editingHistoryIndex = newHistory.lastIndex
                 )
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.OnContentChange -> {
                 if (state.value.editingNoteType == "TEXT") {
@@ -479,6 +494,7 @@ class ProjectNotesViewModel @Inject constructor(
 
                         _state.value = _state.value.copy(linkPreviews = combinedLinkPreviews)
                     }
+                    scheduleAutoSave()
                 }
             }
             is ProjectNotesEvent.ApplyStyleToContent -> {
@@ -568,6 +584,12 @@ class ProjectNotesViewModel @Inject constructor(
                     editingReminderTime = event.time,
                     editingRepeatOption = event.repeatOption
                 )
+                scheduleAutoSave()
+            }
+            is ProjectNotesEvent.AutoSaveNote -> {
+                viewModelScope.launch {
+                    onEvent(ProjectNotesEvent.OnSaveNoteClick)
+                }
             }
             is ProjectNotesEvent.OnTogglePinClick -> {
                 viewModelScope.launch {

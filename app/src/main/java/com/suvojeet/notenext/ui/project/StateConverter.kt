@@ -33,6 +33,11 @@ fun ProjectNotesState.toNotesState(): NotesState {
         editingChecklist = this.editingChecklist,
         isCheckedItemsExpanded = this.isCheckedItemsExpanded,
         newlyAddedChecklistItemId = this.newlyAddedChecklistItemId,
-        editingAttachments = this.editingAttachments
+        editingAttachments = this.editingAttachments,
+        editingIsLocked = this.editingIsLocked,
+        editingNoteVersions = this.editingNoteVersions,
+        editingReminderTime = this.editingReminderTime,
+        editingRepeatOption = this.editingRepeatOption,
+        saveStatus = this.saveStatus
     )
 }
