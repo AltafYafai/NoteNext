@@ -48,5 +48,14 @@ data class ProjectNotesState(
     val projectDescription: String? = null,
     val editingReminderTime: Long? = null,
     val editingRepeatOption: String? = null,
-    val saveStatus: SaveStatus = SaveStatus.SAVED
+    val saveStatus: SaveStatus = SaveStatus.SAVED,
+
+    val isSummarizing: Boolean = false,
+    val summaryResult: String? = null,
+    val showSummaryDialog: Boolean = false,
+    val isGeneratingChecklist: Boolean = false,
+    val generatedChecklistPreview: List<String> = emptyList(),
+    val isFixingGrammar: Boolean = false,
+    val fixedContentPreview: String? = null,
+    val originalContentBackup: TextFieldValue? = null
 )

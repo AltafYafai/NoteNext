@@ -27,6 +27,8 @@ import java.time.ZoneId
 import com.suvojeet.notenext.data.RepeatOption
 import com.suvojeet.notenext.ui.notes.SaveStatus
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -45,6 +47,8 @@ class ProjectNotesViewModel @Inject constructor(
     private val repository: com.suvojeet.notenext.data.NoteRepository,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
+    private val groqRepository: com.suvojeet.notenext.data.repository.GroqRepository,
+    @ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -589,6 +593,137 @@ class ProjectNotesViewModel @Inject constructor(
             is ProjectNotesEvent.AutoSaveNote -> {
                 viewModelScope.launch {
                     onEvent(ProjectNotesEvent.OnSaveNoteClick)
+                }
+            }
+            is ProjectNotesEvent.SummarizeNote -> {
+                val content = if (state.value.editingNoteType == "TEXT") {
+                    state.value.editingContent.text
+                } else {
+                    state.value.editingChecklist.joinToString("\n") { it.text }
+                }
+
+                if (content.isBlank()) {
+                    viewModelScope.launch { _events.emit(ProjectNotesUiEvent.ShowToast("Note content is empty")) }
+                    return
+                }
+
+                _state.value = state.value.copy(isSummarizing = true, showSummaryDialog = true)
+                viewModelScope.launch {
+                    groqRepository.summarizeNote(content).collect { result ->
+                        result.onSuccess { summary ->
+                            _state.value = _state.value.copy(isSummarizing = false, summaryResult = summary)
+                        }.onFailure { e ->
+                            _state.value = _state.value.copy(isSummarizing = false, showSummaryDialog = false)
+                            _events.emit(ProjectNotesUiEvent.ShowToast("Summarization failed: ${e.message}"))
+                        }
+                    }
+                }
+            }
+            is ProjectNotesEvent.ClearSummary -> {
+                _state.value = state.value.copy(summaryResult = null, showSummaryDialog = false)
+            }
+            is ProjectNotesEvent.GenerateChecklist -> {
+                if (event.topic.isBlank()) return
+
+                _state.value = state.value.copy(isGeneratingChecklist = true)
+                viewModelScope.launch {
+                    groqRepository.generateChecklist(event.topic).collect { result ->
+                        result.onSuccess { items ->
+                            _state.value = _state.value.copy(
+                                isGeneratingChecklist = false,
+                                generatedChecklistPreview = items
+                            )
+                        }.onFailure { e ->
+                            _state.value = _state.value.copy(isGeneratingChecklist = false)
+                            _events.emit(ProjectNotesUiEvent.ShowToast("Generation failed: ${e.message}"))
+                        }
+                    }
+                }
+            }
+            is ProjectNotesEvent.InsertGeneratedChecklist -> {
+                val currentItems = state.value.editingChecklist
+                val newItems = event.items.mapIndexed { index, text ->
+                    com.suvojeet.notenext.data.ChecklistItem(
+                        text = text,
+                        isChecked = false,
+                        position = currentItems.size + index
+                    )
+                }
+                _state.value = state.value.copy(
+                    editingChecklist = currentItems + newItems,
+                    editingNoteType = "CHECKLIST",
+                    generatedChecklistPreview = emptyList()
+                )
+                scheduleAutoSave()
+            }
+            is ProjectNotesEvent.ClearGeneratedChecklist -> {
+                _state.value = state.value.copy(generatedChecklistPreview = emptyList())
+            }
+            is ProjectNotesEvent.FixGrammar -> {
+                val targetText = state.value.editingContent.text
+                if (targetText.isBlank()) return
+
+                _state.value = state.value.copy(isFixingGrammar = true)
+                viewModelScope.launch {
+                    groqRepository.fixGrammar(targetText).collect { result ->
+                        result.onSuccess { fixedText ->
+                            _state.value = _state.value.copy(
+                                isFixingGrammar = false,
+                                fixedContentPreview = fixedText,
+                                originalContentBackup = state.value.editingContent
+                            )
+                        }.onFailure { e ->
+                            _state.value = _state.value.copy(isFixingGrammar = false)
+                            _events.emit(ProjectNotesUiEvent.ShowToast("Grammar fix failed: ${e.message}"))
+                        }
+                    }
+                }
+            }
+            is ProjectNotesEvent.ApplyGrammarFix -> {
+                state.value.fixedContentPreview?.let { fixedText ->
+                    val newAnnotatedString = AnnotatedString(fixedText)
+                    _state.value = state.value.copy(
+                        editingContent = TextFieldValue(newAnnotatedString),
+                        fixedContentPreview = null,
+                        originalContentBackup = null
+                    )
+                    scheduleAutoSave()
+                }
+            }
+            is ProjectNotesEvent.ClearGrammarFix -> {
+                _state.value = state.value.copy(
+                    fixedContentPreview = null,
+                    originalContentBackup = null
+                )
+            }
+            is ProjectNotesEvent.ExportNote -> {
+                viewModelScope.launch {
+                    try {
+                        val content = if (state.value.editingNoteType == "TEXT") {
+                            state.value.editingContent.text
+                        } else {
+                            state.value.editingChecklist.joinToString("\n") { if (it.isChecked) "[x] ${it.text}" else "[ ] ${it.text}" }
+                        }
+                        val fullContent = "${state.value.editingTitle}\n\n$content"
+                        
+                        context.contentResolver.openOutputStream(event.uri)?.use { outputStream ->
+                            outputStream.write(fullContent.toByteArray())
+                        }
+                        _events.emit(ProjectNotesUiEvent.ShowToast("Note exported successfully"))
+                    } catch (e: Exception) {
+                        _events.emit(ProjectNotesUiEvent.ShowToast("Export failed: ${e.message}"))
+                    }
+                }
+            }
+            is ProjectNotesEvent.ShareAsText -> {
+                val content = if (state.value.editingNoteType == "TEXT") {
+                    state.value.editingContent.text
+                } else {
+                    state.value.editingChecklist.joinToString("\n") { if (it.isChecked) "[x] ${it.text}" else "[ ] ${it.text}" }
+                }
+                val shareText = "${state.value.editingTitle}\n\n$content"
+                viewModelScope.launch {
+                    _events.emit(ProjectNotesUiEvent.SendNotes(state.value.editingTitle, shareText))
                 }
             }
             is ProjectNotesEvent.OnTogglePinClick -> {

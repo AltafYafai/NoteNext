@@ -68,17 +68,17 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.OnToggleNoteType -> ProjectNotesEvent.OnToggleNoteType
         is NotesEvent.DeleteAllCheckedItems -> ProjectNotesEvent.DeleteAllCheckedItems
         is NotesEvent.ToggleCheckedItemsExpanded -> ProjectNotesEvent.ToggleCheckedItemsExpanded
-        is NotesEvent.SummarizeNote -> throw IllegalArgumentException("SummarizeNote event cannot be converted")
-        is NotesEvent.GenerateChecklist -> throw IllegalArgumentException("GenerateChecklist event cannot be converted")
-        is NotesEvent.InsertGeneratedChecklist -> throw IllegalArgumentException("InsertGeneratedChecklist event cannot be converted")
-        is NotesEvent.ClearGeneratedChecklist -> throw IllegalArgumentException("ClearGeneratedChecklist event cannot be converted")
-        is NotesEvent.ClearSummary -> throw IllegalArgumentException("ClearSummary event cannot be converted")
-        is NotesEvent.FixGrammar -> throw IllegalArgumentException("FixGrammar event cannot be converted")
-        is NotesEvent.ApplyGrammarFix -> throw IllegalArgumentException("ApplyGrammarFix event cannot be converted")
-        is NotesEvent.ClearGrammarFix -> throw IllegalArgumentException("ClearGrammarFix event cannot be converted")
+        is NotesEvent.SummarizeNote -> ProjectNotesEvent.SummarizeNote
+        is NotesEvent.GenerateChecklist -> ProjectNotesEvent.GenerateChecklist(event.topic)
+        is NotesEvent.InsertGeneratedChecklist -> ProjectNotesEvent.InsertGeneratedChecklist(event.editedItems)
+        is NotesEvent.ClearGeneratedChecklist -> ProjectNotesEvent.ClearGeneratedChecklist
+        is NotesEvent.ClearSummary -> ProjectNotesEvent.ClearSummary
+        is NotesEvent.FixGrammar -> ProjectNotesEvent.FixGrammar
+        is NotesEvent.ApplyGrammarFix -> ProjectNotesEvent.ApplyGrammarFix
+        is NotesEvent.ClearGrammarFix -> ProjectNotesEvent.ClearGrammarFix
         is NotesEvent.AutoSaveNote -> ProjectNotesEvent.AutoSaveNote
         is NotesEvent.ImportImage -> throw IllegalArgumentException("ImportImage event cannot be converted")
-        is NotesEvent.ExportNote -> throw IllegalArgumentException("ExportNote event cannot be converted")
+        is NotesEvent.ExportNote -> ProjectNotesEvent.ExportNote(event.uri, event.format)
     }
 }
 

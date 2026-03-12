@@ -59,6 +59,20 @@ sealed class ProjectNotesEvent {
     data class OnReminderChange(val time: Long?, val repeatOption: String?) : ProjectNotesEvent()
     object AutoSaveNote : ProjectNotesEvent()
 
+    // AI Events
+    object SummarizeNote : ProjectNotesEvent()
+    data class GenerateChecklist(val topic: String) : ProjectNotesEvent()
+    data class InsertGeneratedChecklist(val items: List<String>) : ProjectNotesEvent()
+    object ClearGeneratedChecklist : ProjectNotesEvent()
+    object ClearSummary : ProjectNotesEvent()
+    object FixGrammar : ProjectNotesEvent()
+    object ApplyGrammarFix : ProjectNotesEvent()
+    object ClearGrammarFix : ProjectNotesEvent()
+    
+    // Utility Events
+    data class ExportNote(val uri: android.net.Uri, val format: String) : ProjectNotesEvent()
+    object ShareAsText : ProjectNotesEvent()
+
     data class OnLinkDetected(val url: String) : ProjectNotesEvent()
     data class OnLinkPreviewFetched(val url: String, val title: String?, val description: String?, val imageUrl: String?) : ProjectNotesEvent()
     data class OnRemoveLinkPreview(val url: String) : ProjectNotesEvent()

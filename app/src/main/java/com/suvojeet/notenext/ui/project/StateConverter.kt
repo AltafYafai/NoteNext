@@ -38,6 +38,14 @@ fun ProjectNotesState.toNotesState(): NotesState {
         editingNoteVersions = this.editingNoteVersions,
         editingReminderTime = this.editingReminderTime,
         editingRepeatOption = this.editingRepeatOption,
-        saveStatus = this.saveStatus
+        saveStatus = this.saveStatus,
+        isSummarizing = this.isSummarizing,
+        summaryResult = this.summaryResult,
+        showSummaryDialog = this.showSummaryDialog,
+        isGeneratingChecklist = this.isGeneratingChecklist,
+        generatedChecklistPreview = this.generatedChecklistPreview,
+        isFixingGrammar = this.isFixingGrammar,
+        fixedContentPreview = this.fixedContentPreview,
+        originalContentBackup = this.originalContentBackup
     )
 }
