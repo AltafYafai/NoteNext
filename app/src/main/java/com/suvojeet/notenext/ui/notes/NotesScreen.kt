@@ -246,6 +246,7 @@ fun NotesScreen(
                                                 Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
                                             }
                                         },
+                                        scrollBehavior = scrollBehavior,
                                         colors = TopAppBarDefaults.topAppBarColors(
                                             containerColor = MaterialTheme.colorScheme.surfaceContainer,
                                             scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -377,197 +378,203 @@ fun NotesScreen(
                             )
                         }
 
-                        Column(modifier = Modifier.fillMaxSize().padding(padding).clickable(
-                            onClick = {
-                                if (isFabExpanded) {
-                                    isFabExpanded = false
-                                }
-                            },
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        )) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            val notesToDisplay = if (state.filteredLabel == null) {
-                                state.notes
-                            } else {
-                                state.notes.filter { it.note.label == state.filteredLabel }
-                            }
-
-                            if (state.isLoading) {
-                                ExpressiveLoading()
-                            } else if (notesToDisplay.isEmpty()) {
-                                val currentLabel = state.filteredLabel
-                                val emptyMessage = if (currentLabel != null) {
-                                    stringResource(id = R.string.no_notes_found_label, currentLabel)
-                                } else if (state.searchQuery.isNotEmpty()) {
-                                    stringResource(id = R.string.no_notes_found)
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val notesToDisplay = if (state.filteredLabel == null) {
+                                    state.notes
                                 } else {
-                                    stringResource(id = R.string.no_notes_yet)
+                                    state.notes.filter { it.note.label == state.filteredLabel }
                                 }
-                                
-                                val emptyIcon = if (state.searchQuery.isNotEmpty()) Icons.Default.Search else Icons.Default.Note
 
-                                EmptyState(
-                                    icon = emptyIcon,
-                                    message = emptyMessage,
-                                    description = if (state.searchQuery.isEmpty()) stringResource(id = R.string.create_your_first_note) else null
-                                )
-                            } else {
-                                val filteredNotes = notesToDisplay
-                                val pinnedNotes = filteredNotes.filter { it.note.isPinned }
-                                val otherNotes = filteredNotes.filter { !it.note.isPinned }
-
-                                val onNoteClickAction: (com.suvojeet.notenext.data.NoteWithAttachments) -> Unit = { note ->
-                                    if (isSelectionModeActive) {
-                                        viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                if (state.isLoading) {
+                                    ExpressiveLoading()
+                                } else if (notesToDisplay.isEmpty()) {
+                                    val currentLabel = state.filteredLabel
+                                    val emptyMessage = if (currentLabel != null) {
+                                        stringResource(id = R.string.no_notes_found_label, currentLabel)
+                                    } else if (state.searchQuery.isNotEmpty()) {
+                                        stringResource(id = R.string.no_notes_found)
                                     } else {
-                                        if (note.note.isLocked) {
-                                            biometricAuthManager?.showBiometricPrompt(
-                                                onAuthSuccess = { viewModel.onEvent(NotesEvent.ExpandNote(note.note.id)) },
-                                                onAuthError = { Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show() }
-                                            ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
+                                        stringResource(id = R.string.no_notes_yet)
+                                    }
+                                    
+                                    val emptyIcon = if (state.searchQuery.isNotEmpty()) Icons.Default.Search else Icons.Default.Note
+
+                                    EmptyState(
+                                        icon = emptyIcon,
+                                        message = emptyMessage,
+                                        description = if (state.searchQuery.isEmpty()) stringResource(id = R.string.create_your_first_note) else null
+                                    )
+                                } else {
+                                    val filteredNotes = notesToDisplay
+                                    val pinnedNotes = filteredNotes.filter { it.note.isPinned }
+                                    val otherNotes = filteredNotes.filter { !it.note.isPinned }
+
+                                    val onNoteClickAction: (com.suvojeet.notenext.data.NoteWithAttachments) -> Unit = { note ->
+                                        if (isSelectionModeActive) {
+                                            viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                         } else {
-                                            viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
+                                            if (note.note.isLocked) {
+                                                biometricAuthManager?.showBiometricPrompt(
+                                                    onAuthSuccess = { viewModel.onEvent(NotesEvent.ExpandNote(note.note.id)) },
+                                                    onAuthError = { Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show() }
+                                                ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
+                                            }
                                         }
                                     }
-                                }
 
-                                when (state.layoutType) {
-                                    LayoutType.GRID -> {
-                                        LazyVerticalStaggeredGrid(
-                                            columns = StaggeredGridCells.Fixed(2),
-                                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                                            state = gridState,
-                                            contentPadding = PaddingValues(8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                            verticalItemSpacing = 8.dp
-                                        ) {
-                                            if (pinnedNotes.isNotEmpty()) {
-                                                item(span = StaggeredGridItemSpan.FullLine) {
-                                                    Text(
-                                                        text = stringResource(id = R.string.pinned),
-                                                        modifier = Modifier.padding(8.dp),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                                StaggeredGridItems(pinnedNotes, key = { it.note.id }) { note ->
-                                                    val noteModifier = Modifier.sharedElement(
-                                                        rememberSharedContentState(key = "note-${note.note.id}"),
-                                                        animatedVisibilityScope = this@AnimatedContent
-                                                    )
-                                                    NoteItem(
-                                                        modifier = noteModifier,
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        searchQuery = state.searchQuery,
-                                                        onNoteClick = { onNoteClickAction(note) },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        isDarkTheme = isDarkTheme
-                                                    )
-                                                }
-                                            }
-
-                                            if (otherNotes.isNotEmpty()) {
+                                    when (state.layoutType) {
+                                        LayoutType.GRID -> {
+                                            LazyVerticalStaggeredGrid(
+                                                columns = StaggeredGridCells.Fixed(2),
+                                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                                state = gridState,
+                                                contentPadding = PaddingValues(8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalItemSpacing = 8.dp
+                                            ) {
                                                 if (pinnedNotes.isNotEmpty()) {
                                                     item(span = StaggeredGridItemSpan.FullLine) {
                                                         Text(
-                                                            text = stringResource(id = R.string.others),
+                                                            text = stringResource(id = R.string.pinned),
                                                             modifier = Modifier.padding(8.dp),
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
+                                                    StaggeredGridItems(pinnedNotes, key = { it.note.id }) { note ->
+                                                        val noteModifier = Modifier.sharedElement(
+                                                            rememberSharedContentState(key = "note-${note.note.id}"),
+                                                            animatedVisibilityScope = this@AnimatedContent
+                                                        )
+                                                        NoteItem(
+                                                            modifier = noteModifier,
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = state.searchQuery,
+                                                            onNoteClick = { onNoteClickAction(note) },
+                                                            onNoteLongClick = {
+                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                            },
+                                                            isDarkTheme = isDarkTheme
+                                                        )
+                                                    }
                                                 }
-                                                StaggeredGridItems(otherNotes, key = { it.note.id }) { note ->
-                                                    val noteModifier = Modifier.sharedElement(
-                                                        rememberSharedContentState(key = "note-${note.note.id}"),
-                                                        animatedVisibilityScope = this@AnimatedContent
-                                                    )
-                                                    NoteItem(
-                                                        modifier = noteModifier,
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        searchQuery = state.searchQuery,
-                                                        onNoteClick = { onNoteClickAction(note) },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        isDarkTheme = isDarkTheme
-                                                    )
+
+                                                if (otherNotes.isNotEmpty()) {
+                                                    if (pinnedNotes.isNotEmpty()) {
+                                                        item(span = StaggeredGridItemSpan.FullLine) {
+                                                            Text(
+                                                                text = stringResource(id = R.string.others),
+                                                                modifier = Modifier.padding(8.dp),
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                    StaggeredGridItems(otherNotes, key = { it.note.id }) { note ->
+                                                        val noteModifier = Modifier.sharedElement(
+                                                            rememberSharedContentState(key = "note-${note.note.id}"),
+                                                            animatedVisibilityScope = this@AnimatedContent
+                                                        )
+                                                        NoteItem(
+                                                            modifier = noteModifier,
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = state.searchQuery,
+                                                            onNoteClick = { onNoteClickAction(note) },
+                                                            onNoteLongClick = {
+                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                            },
+                                                            isDarkTheme = isDarkTheme
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                    LayoutType.LIST -> {
-                                        LazyColumn(
-                                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                                            state = listState,
-                                            contentPadding = PaddingValues(8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            if (pinnedNotes.isNotEmpty()) {
-                                                item {
-                                                    Text(
-                                                        text = stringResource(id = R.string.pinned),
-                                                        modifier = Modifier.padding(8.dp),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                                items(pinnedNotes, key = { it.note.id }) { note ->
-                                                    val noteModifier = Modifier.sharedElement(
-                                                        rememberSharedContentState(key = "note-${note.note.id}"),
-                                                        animatedVisibilityScope = this@AnimatedContent
-                                                    )
-                                                    NoteItem(
-                                                        modifier = noteModifier,
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        searchQuery = state.searchQuery,
-                                                        onNoteClick = { onNoteClickAction(note) },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        isDarkTheme = isDarkTheme
-                                                    )
-                                                }
-                                            }
-
-                                            if (otherNotes.isNotEmpty()) {
+                                        LayoutType.LIST -> {
+                                            LazyColumn(
+                                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                                state = listState,
+                                                contentPadding = PaddingValues(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
                                                 if (pinnedNotes.isNotEmpty()) {
                                                     item {
                                                         Text(
-                                                            text = stringResource(id = R.string.others),
+                                                            text = stringResource(id = R.string.pinned),
                                                             modifier = Modifier.padding(8.dp),
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
+                                                    items(pinnedNotes, key = { it.note.id }) { note ->
+                                                        val noteModifier = Modifier.sharedElement(
+                                                            rememberSharedContentState(key = "note-${note.note.id}"),
+                                                            animatedVisibilityScope = this@AnimatedContent
+                                                        )
+                                                        NoteItem(
+                                                            modifier = noteModifier,
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = state.searchQuery,
+                                                            onNoteClick = { onNoteClickAction(note) },
+                                                            onNoteLongClick = {
+                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                            },
+                                                            isDarkTheme = isDarkTheme
+                                                        )
+                                                    }
                                                 }
-                                                items(otherNotes, key = { it.note.id }) { note ->
-                                                    val noteModifier = Modifier.sharedElement(
-                                                        rememberSharedContentState(key = "note-${note.note.id}"),
-                                                        animatedVisibilityScope = this@AnimatedContent
-                                                    )
-                                                    NoteItem(
-                                                        modifier = noteModifier,
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        searchQuery = state.searchQuery,
-                                                        onNoteClick = { onNoteClickAction(note) },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        isDarkTheme = isDarkTheme
-                                                    )
+
+                                                if (otherNotes.isNotEmpty()) {
+                                                    if (pinnedNotes.isNotEmpty()) {
+                                                        item {
+                                                            Text(
+                                                                text = stringResource(id = R.string.others),
+                                                                modifier = Modifier.padding(8.dp),
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                    items(otherNotes, key = { it.note.id }) { note ->
+                                                        val noteModifier = Modifier.sharedElement(
+                                                            rememberSharedContentState(key = "note-${note.note.id}"),
+                                                            animatedVisibilityScope = this@AnimatedContent
+                                                        )
+                                                        NoteItem(
+                                                            modifier = noteModifier,
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = state.searchQuery,
+                                                            onNoteClick = { onNoteClickAction(note) },
+                                                            onNoteLongClick = {
+                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                            },
+                                                            isDarkTheme = isDarkTheme
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
+                            }
+
+                            if (isFabExpanded) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clickable(
+                                            onClick = { isFabExpanded = false },
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        )
+                                )
                             }
                         }
                     }
