@@ -456,7 +456,11 @@ fun NotesScreen(
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
-                                                    StaggeredGridItems(pinnedNotes, key = { it.note.id }) { note ->
+                                                    StaggeredGridItems(
+                                                        items = pinnedNotes,
+                                                        key = { it.note.id },
+                                                        contentType = { it.note.noteType }
+                                                    ) { note ->
                                                         val noteModifier = Modifier.sharedElement(
                                                             rememberSharedContentState(key = "note-${note.note.id}"),
                                                             animatedVisibilityScope = this@AnimatedContent
@@ -486,7 +490,11 @@ fun NotesScreen(
                                                             )
                                                         }
                                                     }
-                                                    StaggeredGridItems(otherNotes, key = { it.note.id }) { note ->
+                                                    StaggeredGridItems(
+                                                        items = otherNotes,
+                                                        key = { it.note.id },
+                                                        contentType = { it.note.noteType }
+                                                    ) { note ->
                                                         val noteModifier = Modifier.sharedElement(
                                                             rememberSharedContentState(key = "note-${note.note.id}"),
                                                             animatedVisibilityScope = this@AnimatedContent
@@ -522,7 +530,11 @@ fun NotesScreen(
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
-                                                    items(pinnedNotes, key = { it.note.id }) { note ->
+                                                    items(
+                                                        items = pinnedNotes,
+                                                        key = { it.note.id },
+                                                        contentType = { it.note.noteType }
+                                                    ) { note ->
                                                         val noteModifier = Modifier.sharedElement(
                                                             rememberSharedContentState(key = "note-${note.note.id}"),
                                                             animatedVisibilityScope = this@AnimatedContent
@@ -552,7 +564,11 @@ fun NotesScreen(
                                                             )
                                                         }
                                                     }
-                                                    items(otherNotes, key = { it.note.id }) { note ->
+                                                    items(
+                                                        items = otherNotes,
+                                                        key = { it.note.id },
+                                                        contentType = { it.note.noteType }
+                                                    ) { note ->
                                                         val noteModifier = Modifier.sharedElement(
                                                             rememberSharedContentState(key = "note-${note.note.id}"),
                                                             animatedVisibilityScope = this@AnimatedContent

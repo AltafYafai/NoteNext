@@ -76,7 +76,11 @@ fun ArchiveScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalItemSpacing = 12.dp
                     ) {
-                        items(state.notes) { noteWithAttachments ->
+                        items(
+                            items = state.notes,
+                            key = { it.note.id },
+                            contentType = { it.note.noteType }
+                        ) { noteWithAttachments ->
                             NoteItem(
                                 note = noteWithAttachments,
                                 isSelected = false,

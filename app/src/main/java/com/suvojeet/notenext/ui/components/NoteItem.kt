@@ -89,8 +89,7 @@ fun NoteItem(
             .combinedClickable(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
-            )
-            .animateContentSize(animationSpec = motionScheme.defaultSpatialSpec()),
+            ),
         shape = cardShape,
         colors = CardDefaults.cardColors(
             containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color(adaptiveColor),
@@ -186,13 +185,12 @@ fun NoteItem(
     
                             val fontWeight = if (note.note.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
-                            val annotatedContentState = produceState(
-                                initialValue = androidx.compose.ui.text.AnnotatedString(note.note.content.take(500)),
-                                note.note.content
-                            ) {
-                                value = HtmlConverter.htmlToAnnotatedString(note.note.content)
+                            val annotatedContent = remember(note.note.content) {
+                                // Strip HTML tags for preview to avoid layout jumping and improve performance
+                                val plainText = note.note.content.replace(Regex("<[^>]*>"), "")
+                                androidx.compose.ui.text.AnnotatedString(plainText)
                             }
-                            val annotatedContent = annotatedContentState.value
+
                             val highlightedContent = if (searchQuery.isNotEmpty()) {
                                 buildAnnotatedString {
                                     append(annotatedContent)

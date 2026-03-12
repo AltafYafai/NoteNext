@@ -103,7 +103,8 @@ fun BinScreen(
                         ) {
                             items(
                                 items = state.notes,
-                                key = { it.note.id }
+                                key = { it.note.id },
+                                contentType = { it.note.noteType }
                             ) { noteWithAttachments ->
                                 NoteItem(
                                     note = noteWithAttachments,

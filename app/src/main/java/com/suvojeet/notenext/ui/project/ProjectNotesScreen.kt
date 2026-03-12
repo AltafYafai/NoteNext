@@ -404,7 +404,11 @@ fun ProjectNotesScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-                                        StaggeredGridItems(pinnedNotes, key = { it.note.id }) { note ->
+                                        StaggeredGridItems(
+                                            pinnedNotes,
+                                            key = { it.note.id },
+                                            contentType = { it.note.noteType }
+                                        ) { note ->
                                             val isExpanded = state.expandedNoteId == note.note.id
                                             NoteItem(
                                                 modifier = Modifier.graphicsLayer { alpha = if (isExpanded) 0f else 1f },
@@ -435,7 +439,11 @@ fun ProjectNotesScreen(
                                                 )
                                             }
                                         }
-                                        StaggeredGridItems(otherNotes, key = { it.note.id }) { note ->
+                                        StaggeredGridItems(
+                                            otherNotes,
+                                            key = { it.note.id },
+                                            contentType = { it.note.noteType }
+                                        ) { note ->
                                             val isExpanded = state.expandedNoteId == note.note.id
                                             NoteItem(
                                                 modifier = Modifier.graphicsLayer { alpha = if (isExpanded) 0f else 1f },
