@@ -131,20 +131,3 @@ val AppTypography = Typography(
         letterSpacing = 0.5.sp
     )
 )
-
-// Emphasized styles
-val displayLargeEmphasized = AppTypography.displayLarge.copy(fontWeight = FontWeight.Bold)
-val displayMediumEmphasized = AppTypography.displayMedium.copy(fontWeight = FontWeight.Bold)
-val displaySmallEmphasized = AppTypography.displaySmall.copy(fontWeight = FontWeight.Bold)
-val headlineLargeEmphasized = AppTypography.headlineLarge.copy(fontWeight = FontWeight.Bold)
-val headlineMediumEmphasized = AppTypography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-val headlineSmallEmphasized = AppTypography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-val titleLargeEmphasized = AppTypography.titleLarge.copy(fontWeight = FontWeight.Bold)
-val titleMediumEmphasized = AppTypography.titleMedium.copy(fontWeight = FontWeight.Bold)
-val titleSmallEmphasized = AppTypography.titleSmall.copy(fontWeight = FontWeight.Bold)
-val bodyLargeEmphasized = AppTypography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-val bodyMediumEmphasized = AppTypography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-val bodySmallEmphasized = AppTypography.bodySmall.copy(fontWeight = FontWeight.Bold)
-val labelLargeEmphasized = AppTypography.labelLarge.copy(fontWeight = FontWeight.Bold)
-val labelMediumEmphasized = AppTypography.labelMedium.copy(fontWeight = FontWeight.Bold)
-val labelSmallEmphasized = AppTypography.labelSmall.copy(fontWeight = FontWeight.Bold)

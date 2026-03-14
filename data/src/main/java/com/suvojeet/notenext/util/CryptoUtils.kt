@@ -101,8 +101,12 @@ object CryptoUtils {
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            // Return note as is if decryption fails
-            note
+            // Return note with a clear error so the user sees the problem
+            note.copy(
+                title = if (note.title.length > 20) "⚠ Decryption Failed" else note.title,
+                content = "Unable to decrypt this note. The encryption key may have changed (e.g., after a device reset). Original encrypted data is preserved.",
+                isEncrypted = true
+            )
         }
     }
 
@@ -173,7 +177,11 @@ object CryptoUtils {
             )
         } catch (e: Exception) {
             e.printStackTrace()
-            version
+            version.copy(
+                title = if (version.title.length > 20) "⚠ Decryption Failed" else version.title,
+                content = "Unable to decrypt this version. The encryption key may have changed.",
+                isEncrypted = true
+            )
         }
     }
 }

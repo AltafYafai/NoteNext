@@ -193,7 +193,7 @@ fun DonationScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator(strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
+                                    LoadingIndicator(modifier = Modifier.size(48.dp))
                                     Spacer(Modifier.height(12.dp))
                                     Text(stringResource(R.string.connecting_play_store))
                                 }
@@ -419,7 +419,7 @@ private fun DonationActionCard(
             }
             
             if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+                LoadingIndicator(modifier = Modifier.size(24.dp))
             } else {
                 Surface(
                     shape = CircleShape,

@@ -28,10 +28,6 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        if (com.suvojeet.notenext.BuildConfig.GROQ_API_KEY.isBlank()) {
-            throw IllegalStateException("GROQ_API_KEY is not configured")
-        }
-
         val logging = HttpLoggingInterceptor().apply {
             level = if (com.suvojeet.notenext.BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -40,9 +36,14 @@ object NetworkModule {
             }
         }
         val authInterceptor = Interceptor { chain ->
-            val request = chain.request().newBuilder()
-                .addHeader("Authorization", "Bearer " + com.suvojeet.notenext.BuildConfig.GROQ_API_KEY)
-                .build()
+            val apiKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY
+            val request = if (apiKey.isNotBlank()) {
+                chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .build()
+            } else {
+                chain.request()
+            }
             chain.proceed(request)
         }
 

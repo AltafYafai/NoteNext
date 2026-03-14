@@ -19,11 +19,13 @@ object EncryptionUtils {
     private const val TAG_LENGTH_BIT = 128
     private const val IV_LENGTH_BYTE = 12
     private const val SALT_LENGTH_BYTE = 16
-    private const val PBKDF2_ITERATIONS = 10000
+    private const val PBKDF2_ITERATIONS_V1 = 10000
+    private const val PBKDF2_ITERATIONS = 600000
     private const val KEY_LENGTH_BIT = 256
 
-    // Header to identify encrypted files
-    private const val ENCRYPTED_FILE_HEADER = "NOTENEXT_ENC_V1"
+    // Headers to identify encrypted files
+    private const val ENCRYPTED_FILE_HEADER_V1 = "NOTENEXT_ENC_V1"
+    private const val ENCRYPTED_FILE_HEADER = "NOTENEXT_ENC_V2"
 
     fun encryptFile(inputFile: File, outputStream: OutputStream, password: String) {
         val salt = ByteArray(SALT_LENGTH_BYTE)
@@ -68,13 +70,15 @@ object EncryptionUtils {
      */
     fun decryptFile(inputStream: InputStream, outputFile: File, password: String) {
         inputStream.use { objIn ->
-            // Read Header
+            // Read Header (V1 and V2 headers are the same length)
             val headerBytes = ByteArray(ENCRYPTED_FILE_HEADER.length)
             val headerRead = objIn.read(headerBytes)
             val header = String(headerBytes, Charsets.UTF_8)
-            
-            if (headerRead != ENCRYPTED_FILE_HEADER.length || header != ENCRYPTED_FILE_HEADER) {
-                throw IllegalArgumentException("Invalid file format or not an encrypted backup.")
+
+            val iterations = when {
+                headerRead == ENCRYPTED_FILE_HEADER.length && header == ENCRYPTED_FILE_HEADER -> PBKDF2_ITERATIONS
+                headerRead == ENCRYPTED_FILE_HEADER_V1.length && header == ENCRYPTED_FILE_HEADER_V1 -> PBKDF2_ITERATIONS_V1
+                else -> throw IllegalArgumentException("Invalid file format or not an encrypted backup.")
             }
 
             // Read Salt and IV
@@ -84,7 +88,7 @@ object EncryptionUtils {
             val iv = ByteArray(IV_LENGTH_BYTE)
             if (objIn.read(iv) != IV_LENGTH_BYTE) throw IllegalArgumentException("Corrupted file (missing IV).")
 
-            val secretKey = deriveKey(password, salt)
+            val secretKey = deriveKey(password, salt, iterations)
             val cipher = Cipher.getInstance(ALGORITHM)
             val parameterSpec = GCMParameterSpec(TAG_LENGTH_BIT, iv)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec)
@@ -107,31 +111,21 @@ object EncryptionUtils {
     }
     
     fun isEncrypted(inputStream: InputStream): Boolean {
-        if (!inputStream.markSupported()) {
-           // If we can't mark, we can't peek easily. 
-           // In this app context, we are opening fresh streams from ContentResolver, so we can just read.
-           // But acts as a check.
-        }
-        
         try {
             val headerBytes = ByteArray(ENCRYPTED_FILE_HEADER.length)
-            // We need to read without consuming if we want to reuse stream, OR we assume this is just a check 
-            // and the caller will open a NEW stream for actual processing.
-            // Since we use ContentResolver, we can just open a new stream.
-            // So we just read.
             val bytesRead = inputStream.read(headerBytes)
             if (bytesRead != ENCRYPTED_FILE_HEADER.length) return false
-            
+
             val header = String(headerBytes, Charsets.UTF_8)
-            return header == ENCRYPTED_FILE_HEADER
+            return header == ENCRYPTED_FILE_HEADER || header == ENCRYPTED_FILE_HEADER_V1
         } catch (e: Exception) {
             return false
         }
     }
 
-    private fun deriveKey(password: String, salt: ByteArray): SecretKeySpec {
+    private fun deriveKey(password: String, salt: ByteArray, iterations: Int = PBKDF2_ITERATIONS): SecretKeySpec {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec = PBEKeySpec(password.toCharArray(), salt, PBKDF2_ITERATIONS, KEY_LENGTH_BIT)
+        val spec = PBEKeySpec(password.toCharArray(), salt, iterations, KEY_LENGTH_BIT)
         val tmp = factory.generateSecret(spec)
         return SecretKeySpec(tmp.encoded, KEY_ALGORITHM)
     }
