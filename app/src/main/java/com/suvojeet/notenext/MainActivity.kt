@@ -66,31 +66,20 @@ class MainActivity : FragmentActivity() {
         }
         
         splashScreen.setOnExitAnimationListener { splashScreenView ->
-            val fadeOut = android.view.animation.AlphaAnimation(1f, 0f).apply {
-                duration = 400L
-                fillAfter = true
-            }
-            val scaleOut = android.view.animation.ScaleAnimation(
-                1f, 1.3f, 1f, 1.3f,
-                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f,
-                android.view.animation.Animation.RELATIVE_TO_SELF, 0.5f
-            ).apply {
-                duration = 400L
-                fillAfter = true
-            }
-
-            val animationSet = android.view.animation.AnimationSet(true).apply {
-                addAnimation(fadeOut)
-                addAnimation(scaleOut)
-                setAnimationListener(object : android.view.animation.Animation.AnimationListener {
-                    override fun onAnimationStart(animation: android.view.animation.Animation?) {}
-                    override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+            val splashView = splashScreenView.view
+            splashView.animate()
+                .alpha(0f)
+                .scaleX(1.3f)
+                .scaleY(1.3f)
+                .setDuration(400L)
+                .setInterpolator(android.view.animation.AnticipateInterpolator())
+                .withEndAction {
+                    // Safety check to ensure activity is still alive and view is attached
+                    if (!isFinishing && !isDestroyed) {
                         splashScreenView.remove()
                     }
-                    override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
-                })
-            }
-            splashScreenView.view.startAnimation(animationSet)
+                }
+                .start()
         }
 
         enableEdgeToEdge()
@@ -172,6 +161,7 @@ class MainActivity : FragmentActivity() {
             val restartText = stringResource(R.string.restart_to_update)
 
             LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(2000L)
                 updateChecker.checkForUpdate()
                 updateChecker.resumeUpdateCheck(this@MainActivity)
             }
@@ -235,7 +225,14 @@ class MainActivity : FragmentActivity() {
                                 LockScreen(onUnlock = { unlocked = true })
                             } else {
                                 val startNoteId by _startNoteIdFlow.collectAsState()
-                                NavGraph(themeMode = themeMode, windowSizeClass = windowSizeClass, startNoteId = startNoteId, startAddNote = startAddNote, sharedText = sharedText)
+                                NavGraph(
+                                    themeMode = themeMode,
+                                    windowSizeClass = windowSizeClass,
+                                    settingsRepository = settingsRepository,
+                                    startNoteId = startNoteId,
+                                    startAddNote = startAddNote,
+                                    sharedText = sharedText
+                                )
                             }
                         }
                     }

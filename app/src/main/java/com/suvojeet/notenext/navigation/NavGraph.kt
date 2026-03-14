@@ -90,10 +90,16 @@ import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesState
 
 @Composable
-fun NavGraph(themeMode: ThemeMode, windowSizeClass: WindowSizeClass, startNoteId: Int = -1, startAddNote: Boolean = false, sharedText: String? = null) {
+fun NavGraph(
+    themeMode: ThemeMode,
+    windowSizeClass: WindowSizeClass,
+    settingsRepository: SettingsRepository,
+    startNoteId: Int = -1,
+    startAddNote: Boolean = false,
+    sharedText: String? = null
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val settingsRepository = remember { SettingsRepository(context) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val notesViewModel: NotesViewModel = hiltViewModel()
