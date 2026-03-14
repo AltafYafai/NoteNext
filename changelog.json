@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.3.2",
+      "date": "March 15, 2026",
+      "items": [
+        {
+          "title": "Startup & Splash Optimization",
+          "description": "Optimized app startup time by removing redundant delays and refining the system splash screen transition.",
+          "type": "FIX"
+        }
+      ]
+    },
+    {
       "version": "1.3.1",
       "date": "March 12, 2026",
       "items": [
