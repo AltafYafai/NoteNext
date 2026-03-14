@@ -52,12 +52,18 @@ class MainActivity : FragmentActivity() {
     lateinit var settingsRepository: SettingsRepository
 
     private val _startNoteIdFlow = MutableStateFlow(-1)
+    private val _isSetupCompleteLoaded = MutableStateFlow<Boolean?>(null)
+    private val _enableAppLockLoaded = MutableStateFlow<Boolean?>(null)
     
     private lateinit var updateChecker: UpdateChecker
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
+        
+        splashScreen.setKeepOnScreenCondition {
+            _isSetupCompleteLoaded.value == null || _enableAppLockLoaded.value == null
+        }
         
         splashScreen.setOnExitAnimationListener { splashScreenView ->
             val fadeOut = android.view.animation.AlphaAnimation(1f, 0f).apply {
@@ -104,6 +110,13 @@ class MainActivity : FragmentActivity() {
         }
 
         lifecycleScope.launch {
+            settingsRepository.isSetupComplete.collect { _isSetupCompleteLoaded.value = it }
+        }
+        lifecycleScope.launch {
+            settingsRepository.enableAppLock.collect { _enableAppLockLoaded.value = it }
+        }
+
+        lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 settingsRepository.disallowScreenshots.collect { disallow ->
                     if (disallow) {
@@ -145,25 +158,10 @@ class MainActivity : FragmentActivity() {
             val windowSizeClass = calculateWindowSizeClass(this)
             val themeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
 
-            var enableAppLockLoaded by remember { mutableStateOf<Boolean?>(null) }
-            var isSetupCompleteLoaded by remember { mutableStateOf<Boolean?>(null) }
-
-            LaunchedEffect(Unit) {
-                settingsRepository.enableAppLock.collect { enableAppLockLoaded = it }
-            }
-            LaunchedEffect(Unit) {
-                settingsRepository.isSetupComplete.collect { isSetupCompleteLoaded = it }
-            }
+            val enableAppLockLoaded by _enableAppLockLoaded.collectAsState()
+            val isSetupCompleteLoaded by _isSetupCompleteLoaded.collectAsState()
 
             var unlocked by remember { mutableStateOf(false) }
-            var showSplash by remember { mutableStateOf(true) }
-
-            LaunchedEffect(isSetupCompleteLoaded, enableAppLockLoaded) {
-                if (isSetupCompleteLoaded != null && enableAppLockLoaded != null) {
-                    kotlinx.coroutines.delay(2000L) // Show splash for 2 seconds
-                    showSplash = false
-                }
-            }
 
             // In-App Update Handling
             val updateStatus by updateChecker.updateStatus.collectAsState()
@@ -221,7 +219,7 @@ class MainActivity : FragmentActivity() {
                         val unusedPadding = paddingValues
                         
                         androidx.compose.animation.AnimatedContent(
-                            targetState = showSplash || enableAppLockLoaded == null || isSetupCompleteLoaded == null,
+                            targetState = enableAppLockLoaded == null || isSetupCompleteLoaded == null,
                             transitionSpec = {
                                 (androidx.compose.animation.fadeIn() + androidx.compose.animation.scaleIn(initialScale = 0.92f))
                                     .togetherWith(androidx.compose.animation.fadeOut())
@@ -229,7 +227,8 @@ class MainActivity : FragmentActivity() {
                             label = "AppStartupTransition"
                         ) { isInitialLoading ->
                             if (isInitialLoading) {
-                                com.suvojeet.notenext.ui.components.SetupLoadingScreen()
+                                // Keep showing background color while waiting for splash screen to dismiss
+                                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                             } else if (isSetupCompleteLoaded == false) {
                                 SetupScreen { }
                             } else if (enableAppLockLoaded!! && !unlocked) {
