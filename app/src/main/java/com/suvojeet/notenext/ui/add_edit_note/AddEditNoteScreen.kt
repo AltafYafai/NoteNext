@@ -4,7 +4,7 @@ package com.suvojeet.notenext.ui.add_edit_note
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -59,12 +59,10 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 data class ImageViewerData(val uri: Uri, val tempId: String)
-
-import androidx.activity.compose.PredictiveBackHandler
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AddEditNoteScreen(

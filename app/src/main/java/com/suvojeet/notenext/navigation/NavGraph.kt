@@ -471,8 +471,8 @@ private fun NavGraphBuilder.notesRoute(
     isCompact: Boolean
 ) {
     composable<Destination.Notes>(
-        enterTransition = { fadeIn(animationSpec = MaterialTheme.motionScheme.standard().fastSpec()) },
-        exitTransition = { fadeOut(animationSpec = MaterialTheme.motionScheme.standard().fastSpec()) }
+        enterTransition = { fadeIn(animationSpec = spring()) },
+        exitTransition = { fadeOut(animationSpec = spring()) }
     ) { backStackEntry ->
         if (isCompact) {
             val route: Destination.Notes = backStackEntry.toRoute()
@@ -505,15 +505,8 @@ private fun NavGraphBuilder.sharedRoutes(
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit
 ) {
-    val slideEnter = slideInHorizontally(
-        initialOffsetX = { it },
-        animationSpec = MaterialTheme.motionScheme.expressive().defaultSpec()
-    ) + fadeIn(animationSpec = MaterialTheme.motionScheme.expressive().fastSpec())
-    
-    val slideExit = slideOutHorizontally(
-        targetOffsetX = { it },
-        animationSpec = MaterialTheme.motionScheme.expressive().defaultSpec()
-    ) + fadeOut(animationSpec = MaterialTheme.motionScheme.expressive().fastSpec())
+    val slideEnter = slideInHorizontally(initialOffsetX = { it }, animationSpec = spring()) + fadeIn(spring())
+    val slideExit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = spring()) + fadeOut(spring())
 
     composable<Destination.Settings>(
         enterTransition = { slideEnter },
