@@ -5,9 +5,29 @@
       "date": "March 15, 2026",
       "items": [
         {
+          "title": "Gemini & Assistant Integration",
+          "description": "NoteNext is now a first-class citizen! Use voice commands with Gemini or Google Assistant to create notes, add to lists, or find specific notes natively.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Material 3 Expressive & Predictive Back",
+          "description": "Implemented the latest M3 Expressive motion engine and Predictive Back gestures for a more fluid, responsive, and modern user experience.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "AI Analyzer UI Fixes",
+          "description": "Restored the AI Analyzer functionality in both the Add/Edit and Project screens with new summary sheets.",
+          "type": "FIX"
+        },
+        {
+          "title": "Navigation & Backstack Cleanup",
+          "description": "Refactored the navigation drawer to ensure a clean backstack, fixing issues with unexpected screen jumping and double-clicks.",
+          "type": "FIX"
+        },
+        {
           "title": "Startup & Splash Optimization",
           "description": "Optimized app startup time by removing redundant delays and refining the system splash screen transition.",
-          "type": "FIX"
+          "type": "IMPROVEMENT"
         }
       ]
     },
