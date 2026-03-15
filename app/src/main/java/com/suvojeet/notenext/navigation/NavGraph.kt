@@ -87,6 +87,8 @@ import androidx.fragment.app.FragmentActivity
 import android.widget.Toast
 import androidx.navigation.toRoute
 import com.suvojeet.notenext.ui.components.springPress
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import com.suvojeet.notenext.ui.notes.NotesState
 
 @Composable
@@ -122,7 +124,9 @@ fun NavGraph(
                     onAuthSuccess = {
                         notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
                         navController.navigate(Destination.Notes()) {
-                            popUpTo<Destination.Notes> { inclusive = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
                             launchSingleTop = true
                         }
                     },
@@ -133,7 +137,9 @@ fun NavGraph(
             } else {
                 notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
                 navController.navigate(Destination.Notes()) {
-                    popUpTo<Destination.Notes> { inclusive = true }
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        inclusive = true
+                    }
                     launchSingleTop = true
                 }
             }
@@ -233,39 +239,106 @@ private fun DrawerContent(
     data class DrawerItem(val label: Int, val icon: @Composable () -> Unit, val isSelected: Boolean, val onClick: () -> Unit)
 
     val items = listOf(
-        DrawerItem(R.string.notes, { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) }, currentDestination?.route?.contains("Notes") == true && notesState.filteredLabel == null) {
+        DrawerItem(
+            R.string.notes, 
+            { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) }, 
+            currentDestination?.hasRoute<Destination.Notes>() == true && notesState.filteredLabel == null
+        ) {
             onCloseDrawer()
-            if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != null) {
+            if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != null) {
                 notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
                 navController.navigate(Destination.Notes()) {
-                    popUpTo<Destination.Notes> { inclusive = true }
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
                     launchSingleTop = true
+                    restoreState = true
                 }
             }
         },
-        DrawerItem(R.string.projects, { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, currentDestination?.route?.contains("Projects") == true) {
+        DrawerItem(
+            R.string.projects, 
+            { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, 
+            currentDestination?.hasRoute<Destination.Projects>() == true
+        ) {
             onCloseDrawer()
-            navController.navigate(Destination.Projects)
+            navController.navigate(Destination.Projects) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         },
-        DrawerItem(R.string.archive, { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) }, currentDestination?.route?.contains("Archive") == true) {
+        DrawerItem(
+            R.string.archive, 
+            { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) }, 
+            currentDestination?.hasRoute<Destination.Archive>() == true
+        ) {
             onCloseDrawer()
-            navController.navigate(Destination.Archive) { popUpTo<Destination.Notes>(); launchSingleTop = true }
+            navController.navigate(Destination.Archive) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         },
-        DrawerItem(R.string.reminders, { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) }, currentDestination?.route?.contains("Reminder") == true) {
+        DrawerItem(
+            R.string.reminders, 
+            { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) }, 
+            currentDestination?.hasRoute<Destination.Reminder>() == true
+        ) {
             onCloseDrawer()
-            navController.navigate(Destination.Reminder)
+            navController.navigate(Destination.Reminder) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         },
-        DrawerItem(R.string.todos, { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) }, currentDestination?.route?.contains("Todo") == true) {
+        DrawerItem(
+            R.string.todos, 
+            { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) }, 
+            currentDestination?.hasRoute<Destination.Todo>() == true
+        ) {
             onCloseDrawer()
-            navController.navigate(Destination.Todo)
+            navController.navigate(Destination.Todo) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         },
-        DrawerItem(R.string.bin, { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) }, currentDestination?.route?.contains("Bin") == true) {
+        DrawerItem(
+            R.string.bin, 
+            { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) }, 
+            currentDestination?.hasRoute<Destination.Bin>() == true
+        ) {
             onCloseDrawer()
-            navController.navigate(Destination.Bin) { popUpTo<Destination.Notes>(); launchSingleTop = true }
+            navController.navigate(Destination.Bin) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         },
-        DrawerItem(R.string.settings, { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) }, currentDestination?.route?.contains("Settings") == true) {
+        DrawerItem(
+            R.string.settings, 
+            { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) }, 
+            currentDestination?.hasRoute<Destination.Settings>() == true
+        ) {
             onCloseDrawer()
-            navController.navigate(Destination.Settings)
+            navController.navigate(Destination.Settings) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
         }
     )
 
@@ -288,7 +361,13 @@ private fun DrawerContent(
             selected = false,
             onClick = {
                 onCloseDrawer()
-                navController.navigate(Destination.EditLabels)
+                navController.navigate(Destination.EditLabels) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
         )
@@ -308,7 +387,13 @@ private fun DrawerContent(
             )
             IconButton(onClick = {
                 onCloseDrawer()
-                navController.navigate(Destination.EditLabels)
+                navController.navigate(Destination.EditLabels) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             }, modifier = Modifier.size(24.dp).springPress()) {
                 Icon(
                     imageVector = Icons.Default.Edit,
@@ -326,10 +411,13 @@ private fun DrawerContent(
                 onClick = {
                     onCloseDrawer()
                     notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
-                    if (currentDestination?.route?.contains("Notes") != true || notesState.filteredLabel != label) {
+                    if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != label) {
                         navController.navigate(Destination.Notes()) {
-                            popUpTo<Destination.Notes> { inclusive = true }
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
                             launchSingleTop = true
+                            restoreState = true
                         }
                     }
                 },
