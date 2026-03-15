@@ -452,17 +452,13 @@ private fun AppNavHost(
     onMenuClick: () -> Unit,
     isCompact: Boolean
 ) {
-    val notesState by notesViewModel.state.collectAsState()
-    val pageSpring = spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = 0.9f, stiffness = 200f)
-    val fadeSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 200f)
-
     NavHost(
         navController = navController,
         startDestination = Destination.Notes(),
         modifier = Modifier.background(MaterialTheme.colorScheme.background)
     ) {
-        notesRoute(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, fadeSpring, isCompact)
-        sharedRoutes(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, pageSpring, fadeSpring)
+        notesRoute(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, isCompact)
+        sharedRoutes(navController, notesViewModel, themeMode, settingsRepository, onMenuClick)
     }
 }
 
@@ -472,12 +468,11 @@ private fun NavGraphBuilder.notesRoute(
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit,
-    fadeSpring: androidx.compose.animation.core.SpringSpec<Float>,
     isCompact: Boolean
 ) {
     composable<Destination.Notes>(
-        enterTransition = { fadeIn(animationSpec = fadeSpring) },
-        exitTransition = { fadeOut(animationSpec = fadeSpring) }
+        enterTransition = { fadeIn(animationSpec = MaterialTheme.motionScheme.standard().fastSpec()) },
+        exitTransition = { fadeOut(animationSpec = MaterialTheme.motionScheme.standard().fastSpec()) }
     ) { backStackEntry ->
         if (isCompact) {
             val route: Destination.Notes = backStackEntry.toRoute()
@@ -508,13 +503,21 @@ private fun NavGraphBuilder.sharedRoutes(
     notesViewModel: NotesViewModel,
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
-    onMenuClick: () -> Unit,
-    pageSpring: androidx.compose.animation.core.SpringSpec<androidx.compose.ui.unit.IntOffset>,
-    fadeSpring: androidx.compose.animation.core.SpringSpec<Float>
+    onMenuClick: () -> Unit
 ) {
+    val slideEnter = slideInHorizontally(
+        initialOffsetX = { it },
+        animationSpec = MaterialTheme.motionScheme.expressive().defaultSpec()
+    ) + fadeIn(animationSpec = MaterialTheme.motionScheme.expressive().fastSpec())
+    
+    val slideExit = slideOutHorizontally(
+        targetOffsetX = { it },
+        animationSpec = MaterialTheme.motionScheme.expressive().defaultSpec()
+    ) + fadeOut(animationSpec = MaterialTheme.motionScheme.expressive().fastSpec())
+
     composable<Destination.Settings>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         SettingsScreen(
             onBackClick = { navController.popBackStack() },
@@ -532,37 +535,37 @@ private fun NavGraphBuilder.sharedRoutes(
     }
 
     composable<Destination.Backup>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         BackupScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.Archive>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         ArchiveScreen(onMenuClick = onMenuClick)
     }
 
     composable<Destination.EditLabels>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         EditLabelsScreen(onBackPressed = { navController.popBackStack() })
     }
 
     composable<Destination.Bin>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         val binViewModel: BinViewModel = hiltViewModel()
         BinScreen(viewModel = binViewModel, onMenuClick = onMenuClick)
     }
 
     composable<Destination.Reminder>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         ReminderScreen(
             onBackClick = { navController.popBackStack() },
@@ -575,15 +578,15 @@ private fun NavGraphBuilder.sharedRoutes(
     }
 
     composable<Destination.AddEditReminder>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         AddEditReminderScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.Projects>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         ProjectScreen(
             onMenuClick = onMenuClick,
@@ -594,8 +597,8 @@ private fun NavGraphBuilder.sharedRoutes(
     }
 
     composable<Destination.About>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         AboutScreen(
             onBackClick = { navController.popBackStack() },
@@ -606,36 +609,36 @@ private fun NavGraphBuilder.sharedRoutes(
     }
 
     composable<Destination.Credits>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         CreditsScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.Changelog>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         ChangelogScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.Donate>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         DonationScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.Todo>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         TodoScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.ProjectNotes>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         ProjectNotesScreen(
             onBackClick = { navController.popBackStack() },
@@ -645,8 +648,8 @@ private fun NavGraphBuilder.sharedRoutes(
     }
 
     composable<Destination.AddEditNote>(
-        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = pageSpring) + fadeIn(fadeSpring) },
-        exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = pageSpring) + fadeOut(fadeSpring) }
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
     ) {
         val viewModel: ProjectNotesViewModel = hiltViewModel()
         AddEditNoteScreen(

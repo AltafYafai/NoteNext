@@ -63,6 +63,9 @@ import kotlinx.coroutines.launch
 
 data class ImageViewerData(val uri: Uri, val tempId: String)
 
+import androidx.activity.compose.PredictiveBackHandler
+import kotlinx.coroutines.flow.collectLatest
+
 @Composable
 fun AddEditNoteScreen(
     state: NotesState,
@@ -210,12 +213,17 @@ fun AddEditNoteScreen(
         }
     )
 
-    BackHandler {
-        if (showImageViewer) {
-            showImageViewer = false
-        } else if (isFocusMode) {
-            isFocusMode = false
-        } else {
+    PredictiveBackHandler { progress ->
+        try {
+            progress.collectLatest { /* handle progress */ }
+            if (showImageViewer) {
+                showImageViewer = false
+            } else if (isFocusMode) {
+                isFocusMode = false
+            } else {
+                onDismiss()
+            }
+        } catch (e: Exception) {
             onDismiss()
         }
     }
