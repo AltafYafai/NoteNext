@@ -45,6 +45,7 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.OnCopyCurrentNoteClick -> ProjectNotesEvent.OnCopyCurrentNoteClick
         is NotesEvent.OnAddLabelsToCurrentNoteClick -> ProjectNotesEvent.OnAddLabelsToCurrentNoteClick
         is NotesEvent.OnLabelChange -> ProjectNotesEvent.OnLabelChange(this.label)
+        is NotesEvent.SetInitialTitle -> ProjectNotesEvent.SetInitialTitle(this.title)
         is NotesEvent.DismissLabelDialog -> ProjectNotesEvent.DismissLabelDialog
         is NotesEvent.OnLinkDetected -> ProjectNotesEvent.OnLinkDetected(this.url)
         is NotesEvent.OnLinkPreviewFetched -> ProjectNotesEvent.OnLinkPreviewFetched(this.url, this.title, this.description, this.imageUrl)

@@ -583,6 +583,9 @@ class ProjectNotesViewModel @Inject constructor(
                     _state.value = state.value.copy(editingLabel = event.label)
                 }
             }
+            is ProjectNotesEvent.SetInitialTitle -> {
+                _state.value = state.value.copy(editingTitle = event.title)
+            }
             is ProjectNotesEvent.OnReminderChange -> {
                 _state.value = state.value.copy(
                     editingReminderTime = event.time,

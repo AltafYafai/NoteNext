@@ -55,6 +55,7 @@ sealed class ProjectNotesEvent {
     object OnCopyCurrentNoteClick : ProjectNotesEvent()
     object OnAddLabelsToCurrentNoteClick : ProjectNotesEvent()
     data class OnLabelChange(val label: String) : ProjectNotesEvent()
+    data class SetInitialTitle(val title: String) : ProjectNotesEvent()
     object DismissLabelDialog : ProjectNotesEvent()
     data class OnReminderChange(val time: Long?, val repeatOption: String?) : ProjectNotesEvent()
     object AutoSaveNote : ProjectNotesEvent()
