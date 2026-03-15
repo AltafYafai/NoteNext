@@ -31,4 +31,22 @@
                 android:key="QUERY"/>
         </intent>
     </capability>
+
+    <!-- CREATE_NOTE_ITEM BII: "Add milk to my grocery list in NoteNext" -->
+    <capability android:name="actions.intent.CREATE_NOTE_ITEM">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.suvojeet.notenext"
+            android:targetClass="com.suvojeet.notenext.MainActivity">
+            <!-- Item to add -->
+            <parameter
+                android:name="noteItem.name"
+                android:key="android.content.Intent.EXTRA_TEXT"/>
+            <!-- Target note/list name -->
+            <parameter
+                android:name="note.name"
+                android:key="QUERY"/>
+            <extra android:key="START_ADD_NOTE" android:value="true"/>
+        </intent>
+    </capability>
 </shortcuts>
