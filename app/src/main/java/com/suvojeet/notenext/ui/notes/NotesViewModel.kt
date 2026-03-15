@@ -1199,6 +1199,11 @@ class NotesViewModel @Inject constructor(
                     editingAttachments = emptyList()
                 )
             }
+            is NotesEvent.SetInitialTitle -> {
+                _state.value = state.value.copy(
+                    editingTitle = event.title
+                )
+            }
             is NotesEvent.OnReminderChange -> {
                 _state.value = state.value.copy(
                     editingReminderTime = event.time,

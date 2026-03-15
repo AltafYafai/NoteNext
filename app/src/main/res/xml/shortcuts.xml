@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- CREATE_NOTE BII for Gemini: "Create a note in NoteNext" or "Create a note with [text]" -->
+    <capability android:name="actions.intent.CREATE_NOTE">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.suvojeet.notenext"
+            android:targetClass="com.suvojeet.notenext.MainActivity">
+            <!-- Passes the note text -->
+            <parameter
+                android:name="note.text"
+                android:key="android.content.Intent.EXTRA_TEXT"/>
+            <!-- Passes the note title if provided -->
+            <parameter
+                android:name="note.name"
+                android:key="TITLE"/>
+            <!-- Custom extra to force MainActivity into Add mode -->
+            <extra android:key="START_ADD_NOTE" android:value="true"/>
+        </intent>
+    </capability>
+
+    <!-- GET_NOTE BII for Gemini: "Show my notes in NoteNext" or "Find my [name] note in NoteNext" -->
+    <capability android:name="actions.intent.GET_NOTE">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.suvojeet.notenext"
+            android:targetClass="com.suvojeet.notenext.MainActivity">
+            <!-- Passes the name of the note to search for -->
+            <parameter
+                android:name="note.name"
+                android:key="QUERY"/>
+        </intent>
+    </capability>
+</shortcuts>

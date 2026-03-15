@@ -54,6 +54,11 @@ class MainActivity : FragmentActivity() {
     lateinit var settingsRepository: SettingsRepository
 
     private val _startNoteIdFlow = MutableStateFlow(-1)
+    private val _startAddNoteFlow = MutableStateFlow(false)
+    private val _sharedTextFlow = MutableStateFlow<String?>(null)
+    private val _initialTitleFlow = MutableStateFlow<String?>(null)
+    private val _searchQueryFlow = MutableStateFlow<String?>(null)
+
     private val _isSetupCompleteLoaded = MutableStateFlow<Boolean?>(null)
     private val _enableAppLockLoaded = MutableStateFlow<Boolean?>(null)
     
@@ -89,16 +94,7 @@ class MainActivity : FragmentActivity() {
 
         updateChecker = UpdateChecker(this)
 
-        val initialNoteId = intent.getIntExtra("NOTE_ID", -1)
-        _startNoteIdFlow.value = initialNoteId
-
-        val startAddNote = intent.getBooleanExtra("START_ADD_NOTE", false)
-        val sharedText = when {
-            intent.action == Intent.ACTION_SEND && "text/plain" == intent.type -> {
-                intent.getStringExtra(Intent.EXTRA_TEXT)
-            }
-            else -> null
-        }
+        handleIntent(intent)
 
         lifecycleScope.launch {
             settingsRepository.isSetupComplete.collect { _isSetupCompleteLoaded.value = it }
@@ -227,13 +223,20 @@ class MainActivity : FragmentActivity() {
                                 LockScreen(onUnlock = { unlocked = true })
                             } else {
                                 val startNoteId by _startNoteIdFlow.collectAsState()
+                                val startAddNote by _startAddNoteFlow.collectAsState()
+                                val sharedText by _sharedTextFlow.collectAsState()
+                                val initialTitle by _initialTitleFlow.collectAsState()
+                                val searchQuery by _searchQueryFlow.collectAsState()
+
                                 NavGraph(
                                     themeMode = themeMode,
                                     windowSizeClass = windowSizeClass,
                                     settingsRepository = settingsRepository,
                                     startNoteId = startNoteId,
                                     startAddNote = startAddNote,
-                                    sharedText = sharedText
+                                    sharedText = sharedText,
+                                    initialTitle = initialTitle,
+                                    searchQuery = searchQuery
                                 )
                             }
                         }
@@ -241,6 +244,27 @@ class MainActivity : FragmentActivity() {
                 }
             }
         }
+    }
+
+    private fun handleIntent(intent: Intent) {
+        val noteId = intent.getIntExtra("NOTE_ID", -1)
+        _startNoteIdFlow.value = noteId
+
+        _startAddNoteFlow.value = intent.getBooleanExtra("START_ADD_NOTE", false)
+        
+        _initialTitleFlow.value = intent.getStringExtra("TITLE")
+        _searchQueryFlow.value = intent.getStringExtra("QUERY")
+
+        val sharedText = when {
+            intent.action == Intent.ACTION_SEND && "text/plain" == intent.type -> {
+                intent.getStringExtra(Intent.EXTRA_TEXT)
+            }
+            intent.hasExtra(Intent.EXTRA_TEXT) -> {
+                intent.getStringExtra(Intent.EXTRA_TEXT)
+            }
+            else -> null
+        }
+        _sharedTextFlow.value = sharedText
     }
 
     override fun onResume() {
@@ -256,10 +280,7 @@ class MainActivity : FragmentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        val noteId = intent.getIntExtra("NOTE_ID", -1)
-        if (noteId != -1) {
-             _startNoteIdFlow.value = noteId
-        }
+        handleIntent(intent)
     }
 
     override fun onActionModeStarted(mode: android.view.ActionMode?) {

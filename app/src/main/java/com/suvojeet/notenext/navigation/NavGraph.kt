@@ -98,7 +98,9 @@ fun NavGraph(
     settingsRepository: SettingsRepository,
     startNoteId: Int = -1,
     startAddNote: Boolean = false,
-    sharedText: String? = null
+    sharedText: String? = null,
+    initialTitle: String? = null,
+    searchQuery: String? = null
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
@@ -155,6 +157,18 @@ fun NavGraph(
     LaunchedEffect(sharedText) {
         if (sharedText != null) {
             notesViewModel.onEvent(NotesEvent.CreateNoteFromSharedText(sharedText))
+        }
+    }
+
+    LaunchedEffect(initialTitle) {
+        if (initialTitle != null) {
+            notesViewModel.onEvent(NotesEvent.SetInitialTitle(initialTitle))
+        }
+    }
+
+    LaunchedEffect(searchQuery) {
+        if (searchQuery != null) {
+            notesViewModel.onEvent(NotesEvent.OnSearchQueryChange(searchQuery))
         }
     }
 
