@@ -561,6 +561,15 @@ fun AddEditNoteScreen(
         }
     }
     
+    if (state.showSummaryDialog) {
+        AiSummarySheet(
+            summary = state.summaryResult,
+            isSummarizing = state.isSummarizing,
+            onDismiss = { onEvent(NotesEvent.ClearSummary) },
+            onClearSummary = { onEvent(NotesEvent.ClearSummary) }
+        )
+    }
+    
     if (showReminderDialog) {
         ModalBottomSheet(
             onDismissRequest = { showReminderDialog = false },

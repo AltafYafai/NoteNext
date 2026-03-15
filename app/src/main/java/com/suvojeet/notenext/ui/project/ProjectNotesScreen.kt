@@ -71,6 +71,9 @@ import androidx.compose.ui.text.font.FontWeight
 
 import com.suvojeet.notenext.util.findActivity
 
+import androidx.compose.material.icons.filled.AutoAwesome
+import com.suvojeet.notenext.ui.add_edit_note.components.AiSummarySheet
+
 @Composable
 fun ProjectNotesScreen(
     onBackClick: () -> Unit,
@@ -205,6 +208,15 @@ fun ProjectNotesScreen(
                             navigationIcon = {
                                 IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
                                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = { viewModel.onEvent(ProjectNotesEvent.SummarizeNote) }, modifier = Modifier.springPress()) {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = "AI Analyzer",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
@@ -551,5 +563,14 @@ fun ProjectNotesScreen(
                 events = viewModel.events.map { it.toNotesUiEvent() }.shareIn(rememberCoroutineScope(), SharingStarted.WhileSubscribed())
             )
         }
+    }
+
+    if (state.showSummaryDialog) {
+        AiSummarySheet(
+            summary = state.summaryResult,
+            isSummarizing = state.isSummarizing,
+            onDismiss = { viewModel.onEvent(ProjectNotesEvent.ClearSummary) },
+            onClearSummary = { viewModel.onEvent(ProjectNotesEvent.ClearSummary) }
+        )
     }
 }
