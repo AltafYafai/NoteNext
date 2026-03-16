@@ -100,18 +100,28 @@ class BackupRepository @Inject constructor(
     suspend fun backupToEncryptedStream(outputStream: java.io.OutputStream?, password: String, includeAttachments: Boolean = true) {
         if (outputStream == null) throw Exception("Output stream is null")
         
-        val tempZipFile = File(context.cacheDir, "temp_plain_backup.zip")
-        try {
-            // 1. Create temp plain ZIP
-            createBackupZip(tempZipFile, includeAttachments)
-
-            // 2. Encrypt temp ZIP to target Stream
-            outputStream.use { out ->
-                EncryptionUtils.encryptFile(tempZipFile, out, password)
+        // Use Piped streams to avoid writing plain-text temp files to disk for better security
+        val pipedInputStream = java.io.PipedInputStream()
+        val pipedOutputStream = java.io.PipedOutputStream(pipedInputStream)
+        
+        kotlinx.coroutines.coroutineScope {
+            // Launch zip writing in a separate coroutine
+            val zipJob = kotlinx.coroutines.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    createBackupZip(pipedOutputStream, includeAttachments)
+                } finally {
+                    pipedOutputStream.close()
+                }
             }
-        } finally {
-            // 3. Cleanup
-            tempZipFile.delete()
+            
+            // Encrypt and write to outputStream in the current coroutine
+            try {
+                outputStream.use { out ->
+                    EncryptionUtils.encryptStream(pipedInputStream, out, password)
+                }
+            } finally {
+                zipJob.join()
+            }
         }
     }
 
@@ -140,17 +150,8 @@ class BackupRepository @Inject constructor(
     }
 
     suspend fun createEncryptedBackupZip(targetFile: File, password: String, includeAttachments: Boolean = true) {
-        val tempPlainZip = File(context.cacheDir, "temp_plain_intermediate.zip")
-        try {
-            // 1. Create plain zip
-            createBackupZip(tempPlainZip, includeAttachments)
-            
-            // 2. Encrypt to target file
-            FileOutputStream(targetFile).use { fos ->
-                EncryptionUtils.encryptFile(tempPlainZip, fos, password)
-            }
-        } finally {
-            if (tempPlainZip.exists()) tempPlainZip.delete()
+        FileOutputStream(targetFile).use { fos ->
+            backupToEncryptedStream(fos, password, includeAttachments)
         }
     }
 
@@ -204,7 +205,9 @@ class BackupRepository @Inject constructor(
                 try {
                     val attachmentUri = Uri.parse(attachment.uri)
                     context.contentResolver.openInputStream(attachmentUri)?.use { inputStream ->
-                        val fileName = File(attachmentUri.path!!).name
+                        // Safely get filename using DocumentFile
+                        val documentFile = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, attachmentUri)
+                        val fileName = documentFile?.name ?: File(attachmentUri.path ?: "attachment_${System.currentTimeMillis()}").name
                         zos.putNextEntry(ZipEntry("attachments/$fileName"))
                         inputStream.copyTo(zos)
                         zos.closeEntry()

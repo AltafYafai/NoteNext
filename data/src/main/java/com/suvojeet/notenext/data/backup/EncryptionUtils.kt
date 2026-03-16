@@ -27,7 +27,7 @@ object EncryptionUtils {
     private const val ENCRYPTED_FILE_HEADER_V1 = "NOTENEXT_ENC_V1"
     private const val ENCRYPTED_FILE_HEADER = "NOTENEXT_ENC_V2"
 
-    fun encryptFile(inputFile: File, outputStream: OutputStream, password: String) {
+    fun encryptStream(inputStream: InputStream, outputStream: OutputStream, password: String) {
         val salt = ByteArray(SALT_LENGTH_BYTE)
         SecureRandom().nextBytes(salt)
 
@@ -39,26 +39,30 @@ object EncryptionUtils {
         val parameterSpec = GCMParameterSpec(TAG_LENGTH_BIT, iv)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, parameterSpec)
 
-        outputStream.use { out ->
-            // Write Header
-            out.write(ENCRYPTED_FILE_HEADER.toByteArray(Charsets.UTF_8))
-            // Write Salt and IV
-            out.write(salt)
-            out.write(iv)
+        // Write Header
+        outputStream.write(ENCRYPTED_FILE_HEADER.toByteArray(Charsets.UTF_8))
+        // Write Salt and IV
+        outputStream.write(salt)
+        outputStream.write(iv)
 
+        val buffer = ByteArray(8192)
+        var bytesRead: Int
+        while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+            val encrypted = cipher.update(buffer, 0, bytesRead)
+            if (encrypted != null) {
+                outputStream.write(encrypted)
+            }
+        }
+        val finalBytes = cipher.doFinal()
+        if (finalBytes != null) {
+            outputStream.write(finalBytes)
+        }
+    }
+
+    fun encryptFile(inputFile: File, outputStream: OutputStream, password: String) {
+        outputStream.use { out ->
             FileInputStream(inputFile).use { input ->
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                while (input.read(buffer).also { bytesRead = it } != -1) {
-                    val encrypted = cipher.update(buffer, 0, bytesRead)
-                    if (encrypted != null) {
-                        out.write(encrypted)
-                    }
-                }
-                val finalBytes = cipher.doFinal()
-                if (finalBytes != null) {
-                    out.write(finalBytes)
-                }
+                encryptStream(input, out, password)
             }
         }
     }

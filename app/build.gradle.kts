@@ -14,8 +14,8 @@ android {
         applicationId = "com.suvojeet.notenext"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 22
-        versionName = "1.3.2"
+        versionCode = project.properties["appVersionCode"]?.toString()?.toInt() ?: 22
+        versionName = project.properties["appVersionName"]?.toString() ?: "1.3.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         resConfigs("en", "hi")

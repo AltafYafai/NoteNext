@@ -645,30 +645,23 @@ class NotesViewModel @Inject constructor(
             }
 
             is NotesEvent.AddChecklistItem -> {
-                val newItem = ChecklistItem(text = "", isChecked = false, position = state.value.editingChecklist.size)
-                val updatedChecklist = state.value.editingChecklist + newItem
+                val (updatedChecklist, newItemId) = ChecklistManager.addChecklistItem(state.value.editingChecklist)
                 _state.value = state.value.copy(
                     editingChecklist = updatedChecklist,
-                    newlyAddedChecklistItemId = newItem.id,
-                    checklistInputValues = state.value.checklistInputValues + (newItem.id to TextFieldValue(""))
+                    newlyAddedChecklistItemId = newItemId,
+                    checklistInputValues = state.value.checklistInputValues + (newItemId to TextFieldValue(""))
                 )
                 scheduleAutoSave()
             }
             is NotesEvent.SwapChecklistItems -> {
-                val list = state.value.editingChecklist.toMutableList()
-                val fromIndex = list.indexOfFirst { it.id == event.fromId }
-                val toIndex = list.indexOfFirst { it.id == event.toId }
-
-                if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
-                    java.util.Collections.swap(list, fromIndex, toIndex)
-                    // Update all positions to match indices to be safe
-                    val updatedList = list.mapIndexed { index, item -> item.copy(position = index) }
+                val updatedList = ChecklistManager.swapItems(state.value.editingChecklist, event.fromId, event.toId)
+                if (updatedList != state.value.editingChecklist) {
                     _state.value = state.value.copy(editingChecklist = updatedList)
                     scheduleAutoSave()
                 }
             }
             is NotesEvent.DeleteChecklistItem -> {
-                val updatedChecklist = state.value.editingChecklist.filterNot { it.id == event.itemId }
+                val updatedChecklist = ChecklistManager.deleteItem(state.value.editingChecklist, event.itemId)
                 _state.value = state.value.copy(
                     editingChecklist = updatedChecklist,
                     checklistInputValues = state.value.checklistInputValues - event.itemId
@@ -676,44 +669,23 @@ class NotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is NotesEvent.IndentChecklistItem -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(level = kotlin.math.min(it.level + 1, 5)) else it
-                }
+                val updatedChecklist = ChecklistManager.indentItem(state.value.editingChecklist, event.itemId)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
             is NotesEvent.OutdentChecklistItem -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(level = kotlin.math.max(it.level - 1, 0)) else it
-                }
+                val updatedChecklist = ChecklistManager.outdentItem(state.value.editingChecklist, event.itemId)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
 
             is NotesEvent.OnChecklistItemCheckedChange -> {
-                val updatedChecklist = state.value.editingChecklist.toMutableList()
-                val index = updatedChecklist.indexOfFirst { it.id == event.itemId }
-                if (index != -1) {
-                    val item = updatedChecklist.removeAt(index).copy(isChecked = event.isChecked)
-                    if (event.isChecked) {
-                        updatedChecklist.add(item) // Add to the end if checked
-                    } else {
-                        // Find the first checked item and insert before it, or at the end if no checked items
-                        val firstCheckedIndex = updatedChecklist.indexOfFirst { it.isChecked }
-                        if (firstCheckedIndex != -1) {
-                            updatedChecklist.add(firstCheckedIndex, item)
-                        } else {
-                            updatedChecklist.add(0, item) // Add to the beginning if no checked items
-                        }
-                    }
-                }
+                val updatedChecklist = ChecklistManager.changeItemCheckedState(state.value.editingChecklist, event.itemId, event.isChecked)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
             is NotesEvent.OnChecklistItemTextChange -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(text = event.text) else it
-                }
+                val updatedChecklist = ChecklistManager.changeItemText(state.value.editingChecklist, event.itemId, event.text)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
@@ -1178,7 +1150,7 @@ class NotesViewModel @Inject constructor(
                 _state.value = _state.value.copy(showSummaryDialog = false)
             }
             is NotesEvent.DeleteAllCheckedItems -> {
-                val updatedChecklist = state.value.editingChecklist.filter { !it.isChecked }
+                val updatedChecklist = ChecklistManager.deleteAllCheckedItems(state.value.editingChecklist)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
             }
             is NotesEvent.CreateNoteFromSharedText -> {

@@ -42,15 +42,18 @@ class NoteWidgetRemoteViewsFactory(
                         .map { it.note }
                         .filter { it.isPinned && !it.isArchived && !it.isBinned }
                 
-                // Pre-compute plain text content for all notes to avoid runBlocking in getViewAt
-                noteContents = notes.associate { note ->
-                    val content = if (note.noteType == "CHECKLIST") {
-                        "Checklist..."
-                    } else {
-                        HtmlConverter.htmlToPlainText(note.content)
+                // Pre-compute plain text content for all notes in parallel to avoid long runBlocking
+                val contentPairs = kotlinx.coroutines.awaitAll(*notes.map { note ->
+                    kotlinx.coroutines.async {
+                        val content = if (note.noteType == "CHECKLIST") {
+                            "Checklist..."
+                        } else {
+                            HtmlConverter.htmlToPlainText(note.content)
+                        }
+                        note.id to content
                     }
-                    note.id to content
-                }
+                }.toTypedArray())
+                noteContents = contentPairs.toMap()
             } catch (e: Exception) {
                 e.printStackTrace()
                 notes = emptyList()

@@ -1,0 +1,12 @@
+.gradle/
+build/
+*.iml
+.idea/
+local.properties
+.DS_Store
+captures/
+.externalNativeBuild
+.cxx
+*.keystore
+!my-release-key.keystore
+my-release-key.keystore.base64
