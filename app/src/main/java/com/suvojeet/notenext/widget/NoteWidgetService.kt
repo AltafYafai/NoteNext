@@ -11,6 +11,8 @@ import com.suvojeet.notenext.util.HtmlConverter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -43,8 +45,8 @@ class NoteWidgetRemoteViewsFactory(
                         .filter { it.isPinned && !it.isArchived && !it.isBinned }
                 
                 // Pre-compute plain text content for all notes in parallel to avoid long runBlocking
-                val contentPairs = kotlinx.coroutines.awaitAll(*notes.map { note ->
-                    kotlinx.coroutines.async {
+                val contentPairs = awaitAll(*notes.map { note ->
+                    async {
                         val content = if (note.noteType == "CHECKLIST") {
                             "Checklist..."
                         } else {

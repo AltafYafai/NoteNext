@@ -20,6 +20,11 @@ import java.util.zip.ZipOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
 
 
 @Singleton
@@ -104,9 +109,9 @@ class BackupRepository @Inject constructor(
         val pipedInputStream = java.io.PipedInputStream()
         val pipedOutputStream = java.io.PipedOutputStream(pipedInputStream)
         
-        kotlinx.coroutines.coroutineScope {
+        coroutineScope {
             // Launch zip writing in a separate coroutine
-            val zipJob = kotlinx.coroutines.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val zipJob = launch(Dispatchers.IO) {
                 try {
                     createBackupZip(pipedOutputStream, includeAttachments)
                 } finally {
