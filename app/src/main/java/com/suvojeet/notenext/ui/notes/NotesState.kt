@@ -56,7 +56,6 @@ data class NotesState(
     val isSummarizing: Boolean = false,
     val summaryResult: String? = null,
     val showSummaryDialog: Boolean = false,
-    val showLabelDialog: Boolean = false,
     
     // AI Checklist Generation
     val isGeneratingChecklist: Boolean = false,

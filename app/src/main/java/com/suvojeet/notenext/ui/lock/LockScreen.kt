@@ -50,7 +50,7 @@ fun LockScreen(onUnlock: () -> Unit) {
     LaunchedEffect(biometricAuthManager) {
         if (canAuthenticateResult == BiometricManager.BIOMETRIC_SUCCESS) {
             biometricAuthManager?.showBiometricPrompt(
-                onAuthSuccess = onUnlock,
+                onAuthSuccess = { _ -> onUnlock() },
                 onAuthError = {
                     if (it != "Authentication error: User Canceled") {
                         error = it
@@ -113,7 +113,7 @@ fun LockScreen(onUnlock: () -> Unit) {
                  FilledTonalButton(
                     onClick = {
                         biometricAuthManager?.showBiometricPrompt(
-                            onAuthSuccess = onUnlock,
+                            onAuthSuccess = { _ -> onUnlock() },
                             onAuthError = {
                                 if (it != "Authentication error: User Canceled") {
                                     error = it

@@ -33,8 +33,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.flatMapLatest
@@ -87,7 +90,7 @@ class NotesViewModel @Inject constructor(
     val editState = _editState.asStateFlow()
 
     // Combined state for backward compatibility and complex screen mappings
-    val state = kotlinx.coroutines.flow.combine(_listState, _editState) { list, edit ->
+    val state: StateFlow<NotesState> = combine(_listState, _editState) { list, edit ->
         NotesState(
             notes = list.notes,
             layoutType = list.layoutType,
@@ -138,9 +141,9 @@ class NotesViewModel @Inject constructor(
             originalContentBackup = edit.originalContentBackup,
             saveStatus = edit.saveStatus
         )
-    }.kotlinx.coroutines.flow.stateIn(
+    }.stateIn(
         viewModelScope, 
-        kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), 
+        SharingStarted.WhileSubscribed(5000), 
         NotesState(
             editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
             editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
