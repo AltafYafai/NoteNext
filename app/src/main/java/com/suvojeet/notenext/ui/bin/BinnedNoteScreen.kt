@@ -133,7 +133,7 @@ fun BinnedNoteScreen(
                                         shape = MaterialTheme.shapes.large,
                                         modifier = Modifier.padding(vertical = 8.dp)
                                     ) {
-                                        coil.compose.AsyncImage(
+                                        coil3.compose.AsyncImage(
                                             model = attachment.uri,
                                             contentDescription = null,
                                             modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),

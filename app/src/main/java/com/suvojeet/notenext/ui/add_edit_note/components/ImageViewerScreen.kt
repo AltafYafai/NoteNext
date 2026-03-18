@@ -28,7 +28,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.geometry.Offset
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 

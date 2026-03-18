@@ -49,9 +49,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import coil.request.CachePolicy
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.CachePolicy
 import androidx.compose.ui.layout.ContentScale
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.ui.notes.NotesEvent

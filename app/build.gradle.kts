@@ -137,6 +137,7 @@ dependencies {
 
     // Coil
     implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)   // Coil 3 requires explicit network artifact
 
     // Jsoup for HTML parsing
     implementation(libs.jsoup)
