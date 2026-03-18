@@ -52,9 +52,9 @@ fun MoreOptionsSheet(
                 .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (!state.editingIsNewNote && state.editingLastEdited != 0L) {
+            if (!state.editingIsNewNote && state.editingLastEdited != null && state.editingLastEdited != 0L) {
                 Text(
-                    text = stringResource(id = R.string.last_edited, dateFormat.format(Date(state.editingLastEdited))),
+                    text = stringResource(id = R.string.last_edited, dateFormat.format(Date(state.editingLastEdited ?: 0L))),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

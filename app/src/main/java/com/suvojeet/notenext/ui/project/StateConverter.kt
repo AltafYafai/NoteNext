@@ -46,6 +46,10 @@ fun ProjectNotesState.toNotesState(): NotesState {
         generatedChecklistPreview = this.generatedChecklistPreview,
         isFixingGrammar = this.isFixingGrammar,
         fixedContentPreview = this.fixedContentPreview,
-        originalContentBackup = this.originalContentBackup
+        originalContentBackup = this.originalContentBackup,
+        
+        isMentionPopupVisible = false,
+        mentionSearchQuery = "",
+        mentionableNotes = emptyList()
     )
 }

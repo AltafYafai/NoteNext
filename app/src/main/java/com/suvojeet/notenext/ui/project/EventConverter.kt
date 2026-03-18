@@ -80,6 +80,10 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.AutoSaveNote -> ProjectNotesEvent.AutoSaveNote
         is NotesEvent.ImportImage -> throw IllegalArgumentException("ImportImage event cannot be converted")
         is NotesEvent.ExportNote -> ProjectNotesEvent.ExportNote(this.uri, this.format)
+        
+        is NotesEvent.OnMentionSearchQueryChange -> throw IllegalArgumentException("OnMentionSearchQueryChange event cannot be converted")
+        is NotesEvent.InsertMention -> throw IllegalArgumentException("InsertMention event cannot be converted")
+        is NotesEvent.CloseMentionPopup -> throw IllegalArgumentException("CloseMentionPopup event cannot be converted")
     }
 }
 
