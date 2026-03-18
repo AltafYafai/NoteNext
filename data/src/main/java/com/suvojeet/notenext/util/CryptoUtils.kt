@@ -15,7 +15,8 @@ object CryptoUtils {
 
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val KEY_ALIAS = "NoteNextSecretKey"
-    private const val AUTH_KEY_ALIAS = "NoteNextAuthSecretKey"
+    private const val AUTH_KEY_ALIAS_V1 = "NoteNextAuthSecretKey"
+    private const val AUTH_KEY_ALIAS_V2 = "NoteNextAuthKeyV2"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
 
     private fun getSecretKey(alias: String = KEY_ALIAS, requireAuth: Boolean = false): SecretKey {
@@ -26,6 +27,7 @@ object CryptoUtils {
         val builder = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setInvalidatedByBiometricEnrollment(false)
             
         if (requireAuth) {
             builder.setUserAuthenticationRequired(true)
@@ -42,14 +44,18 @@ object CryptoUtils {
 
     fun getEncryptionCipher(isLocked: Boolean): Cipher {
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        val alias = if (isLocked) AUTH_KEY_ALIAS else KEY_ALIAS
+        val alias = if (isLocked) AUTH_KEY_ALIAS_V2 else KEY_ALIAS
         cipher.init(Cipher.ENCRYPT_MODE, getSecretKey(alias, isLocked))
         return cipher
     }
 
-    fun getDecryptionCipher(iv: ByteArray, isLocked: Boolean): Cipher {
+    fun getDecryptionCipher(iv: ByteArray, isLocked: Boolean, useV1: Boolean = false): Cipher {
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        val alias = if (isLocked) AUTH_KEY_ALIAS else KEY_ALIAS
+        val alias = if (isLocked) {
+            if (useV1) AUTH_KEY_ALIAS_V1 else AUTH_KEY_ALIAS_V2
+        } else {
+            KEY_ALIAS
+        }
         cipher.init(Cipher.DECRYPT_MODE, getSecretKey(alias, isLocked), GCMParameterSpec(128, iv))
         return cipher
     }
@@ -69,8 +75,12 @@ object CryptoUtils {
         val ivContent = cipherContent.iv
         val encryptedContent = Base64.encodeToString(cipherContent.doFinal(note.content.toByteArray()), Base64.DEFAULT)
 
-        // Combine IVs: ivTitle:ivContent
-        val combinedIv = Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+        // Combine IVs: v2:ivTitle:ivContent (v2 prefix for new keys)
+        val combinedIv = if (isLocked) {
+            "v2:" + Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+        } else {
+            Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+        }
 
         return note.copy(
             title = encryptedTitle,
@@ -89,8 +99,11 @@ object CryptoUtils {
         if (!note.isEncrypted || note.iv == null) return note
 
         return try {
-            val ivs = note.iv.split(":")
-            val isLocked = note.isLocked && note.iv.contains(":") // Old single-IV notes might not be easily auth-bindable without migration
+            val rawIv = note.iv
+            val isV2 = rawIv.startsWith("v2:")
+            val cleanIv = if (isV2) rawIv.substring(3) else rawIv
+            val ivs = cleanIv.split(":")
+            val isLocked = note.isLocked && cleanIv.contains(":") 
 
             val (decryptedTitle, decryptedContent) = if (ivs.size == 2) {
                 val ivTitle = Base64.decode(ivs[0], Base64.DEFAULT)
@@ -99,25 +112,25 @@ object CryptoUtils {
                 val title = if (authenticatedCipherTitle != null) {
                     String(authenticatedCipherTitle.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
                 } else {
-                    val cipherTitle = getDecryptionCipher(ivTitle, isLocked)
+                    val cipherTitle = getDecryptionCipher(ivTitle, isLocked, useV1 = !isV2)
                     String(cipherTitle.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
                 }
                 
                 val content = if (authenticatedCipherContent != null) {
                     String(authenticatedCipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
                 } else {
-                    val cipherContent = getDecryptionCipher(ivContent, isLocked)
+                    val cipherContent = getDecryptionCipher(ivContent, isLocked, useV1 = !isV2)
                     String(cipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
                 }
                 
                 Pair(title, content)
             } else {
-                val iv = Base64.decode(note.iv, Base64.DEFAULT)
-                val cipher = getDecryptionCipher(iv, isLocked)
+                val iv = Base64.decode(cleanIv, Base64.DEFAULT)
+                val cipher = getDecryptionCipher(iv, isLocked, useV1 = !isV2)
                 val title = String(cipher.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
                 
                 // Re-init for content
-                cipher.init(Cipher.DECRYPT_MODE, getSecretKey(if (isLocked) AUTH_KEY_ALIAS else KEY_ALIAS, isLocked), GCMParameterSpec(128, iv))
+                cipher.init(Cipher.DECRYPT_MODE, getSecretKey(if (isLocked) (if (isV2) AUTH_KEY_ALIAS_V2 else AUTH_KEY_ALIAS_V1) else KEY_ALIAS, isLocked), GCMParameterSpec(128, iv))
                 val content = String(cipher.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
                 Pair(title, content)
             }
@@ -151,7 +164,11 @@ object CryptoUtils {
         val ivContent = cipherContent.iv
         val encryptedContent = Base64.encodeToString(cipherContent.doFinal(version.content.toByteArray()), Base64.DEFAULT)
 
-        val combinedIv = Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+        val combinedIv = if (isLocked) {
+            "v2:" + Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+        } else {
+            Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+        }
 
         return version.copy(
             title = encryptedTitle,
@@ -165,25 +182,28 @@ object CryptoUtils {
         if (!version.isEncrypted || version.iv == null) return version
 
         return try {
-            val ivs = version.iv.split(":")
+            val rawIv = version.iv
+            val isV2 = rawIv.startsWith("v2:")
+            val cleanIv = if (isV2) rawIv.substring(3) else rawIv
+            val ivs = cleanIv.split(":")
             
             val (decryptedTitle, decryptedContent) = if (ivs.size == 2) {
                 val ivTitle = Base64.decode(ivs[0], Base64.DEFAULT)
                 val ivContent = Base64.decode(ivs[1], Base64.DEFAULT)
                 
-                val cipherTitle = getDecryptionCipher(ivTitle, isLocked)
+                val cipherTitle = getDecryptionCipher(ivTitle, isLocked, useV1 = !isV2)
                 val title = String(cipherTitle.doFinal(Base64.decode(version.title, Base64.DEFAULT)))
                 
-                val cipherContent = getDecryptionCipher(ivContent, isLocked)
+                val cipherContent = getDecryptionCipher(ivContent, isLocked, useV1 = !isV2)
                 val content = String(cipherContent.doFinal(Base64.decode(version.content, Base64.DEFAULT)))
                 
                 Pair(title, content)
             } else {
-                val iv = Base64.decode(version.iv, Base64.DEFAULT)
-                val cipher = getDecryptionCipher(iv, isLocked)
+                val iv = Base64.decode(cleanIv, Base64.DEFAULT)
+                val cipher = getDecryptionCipher(iv, isLocked, useV1 = !isV2)
                 val title = String(cipher.doFinal(Base64.decode(version.title, Base64.DEFAULT)))
                 
-                cipher.init(Cipher.DECRYPT_MODE, getSecretKey(if (isLocked) AUTH_KEY_ALIAS else KEY_ALIAS, isLocked), GCMParameterSpec(128, iv))
+                cipher.init(Cipher.DECRYPT_MODE, getSecretKey(if (isLocked) (if (isV2) AUTH_KEY_ALIAS_V2 else AUTH_KEY_ALIAS_V1) else KEY_ALIAS, isLocked), GCMParameterSpec(128, iv))
                 val content = String(cipher.doFinal(Base64.decode(version.content, Base64.DEFAULT)))
                 Pair(title, content)
             }
