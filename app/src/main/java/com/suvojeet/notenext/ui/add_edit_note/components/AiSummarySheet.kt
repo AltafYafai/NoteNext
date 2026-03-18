@@ -6,14 +6,14 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import kotlinx.coroutines.delay
@@ -35,13 +36,15 @@ fun AiSummarySheet(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = MaterialTheme.shapes.extraLarge
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = MaterialTheme.shapes.extraLarge,
+        tonalElevation = 6.dp
     ) {
         Column(
             modifier = Modifier
@@ -52,123 +55,153 @@ fun AiSummarySheet(
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "AI",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "NoteNext AI Summary",
-                        style = MaterialTheme.typography.titleLarge,
+                        text = "AI Smart Summary",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp
+                    )
+                    Text(
+                        text = "Distilled by Groq AI",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                     Icon(Icons.Default.Close, contentDescription = "Close")
                 }
             }
             
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Content Area
-            Box(
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 200.dp, max = 500.dp),
-                contentAlignment = if (isSummarizing) Alignment.Center else Alignment.TopStart
+                    .heightIn(min = 200.dp, max = 450.dp)
             ) {
-                if (isSummarizing) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        AiThinkingIndicator(
-                            size = 80.dp,
-                            primaryColor = MaterialTheme.colorScheme.primary,
-                            secondaryColor = MaterialTheme.colorScheme.tertiary
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Analyzing your note...", 
-                            style = MaterialTheme.typography.bodyMedium,
+                Box(
+                    modifier = Modifier.padding(16.dp),
+                    contentAlignment = if (isSummarizing) Alignment.Center else Alignment.TopStart
+                ) {
+                    if (isSummarizing) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            LoadingIndicator(
+                                modifier = Modifier.size(48.dp),
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Reading your thoughts...", 
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    } else {
+                        summary?.let { text ->
+                            Column(
+                                modifier = Modifier.verticalScroll(scrollState)
+                            ) {
+                                var visibleText by remember { mutableStateOf("") }
+                                LaunchedEffect(text) {
+                                    visibleText = "" 
+                                    val chunkSize = 8 
+                                    for (i in text.indices step chunkSize) {
+                                        val end = (i + chunkSize).coerceAtMost(text.length)
+                                        visibleText += text.substring(i, end)
+                                        delay(8) 
+                                    }
+                                    visibleText = text 
+                                }
+                                
+                                MarkdownPreview(content = visibleText)
+                            }
+                        } ?: Text(
+                            "No summary available.", 
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                } else {
-                    summary?.let { text ->
-                        Column(
-                            modifier = Modifier.verticalScroll(scrollState)
-                        ) {
-                            // Typing Effect
-                            var visibleText by remember { mutableStateOf("") }
-                            LaunchedEffect(text) {
-                                visibleText = "" 
-                                // Faster typing for better UX
-                                val chunkSize = 5 
-                                for (i in text.indices step chunkSize) {
-                                    val end = (i + chunkSize).coerceAtMost(text.length)
-                                    visibleText += text.substring(i, end)
-                                    delay(5) 
-                                }
-                                visibleText = text // Ensure full text matches at end
-                            }
-                            
-                            // Using the new shared MarkdownPreview component
-                            MarkdownPreview(content = visibleText)
-                        }
-                    } ?: Text("No summary available.", style = MaterialTheme.typography.bodyLarge)
                 }
             }
             
             Spacer(modifier = Modifier.height(24.dp))
             
             // Actions
-            if (!isSummarizing && summary != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("AI Summary", summary)
-                            clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.weight(1f).springPress()
+            AnimatedVisibility(
+                visible = !isSummarizing && summary != null,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Copy")
+                        FilledTonalButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("AI Summary", summary)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f).height(56.dp).springPress(),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Copy")
+                        }
+                        
+                        FilledTonalButton(
+                            onClick = {
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, "Note Summary")
+                                    putExtra(Intent.EXTRA_TEXT, summary)
+                                }
+                                context.startActivity(Intent.createChooser(shareIntent, "Share Summary"))
+                            },
+                            modifier = Modifier.weight(1f).height(56.dp).springPress(),
+                            shape = CircleShape
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Share")
+                        }
                     }
                     
-                    OutlinedButton(
-                        onClick = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, "Note Summary")
-                                putExtra(Intent.EXTRA_TEXT, summary)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "Share Summary"))
-                        },
-                        modifier = Modifier.weight(1f).springPress()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(56.dp).springPress(),
+                        shape = CircleShape
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Share")
+                        Text("Finish", fontWeight = FontWeight.Bold)
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth().springPress()
-                ) {
-                    Text("Done")
                 }
             }
         }

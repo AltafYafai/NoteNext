@@ -5,8 +5,10 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.widget.Toast
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -16,23 +18,25 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.ui.components.springPress
 
 private const val PREFS_NAME = "ai_checklist_prefs"
@@ -51,28 +55,17 @@ fun AiChecklistSheet(
 ) {
     val context = LocalContext.current
     var topic by remember { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true,
-        confirmValueChange = { sheetValue ->
-            // Only allow dismissing from expanded state, prevents accidental swipe
-            sheetValue != SheetValue.Hidden
-        }
-    )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
-    // Local state for editable items
     var editableItems by remember { mutableStateOf(listOf<String>()) }
-    
-    // Prompt history
     var promptHistory by remember { mutableStateOf(loadPromptHistory(context)) }
     
-    // Sync editableItems with generatedItems when new items arrive
     LaunchedEffect(generatedItems) {
         if (generatedItems.isNotEmpty()) {
             editableItems = generatedItems.toList()
         }
     }
     
-    // Check network connectivity
     fun isNetworkAvailable(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
@@ -80,7 +73,6 @@ fun AiChecklistSheet(
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
     
-    // Save prompt to history when generating
     fun saveAndGenerate(prompt: String) {
         if (prompt.isNotBlank()) {
             if (!isNetworkAvailable()) {
@@ -98,64 +90,72 @@ fun AiChecklistSheet(
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             dragHandle = { BottomSheetDefaults.DragHandle() },
-            shape = MaterialTheme.shapes.extraLarge
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 24.dp)
                     .padding(bottom = 32.dp)
             ) {
-                // Header
+                // Header with Sparkle Icon
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Help me create a list",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    IconButton(onClick = onDismiss) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Smart List Creator",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-0.5).sp
+                        )
+                        Text(
+                            text = "Powered by Groq AI",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(onClick = onDismiss, modifier = Modifier.springPress()) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 
-                // Description
-                Text(
-                    text = "Describe the list that you want to create. Try a packing list, to-do list or something else.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                // Prompt History Chips (only show if no items generated yet)
-                if (promptHistory.isNotEmpty() && editableItems.isEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.History,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                // History Chips
+                AnimatedVisibility(
+                    visible = promptHistory.isNotEmpty() && editableItems.isEmpty(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Column {
+                        Text(
+                            text = "Recent prompts",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Row(
                             modifier = Modifier
-                                .weight(1f)
+                                .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -165,116 +165,142 @@ fun AiChecklistSheet(
                                         topic = prompt
                                         saveAndGenerate(prompt)
                                     },
-                                    label = { 
-                                        Text(
-                                            text = prompt,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        ) 
-                                    },
-                                    modifier = Modifier.widthIn(max = 150.dp).springPress()
+                                    label = { Text(prompt) },
+                                    shape = CircleShape,
+                                    colors = SuggestionChipDefaults.suggestionChipColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                                    ),
+                                    modifier = Modifier.springPress()
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
                 }
                 
-                // Input field with optional regenerate button
+                // Input Section
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.padding(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = topic,
-                            onValueChange = { topic = it },
-                            placeholder = { Text("Back-to-school shopping list for a 10-year-old") },
-                            modifier = Modifier.weight(1f),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            maxLines = 3
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "What list should I create?",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
                         )
                         
-                        if (editableItems.isNotEmpty()) {
-                            IconButton(
-                                onClick = { 
-                                    editableItems = emptyList()
-                                    saveAndGenerate(topic) 
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            BasicTextField(
+                                value = topic,
+                                onValueChange = { topic = it },
+                                modifier = Modifier.weight(1f),
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurface
+                                ),
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                decorationBox = { innerTextField ->
+                                    if (topic.isEmpty()) {
+                                        Text(
+                                            text = "e.g. Packing list for hiking trip",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        )
+                                    }
+                                    innerTextField()
                                 },
-                                enabled = topic.isNotBlank() && !isGenerating
-                            ) {
-                                Icon(
-                                    Icons.Default.Refresh,
-                                    contentDescription = "Regenerate",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go)
+                            )
+                            
+                            if (editableItems.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { 
+                                        editableItems = emptyList()
+                                        saveAndGenerate(topic) 
+                                    },
+                                    enabled = topic.isNotBlank() && !isGenerating,
+                                    modifier = Modifier.springPress()
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Regenerate",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 
-                // Show preview if items are generated
+                // Results Section
                 AnimatedContent(
-                    targetState = editableItems.isNotEmpty(),
-                    label = "preview"
-                ) { hasItems ->
-                    if (hasItems) {
-                        Column(modifier = Modifier.padding(top = 16.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Generated list",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "Tap to edit",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                LazyColumn(
+                    targetState = isGenerating || editableItems.isNotEmpty(),
+                    label = "results_content",
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                    }
+                ) { isVisible ->
+                    if (isVisible) {
+                        Column(modifier = Modifier.padding(top = 24.dp)) {
+                            if (isGenerating) {
+                                Box(
                                     modifier = Modifier
-                                        .heightIn(max = 250.dp)
-                                        .padding(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        .fillMaxWidth()
+                                        .height(200.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    itemsIndexed(editableItems, key = { index, _ -> index }) { index, item ->
-                                        // Staggered animation for each item
-                                        var isItemVisible by remember { mutableStateOf(false) }
-                                        LaunchedEffect(Unit) {
-                                            kotlinx.coroutines.delay(index * 50L) // Stagger delay
-                                            isItemVisible = true
-                                        }
-                                        
-                                        androidx.compose.animation.AnimatedVisibility(
-                                            visible = isItemVisible,
-                                            enter = androidx.compose.animation.slideInHorizontally(
-                                                initialOffsetX = { 100 },
-                                                animationSpec = androidx.compose.animation.core.spring(
-                                                    dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
-                                                    stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-                                                )
-                                            ) + androidx.compose.animation.fadeIn()
-                                        ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        LoadingIndicator(
+                                            modifier = Modifier.size(48.dp),
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        Text(
+                                            "Thinking...",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Proposed Items",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${editableItems.size} items",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                Surface(
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .heightIn(max = 300.dp)
+                                            .padding(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        itemsIndexed(editableItems, key = { index, _ -> index }) { index, item ->
                                             EditableItemRow(
                                                 text = item,
                                                 onTextChange = { newText ->
@@ -286,68 +312,88 @@ fun AiChecklistSheet(
                                                     editableItems = editableItems.toMutableList().apply {
                                                         removeAt(index)
                                                     }
-                                                }
+                                                },
+                                                index = index
                                             )
                                         }
                                     }
                                 }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                    ),
+                                    shape = MaterialTheme.shapes.small
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Info,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "AI might provide inaccurate info. Please verify.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                    }
+                                }
                             }
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "NoteNext may display inaccurate information, so double-check its responses.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
                         }
                     }
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 
-                // Action button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
+                // Primary Action Button
+                Box(modifier = Modifier.fillMaxWidth()) {
                     if (editableItems.isEmpty()) {
-                        // Create button
                         Button(
                             onClick = { saveAndGenerate(topic) },
                             enabled = topic.isNotBlank() && !isGenerating,
-                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .springPress(),
+                            shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            modifier = Modifier.springPress()
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            )
                         ) {
-                            if (isGenerating) {
-                                LoadingIndicator(
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Creating...")
-                            } else {
-                                Text("Create")
-                            }
+                            Text(
+                                "Generate List",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     } else {
-                        // Insert button
                         Button(
                             onClick = {
                                 onInsert(editableItems.filter { it.isNotBlank() })
                                 onDismiss()
                             },
-                            enabled = editableItems.any { it.isNotBlank() },
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                            ),
-                            modifier = Modifier.springPress()
+                            enabled = editableItems.any { it.isNotBlank() } && !isGenerating,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .springPress(),
+                            shape = CircleShape
                         ) {
-                            Text("Insert ${editableItems.count { it.isNotBlank() }} items")
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Insert into Note",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -360,50 +406,74 @@ fun AiChecklistSheet(
 private fun EditableItemRow(
     text: String,
     onTextChange: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    index: Int
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(index * 30L)
+        isVisible = true
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = slideInHorizontally(initialOffsetX = { 50 }) + fadeIn(),
+        exit = fadeOut()
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        
-        BasicTextField(
-            value = text,
-            onValueChange = onTextChange,
-            modifier = Modifier.weight(1f),
-            textStyle = TextStyle(
-                color = MaterialTheme.colorScheme.onSurface,
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            singleLine = false,
-            maxLines = 3  // Prevent overflow for long items
-        )
-        
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(32.dp)
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shape = MaterialTheme.shapes.small,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = "Remove item",
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = (index + 1).toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                BasicTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    modifier = Modifier.weight(1f),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+                )
+                
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp).springPress()
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Remove item",
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                    )
+                }
+            }
         }
     }
 }
 
-// Helper functions for SharedPreferences
 private fun loadPromptHistory(context: Context): List<String> {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     val historyString = prefs.getString(KEY_PROMPT_HISTORY, "") ?: ""
@@ -411,11 +481,8 @@ private fun loadPromptHistory(context: Context): List<String> {
 }
 
 private fun savePromptToHistory(context: Context, prompt: String, currentHistory: List<String>): List<String> {
-    // Remove duplicate if exists, add to front, limit to MAX_HISTORY_SIZE
     val newHistory = (listOf(prompt) + currentHistory.filter { it != prompt }).take(MAX_HISTORY_SIZE)
-    
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     prefs.edit().putString(KEY_PROMPT_HISTORY, newHistory.joinToString("|||")).apply()
-    
     return newHistory
 }
