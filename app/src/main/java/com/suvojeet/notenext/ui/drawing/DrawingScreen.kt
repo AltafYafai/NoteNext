@@ -141,7 +141,7 @@ fun DrawingScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
@@ -188,7 +188,7 @@ fun DrawingScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Tool Switchers
-                        Row(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Surface(
                                 selected = !isEraserMode,
                                 onClick = { isEraserMode = false; isEraserMode = false },
