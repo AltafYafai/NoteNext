@@ -17,13 +17,13 @@ class BiometricAuthManager(
     fun canAuthenticate(): Int {
         return biometricManager.canAuthenticate(
             BiometricManager.Authenticators.BIOMETRIC_STRONG or 
-            BiometricManager.Authenticators.BIOMETRIC_WEAK or 
             BiometricManager.Authenticators.DEVICE_CREDENTIAL
         )
     }
 
     fun showBiometricPrompt(
-        onAuthSuccess: () -> Unit,
+        cryptoObject: BiometricPrompt.CryptoObject? = null,
+        onAuthSuccess: (BiometricPrompt.AuthenticationResult) -> Unit,
         onAuthError: (String) -> Unit = {},
         onAuthFailed: () -> Unit = {}
     ) {
@@ -31,9 +31,8 @@ class BiometricAuthManager(
             .setTitle("Biometric login for NoteNext")
             .setSubtitle("Log in using your biometric credential")
             .setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG or 
-                BiometricManager.Authenticators.BIOMETRIC_WEAK or 
-                BiometricManager.Authenticators.DEVICE_CREDENTIAL
+                if (cryptoObject != null) BiometricManager.Authenticators.BIOMETRIC_STRONG
+                else BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
             )
             .build()
 
@@ -46,7 +45,7 @@ class BiometricAuthManager(
 
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    onAuthSuccess()
+                    onAuthSuccess(result)
                 }
 
                 override fun onAuthenticationFailed() {
@@ -55,6 +54,10 @@ class BiometricAuthManager(
                 }
             })
 
-        biometricPrompt.authenticate(promptInfo)
+        if (cryptoObject != null) {
+            biometricPrompt.authenticate(promptInfo, cryptoObject)
+        } else {
+            biometricPrompt.authenticate(promptInfo)
+        }
     }
 }

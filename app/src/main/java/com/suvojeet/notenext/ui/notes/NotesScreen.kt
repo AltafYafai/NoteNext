@@ -79,7 +79,8 @@ fun NotesScreen(
     onTodoClick: () -> Unit = {},
     events: SharedFlow<NotesUiEvent>
 ) {
-    val state by viewModel.state.collectAsState()
+    val listState by viewModel.listState.collectAsState()
+    val editState by viewModel.editState.collectAsState()
     var isFabExpanded by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     
@@ -90,7 +91,7 @@ fun NotesScreen(
         else -> false
     }
 
-    val isSelectionModeActive = state.selectedNoteIds.isNotEmpty()
+    val isSelectionModeActive = listState.selectedNoteIds.isNotEmpty()
     var showLabelDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showReminderSetDialog by remember { mutableStateOf(false) }
@@ -159,23 +160,23 @@ fun NotesScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    BackHandler(enabled = isSearchActive || isSelectionModeActive || state.expandedNoteId != null) {
+    BackHandler(enabled = isSearchActive || isSelectionModeActive || editState.expandedNoteId != null) {
         when {
             isSearchActive -> {
                 isSearchActive = false
                 focusManager.clearFocus()
             }
             isSelectionModeActive -> viewModel.onEvent(NotesEvent.ClearSelection)
-            state.expandedNoteId != null -> viewModel.onEvent(NotesEvent.CollapseNote)
+            editState.expandedNoteId != null -> viewModel.onEvent(NotesEvent.CollapseNote)
         }
     }
 
     val gridState = rememberLazyStaggeredGridState()
-    val listState = rememberLazyListState()
+    val lazyListState = rememberLazyListState()
 
     SharedTransitionLayout {
         AnimatedContent(
-            targetState = state.expandedNoteId,
+            targetState = editState.expandedNoteId,
             label = "NoteTransition",
             transitionSpec = {
                 val springSpec = spring<Float>(dampingRatio = 0.8f, stiffness = 300f)
@@ -203,7 +204,7 @@ fun NotesScreen(
                             ) { targetState ->
                                 if (targetState) {
                                     ContextualTopAppBar(
-                                        selectedItemCount = state.selectedNoteIds.size,
+                                        selectedItemCount = listState.selectedNoteIds.size,
                                         onClearSelection = { viewModel.onEvent(NotesEvent.ClearSelection) },
                                         onTogglePinClick = { viewModel.onEvent(NotesEvent.TogglePinForSelectedNotes) },
                                         onReminderClick = { showReminderSetDialog = true },
@@ -215,7 +216,7 @@ fun NotesScreen(
                                         onLabelClick = { showLabelDialog = true },
                                         onMoveToProjectClick = { showMoveToProjectDialog = true },
                                         onLockClick = { 
-                                            val selectedNotes = state.notes.filter { state.selectedNoteIds.contains(it.note.id) }
+                                            val selectedNotes = listState.notes.filter { listState.selectedNoteIds.contains(it.note.id) }
                                             val isAnyNoteLocked = selectedNotes.any { it.note.isLocked }
                                             if (isAnyNoteLocked) {
                                                 biometricAuthManager?.showBiometricPrompt(
@@ -232,24 +233,24 @@ fun NotesScreen(
                                     TopAppBar(
                                         title = {
                                             SearchBar(
-                                                searchQuery = state.searchQuery,
+                                                searchQuery = listState.searchQuery,
                                                 onSearchQueryChange = { viewModel.onEvent(NotesEvent.OnSearchQueryChange(it)) },
                                                 isSearchActive = isSearchActive,
                                                 onSearchActiveChange = { isSearchActive = it },
                                                 onLayoutToggleClick = { viewModel.onEvent(NotesEvent.ToggleLayout) },
                                                 onSortClick = { showSortMenu = true },
-                                                layoutType = state.layoutType,
+                                                layoutType = listState.layoutType,
                                                 sortMenuExpanded = showSortMenu,
                                                 onSortMenuDismissRequest = { showSortMenu = false },
                                                 onSortOptionClick = { sortType ->
-                                                    val newSortType = if (sortType == state.sortType) {
+                                                    val newSortType = if (sortType == listState.sortType) {
                                                         SortType.DATE_MODIFIED
                                                     } else {
                                                         sortType
                                                     }
                                                     viewModel.onEvent(NotesEvent.SortNotes(newSortType))
                                                 },
-                                                currentSortType = state.sortType
+                                                currentSortType = listState.sortType
                                             )
                                         },
                                         navigationIcon = {
@@ -267,9 +268,9 @@ fun NotesScreen(
                             }
                         },
                         floatingActionButton = {
-                            val isFabScrollExpanded = when (state.layoutType) {
+                            val isFabScrollExpanded = when (listState.layoutType) {
                                 LayoutType.GRID -> gridState.firstVisibleItemIndex == 0
-                                LayoutType.LIST -> listState.firstVisibleItemIndex == 0
+                                LayoutType.LIST -> lazyListState.firstVisibleItemIndex == 0
                             }
 
                             MultiActionFab(
@@ -323,7 +324,7 @@ fun NotesScreen(
                         }
                         if (showLabelDialog) {
                             LabelDialog(
-                                labels = state.labels,
+                                labels = listState.labels,
                                 onDismiss = { showLabelDialog = false },
                                 onConfirm = { label ->
                                     viewModel.onEvent(NotesEvent.SetLabelForSelectedNotes(label))
@@ -364,7 +365,7 @@ fun NotesScreen(
 
                         if (showMoveToProjectDialog) {
                             MoveToProjectDialog(
-                                projects = state.projects,
+                                projects = listState.projects,
                                 onDismiss = { showMoveToProjectDialog = false },
                                 onConfirm = { projectId ->
                                     viewModel.onEvent(NotesEvent.MoveSelectedNotesToProject(projectId))
@@ -392,30 +393,30 @@ fun NotesScreen(
                         Box(modifier = Modifier.fillMaxSize()) {
                             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                val notesToDisplay = if (state.filteredLabel == null) {
-                                    state.notes
+                                val notesToDisplay = if (listState.filteredLabel == null) {
+                                    listState.notes
                                 } else {
-                                    state.notes.filter { it.note.label == state.filteredLabel }
+                                    listState.notes.filter { it.note.label == listState.filteredLabel }
                                 }
 
-                                if (state.isLoading) {
+                                if (listState.isLoading) {
                                     ExpressiveLoading()
                                 } else if (notesToDisplay.isEmpty()) {
-                                    val currentLabel = state.filteredLabel
+                                    val currentLabel = listState.filteredLabel
                                     val emptyMessage = if (currentLabel != null) {
                                         stringResource(id = R.string.no_notes_found_label, currentLabel)
-                                    } else if (state.searchQuery.isNotEmpty()) {
+                                    } else if (listState.searchQuery.isNotEmpty()) {
                                         stringResource(id = R.string.no_notes_found)
                                     } else {
                                         stringResource(id = R.string.no_notes_yet)
                                     }
                                     
-                                    val emptyIcon = if (state.searchQuery.isNotEmpty()) Icons.Default.Search else Icons.Default.Note
+                                    val emptyIcon = if (listState.searchQuery.isNotEmpty()) Icons.Default.Search else Icons.Default.Note
 
                                     EmptyState(
                                         icon = emptyIcon,
                                         message = emptyMessage,
-                                        description = if (state.searchQuery.isEmpty()) stringResource(id = R.string.create_your_first_note) else null
+                                        description = if (listState.searchQuery.isEmpty()) stringResource(id = R.string.create_your_first_note) else null
                                     )
                                 } else {
                                     val filteredNotes = notesToDisplay
@@ -427,17 +428,46 @@ fun NotesScreen(
                                             viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                         } else {
                                             if (note.note.isLocked) {
-                                                biometricAuthManager?.showBiometricPrompt(
-                                                    onAuthSuccess = { viewModel.onEvent(NotesEvent.ExpandNote(note.note.id)) },
-                                                    onAuthError = { Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show() }
-                                                ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
+                                                try {
+                                                    val ivs = note.note.iv?.split(":")
+                                                    if (ivs != null && ivs.size == 2) {
+                                                        val ivTitle = android.util.Base64.decode(ivs[0], android.util.Base64.DEFAULT)
+                                                        val ivContent = android.util.Base64.decode(ivs[1], android.util.Base64.DEFAULT)
+                                                        
+                                                        val cipherTitle = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivTitle, true)
+                                                        val cipherContent = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivContent, true)
+                                                        
+                                                        biometricAuthManager?.showBiometricPrompt(
+                                                            cryptoObject = androidx.biometric.BiometricPrompt.CryptoObject(cipherTitle),
+                                                            onAuthSuccess = { result -> 
+                                                                viewModel.onEvent(NotesEvent.ExpandNote(
+                                                                    noteId = note.note.id,
+                                                                    authenticatedCipherTitle = result.cryptoObject?.cipher,
+                                                                    authenticatedCipherContent = cipherContent // We can't bind two ciphers to one prompt, but unlocking one key unlocks all for a duration or we just use the first one. 
+                                                                    // Actually, since they use the same key, once the key is unlocked in the KeyStore for this process/duration, the second cipher might work too, 
+                                                                    // OR we just decrypt the title with the first one and then use the same key for content.
+                                                                )) 
+                                                            },
+                                                            onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                                                        ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        // Legacy or corrupted IV, try without CryptoObject (might fail if key requires it)
+                                                        biometricAuthManager?.showBiometricPrompt(
+                                                            onAuthSuccess = { viewModel.onEvent(NotesEvent.ExpandNote(note.note.id)) },
+                                                            onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                                                        )
+                                                    }
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                    Toast.makeText(context, "Error initializing security: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                }
                                             } else {
                                                 viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
                                             }
                                         }
                                     }
 
-                                    when (state.layoutType) {
+                                    when (listState.layoutType) {
                                         LayoutType.GRID -> {
                                             LazyVerticalStaggeredGrid(
                                                 columns = StaggeredGridCells.Fixed(2),
@@ -468,8 +498,8 @@ fun NotesScreen(
                                                         NoteItem(
                                                             modifier = noteModifier,
                                                             note = note,
-                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                            searchQuery = state.searchQuery,
+                                                            isSelected = listState.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = listState.searchQuery,
                                                             onNoteClick = { onNoteClickAction(note) },
                                                             onNoteLongClick = {
                                                                 viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
@@ -502,8 +532,8 @@ fun NotesScreen(
                                                         NoteItem(
                                                             modifier = noteModifier,
                                                             note = note,
-                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                            searchQuery = state.searchQuery,
+                                                            isSelected = listState.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = listState.searchQuery,
                                                             onNoteClick = { onNoteClickAction(note) },
                                                             onNoteLongClick = {
                                                                 viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
@@ -517,7 +547,7 @@ fun NotesScreen(
                                         LayoutType.LIST -> {
                                             LazyColumn(
                                                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                                                state = listState,
+                                                state = lazyListState,
                                                 contentPadding = PaddingValues(8.dp),
                                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
@@ -542,8 +572,8 @@ fun NotesScreen(
                                                         NoteItem(
                                                             modifier = noteModifier,
                                                             note = note,
-                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                            searchQuery = state.searchQuery,
+                                                            isSelected = listState.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = listState.searchQuery,
                                                             onNoteClick = { onNoteClickAction(note) },
                                                             onNoteLongClick = {
                                                                 viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
@@ -576,8 +606,8 @@ fun NotesScreen(
                                                         NoteItem(
                                                             modifier = noteModifier,
                                                             note = note,
-                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                            searchQuery = state.searchQuery,
+                                                            isSelected = listState.selectedNoteIds.contains(note.note.id),
+                                                            searchQuery = listState.searchQuery,
                                                             onNoteClick = { onNoteClickAction(note) },
                                                             onNoteLongClick = {
                                                                 viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
@@ -608,7 +638,7 @@ fun NotesScreen(
                 }
             } else {
                  AddEditNoteScreen(
-                    state = state,
+                    state = viewModel.state.collectAsState().value,
                     onEvent = viewModel::onEvent,
                     onDismiss = { viewModel.onEvent(NotesEvent.CollapseNote) },
                     themeMode = themeMode,

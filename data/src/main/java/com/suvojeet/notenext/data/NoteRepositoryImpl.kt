@@ -31,20 +31,39 @@ class NoteRepositoryImpl @Inject constructor(
                 SortType.CUSTOM -> noteDao.searchNotesOrderedByPosition(formattedQuery)
             }
         }
-        return flow.map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
+        return flow.map { list -> 
+            list.map { 
+                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
+            } 
+        }
     }
 
     override fun getArchivedNotes(): Flow<List<NoteWithAttachments>> = 
-        noteDao.getArchivedNotes().map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
+        noteDao.getArchivedNotes().map { list -> 
+            list.map { 
+                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
+            } 
+        }
 
     override fun getBinnedNotes(): Flow<List<NoteWithAttachments>> = 
-        noteDao.getBinnedNotes().map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
+        noteDao.getBinnedNotes().map { list -> 
+            list.map { 
+                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
+            } 
+        }
 
     override fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>> = 
-        noteDao.getNotesByProjectId(projectId).map { list -> list.map { it.copy(note = CryptoUtils.decryptNote(it.note)) } }
+        noteDao.getNotesByProjectId(projectId).map { list -> 
+            list.map { 
+                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
+            } 
+        }
 
     override suspend fun getNoteById(id: Int): NoteWithAttachments? = 
-        noteDao.getNoteById(id)?.let { it.copy(note = CryptoUtils.decryptNote(it.note)) }
+        noteDao.getNoteById(id)?.let { 
+            // We return it AS IS if locked, so the caller can trigger biometric auth
+            if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
+        }
 
     override suspend fun insertNote(note: Note): Long {
         val noteToInsert = if (note.isLocked) CryptoUtils.encryptNote(note) else note
@@ -113,12 +132,20 @@ class NoteRepositoryImpl @Inject constructor(
 
     override suspend fun insertNoteVersion(version: NoteVersion) {
         val note = noteDao.getNoteById(version.noteId)
-        val versionToInsert = if (note?.note?.isLocked == true) CryptoUtils.encryptNoteVersion(version) else version
+        val isLocked = note?.note?.isLocked == true
+        val versionToInsert = if (isLocked) CryptoUtils.encryptNoteVersion(version, isLocked) else version
         noteDao.insertNoteVersion(versionToInsert)
     }
 
-    override fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>> = 
-        noteDao.getNoteVersions(noteId).map { list -> list.map { CryptoUtils.decryptNoteVersion(it) } }
+    override fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>> {
+        return noteDao.getNoteVersions(noteId).map { list -> 
+            val note = noteDao.getNoteById(noteId)
+            val isLocked = note?.note?.isLocked == true
+            list.map { 
+                if (isLocked) it else CryptoUtils.decryptNoteVersion(it, isLocked) 
+            } 
+        }
+    }
 
     override suspend fun limitNoteVersions(noteId: Int, limit: Int) = noteDao.limitNoteVersions(noteId, limit)
 

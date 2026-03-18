@@ -74,14 +74,79 @@ class NotesViewModel @Inject constructor(
         private const val KEY_EXPANDED_NOTE_ID = "expanded_note_id"
     }
 
-    private val _state = MutableStateFlow(
+    private val _listState = MutableStateFlow(NotesListState())
+    val listState = _listState.asStateFlow()
+
+    private val _editState = MutableStateFlow(
+        NotesEditState(
+            editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
+            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
+            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
+        )
+    )
+    val editState = _editState.asStateFlow()
+
+    // Combined state for backward compatibility and complex screen mappings
+    val state = kotlinx.coroutines.flow.combine(_listState, _editState) { list, edit ->
+        NotesState(
+            notes = list.notes,
+            layoutType = list.layoutType,
+            sortType = list.sortType,
+            selectedNoteIds = list.selectedNoteIds,
+            labels = list.labels,
+            filteredLabel = list.filteredLabel,
+            isLoading = list.isLoading,
+            projects = list.projects,
+            searchQuery = list.searchQuery,
+            
+            expandedNoteId = edit.expandedNoteId,
+            editingTitle = edit.editingTitle,
+            editingContent = edit.editingContent,
+            editingColor = edit.editingColor,
+            editingIsNewNote = edit.editingIsNewNote,
+            editingLastEdited = edit.editingLastEdited,
+            isPinned = edit.isPinned,
+            isArchived = edit.isArchived,
+            editingLabel = edit.editingLabel,
+            canUndo = edit.canUndo,
+            canRedo = edit.canRedo,
+            isBoldActive = edit.isBoldActive,
+            isItalicActive = edit.isItalicActive,
+            isUnderlineActive = edit.isUnderlineActive,
+            activeHeadingStyle = edit.activeHeadingStyle,
+            activeStyles = edit.activeStyles,
+            linkPreviews = edit.linkPreviews,
+            editingNoteType = edit.editingNoteType,
+            editingChecklist = edit.editingChecklist,
+            checklistInputValues = edit.checklistInputValues,
+            focusedChecklistItemId = edit.focusedChecklistItemId,
+            isCheckedItemsExpanded = edit.isCheckedItemsExpanded,
+            newlyAddedChecklistItemId = edit.newlyAddedChecklistItemId,
+            editingAttachments = edit.editingAttachments,
+            editingIsLocked = edit.editingIsLocked,
+            editingNoteVersions = edit.editingNoteVersions,
+            editingReminderTime = edit.editingReminderTime,
+            editingRepeatOption = edit.editingRepeatOption,
+            isSummarizing = edit.isSummarizing,
+            summaryResult = edit.summaryResult,
+            showSummaryDialog = edit.showSummaryDialog,
+            showLabelDialog = edit.showLabelDialog,
+            isGeneratingChecklist = edit.isGeneratingChecklist,
+            generatedChecklistPreview = edit.generatedChecklistPreview,
+            isFixingGrammar = edit.isFixingGrammar,
+            fixedContentPreview = edit.fixedContentPreview,
+            originalContentBackup = edit.originalContentBackup,
+            saveStatus = edit.saveStatus
+        )
+    }.kotlinx.coroutines.flow.stateIn(
+        viewModelScope, 
+        kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000), 
         NotesState(
             editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
             editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
             expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
         )
     )
-    val state = _state.asStateFlow()
 
     private val _events = MutableSharedFlow<NotesUiEvent>()
     val events = _events.asSharedFlow()
@@ -100,16 +165,16 @@ class NotesViewModel @Inject constructor(
 
     private fun scheduleAutoSave() {
         autoSaveJob?.cancel()
-        _state.value = state.value.copy(saveStatus = SaveStatus.SAVING)
+        _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVING)
         autoSaveJob = viewModelScope.launch {
             try {
                 delay(1000L) // 1 second debounce
                 saveNote(shouldCollapse = false)
-                _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
+                _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVED)
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 e.printStackTrace()
-                _state.value = state.value.copy(saveStatus = SaveStatus.ERROR)
+                _editState.value = editState.value.copy(saveStatus = SaveStatus.ERROR)
                 _events.emit(NotesUiEvent.ShowToast("Auto-save failed: ${e.message}"))
             }
         }
@@ -127,7 +192,7 @@ class NotesViewModel @Inject constructor(
             _sortType,
             _searchQuery
         ) { notes, labels, projects, sortType, query ->
-            _state.value = _state.value.copy(
+            _listState.value = _listState.value.copy(
                 notes = notes,
                 labels = labels.map { it.name },
                 projects = projects,
@@ -157,16 +222,16 @@ class NotesViewModel @Inject constructor(
         when (event) {
             is NotesEvent.GenerateChecklist -> {
                 viewModelScope.launch {
-                    _state.value = state.value.copy(isGeneratingChecklist = true, generatedChecklistPreview = emptyList())
+                    _editState.value = editState.value.copy(isGeneratingChecklist = true, generatedChecklistPreview = emptyList())
                     groqRepository.generateChecklist(event.topic).collect { result ->
                         result.onSuccess { items ->
                             // Store preview instead of inserting directly
-                            _state.value = state.value.copy(
+                            _editState.value = editState.value.copy(
                                 isGeneratingChecklist = false,
                                 generatedChecklistPreview = items
                             )
                         }.onFailure { error ->
-                            _state.value = state.value.copy(isGeneratingChecklist = false, generatedChecklistPreview = emptyList())
+                            _editState.value = editState.value.copy(isGeneratingChecklist = false, generatedChecklistPreview = emptyList())
                             val errorMessage = when {
                                 error.message?.contains("429") == true || 
                                 error.message?.contains("rate limit", ignoreCase = true) == true ->
@@ -191,8 +256,8 @@ class NotesViewModel @Inject constructor(
                             id = java.util.UUID.randomUUID().toString(),
                             text = text, 
                             isChecked = false, 
-                            position = state.value.editingChecklist.size + index,
-                            noteId = state.value.expandedNoteId ?: 0
+                            position = editState.value.editingChecklist.size + index,
+                            noteId = editState.value.expandedNoteId ?: 0
                         ) 
                     }
                     
@@ -200,19 +265,19 @@ class NotesViewModel @Inject constructor(
                         item.id to TextFieldValue(item.text)
                     }
 
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingNoteType = "CHECKLIST",
-                        editingChecklist = state.value.editingChecklist + checklistItems,
-                        checklistInputValues = state.value.checklistInputValues + newInputValues,
+                        editingChecklist = editState.value.editingChecklist + checklistItems,
+                        checklistInputValues = editState.value.checklistInputValues + newInputValues,
                         generatedChecklistPreview = emptyList()
                     )
                 }
             }
             is NotesEvent.ClearGeneratedChecklist -> {
-                _state.value = state.value.copy(generatedChecklistPreview = emptyList(), isGeneratingChecklist = false)
+                _editState.value = editState.value.copy(generatedChecklistPreview = emptyList(), isGeneratingChecklist = false)
             }
             is NotesEvent.FixGrammar -> {
-                val currentTextFieldValue = state.value.editingContent
+                val currentTextFieldValue = editState.value.editingContent
                 val selection = currentTextFieldValue.selection
                 val fullText = currentTextFieldValue.text
 
@@ -229,7 +294,7 @@ class NotesViewModel @Inject constructor(
                 }
 
                 viewModelScope.launch {
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         isFixingGrammar = true, 
                         fixedContentPreview = null,
                         originalContentBackup = currentTextFieldValue // Backup for Undo
@@ -259,13 +324,13 @@ class NotesViewModel @Inject constructor(
                             }
                             val inlinePreview = inlinePreviewBuilder.toAnnotatedString()
 
-                            _state.value = state.value.copy(
+                            _editState.value = editState.value.copy(
                                 isFixingGrammar = false,
                                 fixedContentPreview = finalCleanText, // Clean text for Apply
                                 editingContent = TextFieldValue(inlinePreview, selection) // Show Diff Inline
                             )
                         }.onFailure { error ->
-                            _state.value = state.value.copy(isFixingGrammar = false, fixedContentPreview = null, originalContentBackup = null)
+                            _editState.value = editState.value.copy(isFixingGrammar = false, fixedContentPreview = null, originalContentBackup = null)
                             val errorMessage = when {
                                 error.message?.contains("429") == true -> "Too many requests. Please wait."
                                 error.message?.contains("timeout", ignoreCase = true) == true -> "Request timed out."
@@ -279,7 +344,7 @@ class NotesViewModel @Inject constructor(
             is NotesEvent.AutoSaveNote -> {
                 viewModelScope.launch {
                     saveNote(shouldCollapse = false)
-                    _state.value = state.value.copy(saveStatus = SaveStatus.SAVED)
+                    _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVED)
                 }
             }
             is NotesEvent.ImportImage -> {
@@ -301,9 +366,9 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ApplyGrammarFix -> {
-                val fixedContent = state.value.fixedContentPreview
+                val fixedContent = editState.value.fixedContentPreview
                 if (fixedContent != null) {
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingContent = TextFieldValue(fixedContent), // Apply clean text
                         fixedContentPreview = null,
                         originalContentBackup = null
@@ -313,14 +378,14 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.ClearGrammarFix -> {
                 // Revert to backup
-                state.value.originalContentBackup?.let { backup ->
-                    _state.value = state.value.copy(
+                editState.value.originalContentBackup?.let { backup ->
+                    _editState.value = editState.value.copy(
                         editingContent = backup,
                         fixedContentPreview = null,
                         originalContentBackup = null
                     )
                 } ?: run {
-                     _state.value = state.value.copy(fixedContentPreview = null, isFixingGrammar = false)
+                     _editState.value = editState.value.copy(fixedContentPreview = null, isFixingGrammar = false)
                 }
             }
             is NotesEvent.OnSearchQueryChange -> {
@@ -329,7 +394,7 @@ class NotesViewModel @Inject constructor(
             is NotesEvent.OnRestoreVersion -> {
                 viewModelScope.launch {
                     val content = HtmlConverter.htmlToAnnotatedString(event.version.content)
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingTitle = event.version.title,
                         editingContent = TextFieldValue(content),
                         editingNoteType = event.version.noteType
@@ -360,34 +425,34 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ToggleNoteSelection -> {
-                val selectedIds = state.value.selectedNoteIds.toMutableList()
+                val selectedIds = listState.value.selectedNoteIds.toMutableList()
                 if (selectedIds.contains(event.noteId)) {
                     selectedIds.remove(event.noteId)
                 } else {
                     selectedIds.add(event.noteId)
                 }
-                _state.value = state.value.copy(selectedNoteIds = selectedIds)
+                _listState.value = listState.value.copy(selectedNoteIds = selectedIds)
             }
             is NotesEvent.ClearSelection -> {
-                _state.value = state.value.copy(selectedNoteIds = emptyList())
+                _listState.value = listState.value.copy(selectedNoteIds = emptyList())
             }
             is NotesEvent.SelectAllNotes -> {
-                val notesToSelect = if (state.value.filteredLabel != null) {
-                    state.value.notes.filter { it.note.label == state.value.filteredLabel }
+                val notesToSelect = if (listState.value.filteredLabel != null) {
+                    listState.value.notes.filter { it.note.label == listState.value.filteredLabel }
                 } else {
-                    state.value.notes
+                    listState.value.notes
                 }
                 val allIds = notesToSelect.map { it.note.id }
-                _state.value = state.value.copy(selectedNoteIds = allIds)
+                _listState.value = listState.value.copy(selectedNoteIds = allIds)
             }
             is NotesEvent.TogglePinForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     val areNotesBeingPinned = selectedNotes.firstOrNull()?.note?.isPinned == false
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isPinned = areNotesBeingPinned))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     val message = if (areNotesBeingPinned) {
                         if (selectedNotes.size > 1) "${selectedNotes.size} notes pinned" else "Note pinned"
                     } else {
@@ -399,12 +464,12 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.ToggleLockForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                      val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isLocked = areNotesBeingLocked))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     val message = if (areNotesBeingLocked) {
                         if (selectedNotes.size > 1) "${selectedNotes.size} notes locked" else "Note locked"
                     } else {
@@ -416,49 +481,49 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.DeleteSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isBinned = true, binnedOn = System.currentTimeMillis()))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     _events.emit(NotesUiEvent.ShowToast("${selectedNotes.size} notes moved to Bin"))
                     updateWidgets()
                 }
             }
             is NotesEvent.ArchiveSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isArchived = !note.note.isArchived))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     updateWidgets()
                 }
             }
             is NotesEvent.ToggleImportantForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isImportant = !note.note.isImportant))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                 }
             }
             is NotesEvent.ChangeColorForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(color = event.color))
                     }
                     // Update local state immediately so UI reflects the change
-                    val updatedNotesList = state.value.notes.map { noteWithAttachments ->
-                        if (state.value.selectedNoteIds.contains(noteWithAttachments.note.id)) {
+                    val updatedNotesList = listState.value.notes.map { noteWithAttachments ->
+                        if (listState.value.selectedNoteIds.contains(noteWithAttachments.note.id)) {
                             noteWithAttachments.copy(note = noteWithAttachments.note.copy(color = event.color))
                         } else {
                             noteWithAttachments
                         }
                     }
-                    _state.value = state.value.copy(
+                    _listState.value = listState.value.copy(
                         notes = updatedNotesList,
                         selectedNoteIds = emptyList()
                     )
@@ -467,7 +532,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.CopySelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (noteWithAttachments in selectedNotes) {
                         val copiedNote = noteWithAttachments.note.copy(id = 0, title = "${noteWithAttachments.note.title} (Copy)")
                         val newNoteId = repository.insertNote(copiedNote)
@@ -481,14 +546,14 @@ class NotesViewModel @Inject constructor(
                         }
                         repository.insertChecklistItems(newChecklistItems)
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     val message = if (selectedNotes.size > 1) "${selectedNotes.size} notes copied" else "Note copied"
                     _events.emit(NotesUiEvent.ShowToast(message))
                 }
             }
             is NotesEvent.SendSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     if (selectedNotes.isNotEmpty()) {
                         val title = if (selectedNotes.size == 1) selectedNotes.first().note.title else "Multiple Notes"
                         val contentBuilder = StringBuilder()
@@ -500,12 +565,12 @@ class NotesViewModel @Inject constructor(
                         }
                         _events.emit(NotesUiEvent.SendNotes(title, contentBuilder.toString()))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                 }
             }
             is NotesEvent.SetReminderForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     val reminderDateTime = LocalDateTime.of(event.date, event.time)
                     val reminderMillis = reminderDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -517,7 +582,7 @@ class NotesViewModel @Inject constructor(
                         repository.updateNote(updatedNote)
                         alarmScheduler.schedule(updatedNote)
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     _events.emit(NotesUiEvent.ShowToast("Reminder set for ${selectedNotes.size} notes"))
                 }
             }
@@ -526,11 +591,11 @@ class NotesViewModel @Inject constructor(
                     if (event.label.isNotBlank()) {
                         repository.insertLabel(Label(event.label))
                     }
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(label = event.label))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                 }
             }
             is NotesEvent.ExpandNote -> {
@@ -538,7 +603,16 @@ class NotesViewModel @Inject constructor(
                 viewModelScope.launch {
                     if (event.noteId != -1) {
                         noteUseCases.getNote(event.noteId)?.let { noteWithAttachments ->
-                            val note = noteWithAttachments.note
+                            val note = if (noteWithAttachments.note.isLocked && event.authenticatedCipherTitle != null) {
+                                com.suvojeet.notenext.util.CryptoUtils.decryptNote(
+                                    noteWithAttachments.note,
+                                    event.authenticatedCipherTitle,
+                                    event.authenticatedCipherContent
+                                )
+                            } else {
+                                noteWithAttachments.note
+                            }
+
                             val content = if (note.noteType == "TEXT") {
                                 HtmlConverter.htmlToAnnotatedString(note.content)
                             } else {
@@ -553,7 +627,7 @@ class NotesViewModel @Inject constructor(
                             // Fetch versions
                             viewModelScope.launch {
                                 repository.getNoteVersions(event.noteId).collect { versions ->
-                                    _state.value = _state.value.copy(editingNoteVersions = versions)
+                                    _editState.value = editState.value.copy(editingNoteVersions = versions)
                                 }
                             }
                             
@@ -564,7 +638,7 @@ class NotesViewModel @Inject constructor(
                             savedStateHandle[KEY_EDITING_TITLE] = note.title
                             savedStateHandle[KEY_EDITING_CONTENT] = note.content
 
-                            _state.value = state.value.copy(
+                            _editState.value = editState.value.copy(
                                 expandedNoteId = event.noteId,
                                 editingTitle = note.title,
                                 editingContent = contentValue,
@@ -595,7 +669,7 @@ class NotesViewModel @Inject constructor(
                         savedStateHandle[KEY_EXPANDED_NOTE_ID] = -1
                         savedStateHandle[KEY_EDITING_TITLE] = ""
                         savedStateHandle[KEY_EDITING_CONTENT] = ""
-                        _state.value = state.value.copy(
+                        _editState.value = editState.value.copy(
                             expandedNoteId = -1,
                             editingTitle = "",
                             editingContent = TextFieldValue(),
@@ -620,17 +694,17 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnToggleLockClick -> {
                 viewModelScope.launch {
-                    val currentLockState = state.value.editingIsLocked
-                    _state.value = state.value.copy(editingIsLocked = !currentLockState)
+                    val currentLockState = editState.value.editingIsLocked
+                    _editState.value = editState.value.copy(editingIsLocked = !currentLockState)
                     // If note exists, update immediately
-                    state.value.expandedNoteId?.let { noteId ->
+                    editState.value.expandedNoteId?.let { noteId ->
                          if (noteId != -1) {
                              repository.getNoteById(noteId)?.let { note ->
                                  repository.updateNote(note.note.copy(isLocked = !currentLockState))
                              }
                              // Update list locally
-                             val updatedNotesList = state.value.notes.map { if (it.note.id == noteId) it.copy(note = it.note.copy(isLocked = !currentLockState)) else it }
-                             _state.value = _state.value.copy(notes = updatedNotesList)
+                             val updatedNotesList = listState.value.notes.map { if (it.note.id == noteId) it.copy(note = it.note.copy(isLocked = !currentLockState)) else it }
+                             _listState.value = listState.value.copy(notes = updatedNotesList)
                              _events.emit(NotesUiEvent.ShowToast(if (!currentLockState) "Note locked" else "Note unlocked"))
                              updateWidgets()
                          }
@@ -645,53 +719,53 @@ class NotesViewModel @Inject constructor(
             }
 
             is NotesEvent.AddChecklistItem -> {
-                val (updatedChecklist, newItemId) = ChecklistManager.addChecklistItem(state.value.editingChecklist)
-                _state.value = state.value.copy(
+                val (updatedChecklist, newItemId) = ChecklistManager.addChecklistItem(editState.value.editingChecklist)
+                _editState.value = editState.value.copy(
                     editingChecklist = updatedChecklist,
                     newlyAddedChecklistItemId = newItemId,
-                    checklistInputValues = state.value.checklistInputValues + (newItemId to TextFieldValue(""))
+                    checklistInputValues = editState.value.checklistInputValues + (newItemId to TextFieldValue(""))
                 )
                 scheduleAutoSave()
             }
             is NotesEvent.SwapChecklistItems -> {
-                val updatedList = ChecklistManager.swapItems(state.value.editingChecklist, event.fromId, event.toId)
-                if (updatedList != state.value.editingChecklist) {
-                    _state.value = state.value.copy(editingChecklist = updatedList)
+                val updatedList = ChecklistManager.swapItems(editState.value.editingChecklist, event.fromId, event.toId)
+                if (updatedList != editState.value.editingChecklist) {
+                    _editState.value = editState.value.copy(editingChecklist = updatedList)
                     scheduleAutoSave()
                 }
             }
             is NotesEvent.DeleteChecklistItem -> {
-                val updatedChecklist = ChecklistManager.deleteItem(state.value.editingChecklist, event.itemId)
-                _state.value = state.value.copy(
+                val updatedChecklist = ChecklistManager.deleteItem(editState.value.editingChecklist, event.itemId)
+                _editState.value = editState.value.copy(
                     editingChecklist = updatedChecklist,
-                    checklistInputValues = state.value.checklistInputValues - event.itemId
+                    checklistInputValues = editState.value.checklistInputValues - event.itemId
                 )
                 scheduleAutoSave()
             }
             is NotesEvent.IndentChecklistItem -> {
-                val updatedChecklist = ChecklistManager.indentItem(state.value.editingChecklist, event.itemId)
-                _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                val updatedChecklist = ChecklistManager.indentItem(editState.value.editingChecklist, event.itemId)
+                _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
             is NotesEvent.OutdentChecklistItem -> {
-                val updatedChecklist = ChecklistManager.outdentItem(state.value.editingChecklist, event.itemId)
-                _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                val updatedChecklist = ChecklistManager.outdentItem(editState.value.editingChecklist, event.itemId)
+                _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
 
             is NotesEvent.OnChecklistItemCheckedChange -> {
-                val updatedChecklist = ChecklistManager.changeItemCheckedState(state.value.editingChecklist, event.itemId, event.isChecked)
-                _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                val updatedChecklist = ChecklistManager.changeItemCheckedState(editState.value.editingChecklist, event.itemId, event.isChecked)
+                _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
             is NotesEvent.OnChecklistItemTextChange -> {
-                val updatedChecklist = ChecklistManager.changeItemText(state.value.editingChecklist, event.itemId, event.text)
-                _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                val updatedChecklist = ChecklistManager.changeItemText(editState.value.editingChecklist, event.itemId, event.text)
+                _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
                 scheduleAutoSave()
             }
             is NotesEvent.OnTitleChange -> {
-                undoRedoManager.addState(event.title to state.value.editingContent)
-                _state.value = state.value.copy(
+                undoRedoManager.addState(event.title to editState.value.editingContent)
+                _editState.value = editState.value.copy(
                     editingTitle = event.title,
                     canUndo = undoRedoManager.canUndo.value,
                     canRedo = undoRedoManager.canRedo.value,
@@ -701,15 +775,15 @@ class NotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is NotesEvent.OnContentChange -> {
-                if (state.value.editingNoteType == "TEXT") {
+                if (editState.value.editingNoteType == "TEXT") {
                     val newContent = event.content
-                    val oldContent = state.value.editingContent
+                    val oldContent = editState.value.editingContent
 
                     val finalContent = richTextController.processContentChange(
                         oldContent,
                         newContent,
-                        state.value.activeStyles,
-                        state.value.activeHeadingStyle
+                        editState.value.activeStyles,
+                        editState.value.activeHeadingStyle
                     )
 
                     val selection = finalContent.selection
@@ -730,10 +804,10 @@ class NotesViewModel @Inject constructor(
                     // Only add to undo history if text actually changed (not just selection)
                     val textChanged = oldContent.text != finalContent.text
                     if (textChanged) {
-                        undoRedoManager.addState(state.value.editingTitle to finalContent)
+                        undoRedoManager.addState(editState.value.editingTitle to finalContent)
                     }
                     
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingContent = finalContent,
                         canUndo = undoRedoManager.canUndo.value,
                         canRedo = undoRedoManager.canRedo.value,
@@ -754,7 +828,7 @@ class NotesViewModel @Inject constructor(
                     val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
                     val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet() // Use Set for efficient lookup
 
-                    val existingLinkPreviews = state.value.linkPreviews.filter { detectedUrls.contains(it.url) }
+                    val existingLinkPreviews = editState.value.linkPreviews.filter { detectedUrls.contains(it.url) }
                     val newUrlsToFetch = detectedUrls.filter { url -> existingLinkPreviews.none { it.url == url } }
 
                     viewModelScope.launch {
@@ -764,12 +838,12 @@ class NotesViewModel @Inject constructor(
 
                         val combinedLinkPreviews = (existingLinkPreviews + fetchedNewLinkPreviews).distinctBy { it.url }
 
-                        _state.value = _state.value.copy(linkPreviews = combinedLinkPreviews)
+                        _editState.value = editState.value.copy(linkPreviews = combinedLinkPreviews)
                     }
                 }
             }
             is NotesEvent.OnChecklistItemValueChange -> {
-                val updatedInputValues = state.value.checklistInputValues.toMutableMap()
+                val updatedInputValues = editState.value.checklistInputValues.toMutableMap()
                 updatedInputValues[event.itemId] = event.value
 
                 // Check for styles at selection to update toolbar state
@@ -788,7 +862,7 @@ class NotesViewModel @Inject constructor(
                     }
                 }
 
-                _state.value = state.value.copy(
+                _editState.value = editState.value.copy(
                     checklistInputValues = updatedInputValues,
                      isBoldActive = styles.any { style -> style.item.fontWeight == FontWeight.Bold },
                      isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
@@ -802,22 +876,22 @@ class NotesViewModel @Inject constructor(
                         com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
                     }
 
-                    val updatedChecklist = _state.value.editingChecklist.map {
+                    val updatedChecklist = editState.value.editingChecklist.map {
                         if (it.id == event.itemId) it.copy(text = updatedText) else it
                     }
-                    _state.value = _state.value.copy(editingChecklist = updatedChecklist)
+                    _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
                 }
             }
             is NotesEvent.OnChecklistItemFocus -> {
-                _state.value = state.value.copy(focusedChecklistItemId = event.itemId)
+                _editState.value = editState.value.copy(focusedChecklistItemId = event.itemId)
                 // Update active styles based on the focused item's cursor position handled in ValueChange or just reset/check here
-                val value = state.value.checklistInputValues[event.itemId]
+                val value = editState.value.checklistInputValues[event.itemId]
                 if (value != null) {
                      val selection = value.selection
                      val styles = value.annotatedString.spanStyles.filter {
                         maxOf(selection.start, it.start) < minOf(selection.end, it.end)
                     }
-                     _state.value = state.value.copy(
+                     _editState.value = editState.value.copy(
                          isBoldActive = styles.any { style -> style.item.fontWeight == FontWeight.Bold },
                          isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                          isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline }
@@ -825,18 +899,18 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ApplyStyleToContent -> {
-                if (state.value.editingNoteType == "CHECKLIST") {
-                    val focusedId = state.value.focusedChecklistItemId
+                if (editState.value.editingNoteType == "CHECKLIST") {
+                    val focusedId = editState.value.focusedChecklistItemId
                     if (focusedId != null) {
-                        val currentValue = state.value.checklistInputValues[focusedId]
+                        val currentValue = editState.value.checklistInputValues[focusedId]
                         if (currentValue != null) {
                              val result = richTextController.toggleStyle(
                                 currentValue,
                                 event.style,
                                 emptySet(), // We don't track activeStyles per item easily yet, relies on result
-                                state.value.isBoldActive,
-                                state.value.isItalicActive,
-                                state.value.isUnderlineActive
+                                editState.value.isBoldActive,
+                                editState.value.isItalicActive,
+                                editState.value.isUnderlineActive
                             )
                             if (result.updatedContent != null) {
                                 onEvent(NotesEvent.OnChecklistItemValueChange(focusedId, result.updatedContent))
@@ -845,25 +919,25 @@ class NotesViewModel @Inject constructor(
                     }
                 } else {
                     val result = richTextController.toggleStyle(
-                    state.value.editingContent,
+                    editState.value.editingContent,
                     event.style,
-                    state.value.activeStyles,
-                    state.value.isBoldActive,
-                    state.value.isItalicActive,
-                    state.value.isUnderlineActive
+                    editState.value.activeStyles,
+                    editState.value.isBoldActive,
+                    editState.value.isItalicActive,
+                    editState.value.isUnderlineActive
                 )
 
                 if (result.updatedActiveStyles != null) {
                     val activeStyles = result.updatedActiveStyles
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         activeStyles = activeStyles,
                         isBoldActive = activeStyles.any { it.fontWeight == FontWeight.Bold },
                         isItalicActive = activeStyles.any { it.fontStyle == FontStyle.Italic },
                         isUnderlineActive = activeStyles.any { it.textDecoration == TextDecoration.Underline }
                     )
                 } else if (result.updatedContent != null) {
-                    undoRedoManager.addState(state.value.editingTitle to result.updatedContent)
-                    _state.value = state.value.copy(
+                    undoRedoManager.addState(editState.value.editingTitle to result.updatedContent)
+                    _editState.value = editState.value.copy(
                         editingContent = result.updatedContent,
                         canUndo = undoRedoManager.canUndo.value,
                         canRedo = undoRedoManager.canRedo.value
@@ -872,7 +946,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ApplyHeadingStyle -> {
-                val updatedContent = richTextController.applyHeading(state.value.editingContent, event.level)
+                val updatedContent = richTextController.applyHeading(editState.value.editingContent, event.level)
 
                 if (updatedContent == null) {
                     // Selection is collapsed, update active styles for future typing
@@ -880,7 +954,7 @@ class NotesViewModel @Inject constructor(
                     if (event.level != 0) {
                         newActiveStyles.add(richTextController.getHeadingStyle(event.level))
                     }
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         activeHeadingStyle = event.level,
                         activeStyles = newActiveStyles,
                         isBoldActive = false,
@@ -889,9 +963,9 @@ class NotesViewModel @Inject constructor(
                     )
                 } else {
                     // Applied to selection
-                    undoRedoManager.addState(state.value.editingTitle to updatedContent)
+                    undoRedoManager.addState(editState.value.editingTitle to updatedContent)
 
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingContent = updatedContent,
                         canUndo = undoRedoManager.canUndo.value,
                         canRedo = undoRedoManager.canRedo.value,
@@ -900,23 +974,23 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.OnTitleChange -> {
-                _state.value = state.value.copy(editingTitle = event.title)
+                _editState.value = editState.value.copy(editingTitle = event.title)
                 savedStateHandle[KEY_EDITING_TITLE] = event.title
                 scheduleAutoSave()
             }
             is NotesEvent.OnColorChange -> {
-                _state.value = state.value.copy(editingColor = event.color)
+                _editState.value = editState.value.copy(editingColor = event.color)
                 scheduleAutoSave()
             }
             is NotesEvent.OnLabelChange -> {
                 viewModelScope.launch {
                     repository.insertLabel(Label(event.label))
-                    _state.value = state.value.copy(editingLabel = event.label)
+                    _editState.value = editState.value.copy(editingLabel = event.label)
                 }
             }
             is NotesEvent.OnTogglePinClick -> {
-                val newPinnedState = !state.value.isPinned
-                _state.value = state.value.copy(isPinned = newPinnedState)
+                val newPinnedState = !editState.value.isPinned
+                _editState.value = editState.value.copy(isPinned = newPinnedState)
                 viewModelScope.launch {
                     saveNote(shouldCollapse = false)
                     val message = if (newPinnedState) "Note pinned" else "Note unpinned"
@@ -925,13 +999,15 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnToggleArchiveClick -> {
                 viewModelScope.launch {
-                    state.value.expandedNoteId?.let { noteId ->
+                    editState.value.expandedNoteId?.let { noteId ->
                         repository.getNoteById(noteId)?.let { note ->
                             val updatedNote = note.note.copy(isArchived = !note.note.isArchived)
                             repository.updateNote(updatedNote)
-                            val updatedNotesList = state.value.notes.map { if (it.note.id == updatedNote.id) it.copy(note = updatedNote) else it }
-                            _state.value = state.value.copy(
+                            val updatedNotesList = listState.value.notes.map { if (it.note.id == updatedNote.id) it.copy(note = updatedNote) else it }
+                            _editState.value = editState.value.copy(
                                 isArchived = updatedNote.isArchived,
+                            )
+                            _listState.value = listState.value.copy(
                                 notes = updatedNotesList
                             )
                             updateWidgets()
@@ -941,7 +1017,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnUndoClick -> {
                 undoRedoManager.undo()?.let { (title, content) ->
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingTitle = title,
                         editingContent = content,
                         canUndo = undoRedoManager.canUndo.value,
@@ -951,7 +1027,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnRedoClick -> {
                 undoRedoManager.redo()?.let { (title, content) ->
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingTitle = title,
                         editingContent = content,
                         canUndo = undoRedoManager.canUndo.value,
@@ -966,7 +1042,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnDeleteNoteClick -> {
                 viewModelScope.launch {
-                    state.value.expandedNoteId?.let {
+                    editState.value.expandedNoteId?.let {
                         if (it != -1) {
                             repository.getNoteById(it)?.let { note ->
                                 repository.updateNote(note.note.copy(isBinned = true, binnedOn = System.currentTimeMillis()))
@@ -975,12 +1051,12 @@ class NotesViewModel @Inject constructor(
                             }
                         }
                     }
-                    _state.value = state.value.copy(expandedNoteId = null)
+                    _editState.value = editState.value.copy(expandedNoteId = null)
                 }
             }
             is NotesEvent.OnCopyCurrentNoteClick -> {
                 viewModelScope.launch {
-                    state.value.expandedNoteId?.let {
+                    editState.value.expandedNoteId?.let {
                         repository.getNoteById(it)?.let { noteWithAttachments ->
                             val copiedNote = noteWithAttachments.note.copy(id = 0, title = "${noteWithAttachments.note.title} (Copy)", createdAt = System.currentTimeMillis(), lastEdited = System.currentTimeMillis())
                             val newNoteId = repository.insertNote(copiedNote)
@@ -994,30 +1070,30 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.OnAddLabelsToCurrentNoteClick -> {
-                _state.value = state.value.copy(showLabelDialog = true)
+                _editState.value = editState.value.copy(showLabelDialog = true)
             }
             is NotesEvent.DismissLabelDialog -> {
-                _state.value = state.value.copy(showLabelDialog = false)
+                _editState.value = editState.value.copy(showLabelDialog = false)
             }
             is NotesEvent.FilterByLabel -> {
-                _state.value = state.value.copy(filteredLabel = event.label)
+                _listState.value = listState.value.copy(filteredLabel = event.label)
             }
             is NotesEvent.ToggleLayout -> {
-                val newLayout = if (state.value.layoutType == LayoutType.GRID) LayoutType.LIST else LayoutType.GRID
-                _state.value = state.value.copy(layoutType = newLayout)
+                val newLayout = if (listState.value.layoutType == LayoutType.GRID) LayoutType.LIST else LayoutType.GRID
+                _listState.value = listState.value.copy(layoutType = newLayout)
             }
             is NotesEvent.SortNotes -> {
                 _sortType.value = event.sortType
             }
             is NotesEvent.OnRemoveLinkPreview -> {
-                val updatedLinkPreviews = state.value.linkPreviews.filter { it.url != event.url }
-                _state.value = state.value.copy(linkPreviews = updatedLinkPreviews)
+                val updatedLinkPreviews = editState.value.linkPreviews.filter { it.url != event.url }
+                _editState.value = editState.value.copy(linkPreviews = updatedLinkPreviews)
                 viewModelScope.launch {
                     _events.emit(NotesUiEvent.LinkPreviewRemoved)
                 }
             }
             is NotesEvent.OnInsertLink -> {
-                val content = state.value.editingContent
+                val content = editState.value.editingContent
                 val selection = content.selection
                 if (!selection.collapsed) {
                     val selectedText = content.text.substring(selection.start, selection.end)
@@ -1031,11 +1107,11 @@ class NotesViewModel @Inject constructor(
                         append(content.annotatedString.subSequence(selection.end, content.text.length))
                     }
                     val newTextFieldValue = content.copy(annotatedString = newAnnotatedString)
-                    _state.value = state.value.copy(editingContent = newTextFieldValue)
+                    _editState.value = editState.value.copy(editingContent = newTextFieldValue)
                 }
             }
             is NotesEvent.ClearNewlyAddedChecklistItemId -> {
-                _state.value = state.value.copy(newlyAddedChecklistItemId = null)
+                _editState.value = editState.value.copy(newlyAddedChecklistItemId = null)
             }
             is NotesEvent.AddAttachment -> {
                 val type = when {
@@ -1045,26 +1121,26 @@ class NotesViewModel @Inject constructor(
                     else -> "FILE"
                 }
                 val attachment = Attachment(
-                    noteId = state.value.expandedNoteId ?: -1,
+                    noteId = editState.value.expandedNoteId ?: -1,
                     uri = event.uri,
                     type = type,
                     mimeType = event.mimeType,
                     tempId = java.util.UUID.randomUUID().toString()
                 )
-                _state.value = state.value.copy(editingAttachments = state.value.editingAttachments + attachment)
+                _editState.value = editState.value.copy(editingAttachments = editState.value.editingAttachments + attachment)
                 scheduleAutoSave()
             }
             is NotesEvent.OnLinkDetected -> { /* TODO: Handle link detection */ }
             is NotesEvent.OnLinkPreviewFetched -> { /* TODO: Handle link preview fetched */ }
             is NotesEvent.RemoveAttachment -> {
                 viewModelScope.launch {
-                    val attachmentToRemove = _state.value.editingAttachments.firstOrNull { it.tempId == event.tempId }
+                    val attachmentToRemove = editState.value.editingAttachments.firstOrNull { it.tempId == event.tempId }
                     attachmentToRemove?.let {
                         if (it.id != 0) { // Only delete from DB if it has a real ID
                             repository.deleteAttachmentById(it.id)
                         }
-                        val updatedAttachments = _state.value.editingAttachments.filter { attachment -> attachment.tempId != event.tempId }
-                        _state.value = _state.value.copy(editingAttachments = updatedAttachments)
+                        val updatedAttachments = editState.value.editingAttachments.filter { attachment -> attachment.tempId != event.tempId }
+                        _editState.value = editState.value.copy(editingAttachments = updatedAttachments)
                         scheduleAutoSave()
                     }
                 }
@@ -1078,34 +1154,34 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.MoveSelectedNotesToProject -> {
                 viewModelScope.launch {
-                    val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(projectId = event.projectId))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     _events.emit(NotesUiEvent.ShowToast("${selectedNotes.size} notes moved to project"))
                 }
             }
             is NotesEvent.OnToggleNoteType -> {
-                val currentType = state.value.editingNoteType
+                val currentType = editState.value.editingNoteType
                 if (currentType == "TEXT") {
                     // Convert TEXT to CHECKLIST
-                    val lines = state.value.editingContent.text.split("\n")
+                    val lines = editState.value.editingContent.text.split("\n")
                     val checklistItems = lines.filter { it.isNotBlank() }.mapIndexed { index, text ->
                         ChecklistItem(text = text.trim(), isChecked = false, position = index)
                     }
                     // If empty, add one empty item
                     val finalItems = if (checklistItems.isEmpty()) listOf(ChecklistItem(text = "", isChecked = false, position = 0)) else checklistItems
                     
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingNoteType = "CHECKLIST",
                         editingChecklist = finalItems,
                         editingContent = TextFieldValue("") // Clear text content
                     )
                 } else {
                     // Convert CHECKLIST to TEXT
-                    val textContent = state.value.editingChecklist.joinToString("\n") { it.text }
-                    _state.value = state.value.copy(
+                    val textContent = editState.value.editingChecklist.joinToString("\n") { it.text }
+                    _editState.value = editState.value.copy(
                         editingNoteType = "TEXT",
                         editingContent = TextFieldValue(textContent),
                         editingChecklist = emptyList()
@@ -1113,30 +1189,30 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ToggleCheckedItemsExpanded -> {
-                _state.value = state.value.copy(
-                    isCheckedItemsExpanded = !state.value.isCheckedItemsExpanded
+                _editState.value = editState.value.copy(
+                    isCheckedItemsExpanded = !editState.value.isCheckedItemsExpanded
                 )
             }
             is NotesEvent.SummarizeNote -> {
-                val content = if (state.value.editingNoteType == "CHECKLIST") {
-                    state.value.editingChecklist.joinToString("\n") { it.text }
+                val content = if (editState.value.editingNoteType == "CHECKLIST") {
+                    editState.value.editingChecklist.joinToString("\n") { it.text }
                 } else {
-                    state.value.editingContent.text
+                    editState.value.editingContent.text
                 }
 
                 if (content.isNotBlank()) {
-                    if (state.value.summaryResult != null) {
+                    if (editState.value.summaryResult != null) {
                          // Cache hit - just show dialog
-                         _state.value = _state.value.copy(showSummaryDialog = true)
+                         _editState.value = editState.value.copy(showSummaryDialog = true)
                     } else {
                          // Cache miss - fetch
-                        _state.value = _state.value.copy(isSummarizing = true, showSummaryDialog = true)
+                        _editState.value = editState.value.copy(isSummarizing = true, showSummaryDialog = true)
                         viewModelScope.launch {
                             groqRepository.summarizeNote(content).collect { result ->
                                 result.onSuccess { summary ->
-                                    _state.value = _state.value.copy(isSummarizing = false, summaryResult = summary)
+                                    _editState.value = editState.value.copy(isSummarizing = false, summaryResult = summary)
                                 }.onFailure {
-                                    _state.value = _state.value.copy(
+                                    _editState.value = editState.value.copy(
                                         isSummarizing = false,
                                         summaryResult = "Error: " + it.localizedMessage
                                     )
@@ -1147,15 +1223,15 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ClearSummary -> {
-                _state.value = _state.value.copy(showSummaryDialog = false)
+                _editState.value = editState.value.copy(showSummaryDialog = false)
             }
             is NotesEvent.DeleteAllCheckedItems -> {
-                val updatedChecklist = ChecklistManager.deleteAllCheckedItems(state.value.editingChecklist)
-                _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                val updatedChecklist = ChecklistManager.deleteAllCheckedItems(editState.value.editingChecklist)
+                _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
             }
             is NotesEvent.CreateNoteFromSharedText -> {
                 undoRedoManager.reset("" to TextFieldValue(event.text))
-                _state.value = state.value.copy(
+                _editState.value = editState.value.copy(
                     expandedNoteId = -1,
                     editingTitle = "",
                     editingContent = TextFieldValue(event.text),
@@ -1172,12 +1248,12 @@ class NotesViewModel @Inject constructor(
                 )
             }
             is NotesEvent.SetInitialTitle -> {
-                _state.value = state.value.copy(
+                _editState.value = editState.value.copy(
                     editingTitle = event.title
                 )
             }
             is NotesEvent.OnReminderChange -> {
-                _state.value = state.value.copy(
+                _editState.value = editState.value.copy(
                     editingReminderTime = event.time,
                     editingRepeatOption = event.repeatOption
                 )
@@ -1187,23 +1263,23 @@ class NotesViewModel @Inject constructor(
                 viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                     try {
                         val contentToExport = if (event.format == "MD") {
-                            if (state.value.editingNoteType == "CHECKLIST") {
-                                state.value.editingChecklist.joinToString("\n") { 
+                            if (editState.value.editingNoteType == "CHECKLIST") {
+                                editState.value.editingChecklist.joinToString("\n") { 
                                     (if (it.isChecked) "- [x] " else "- [ ] ") + it.text 
                                 }
                             } else {
-                                HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString).let {
+                                HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString).let {
                                     com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
                                 }
                             }
                         } else {
                             // TXT (Plain Text)
-                            if (state.value.editingNoteType == "CHECKLIST") {
-                                state.value.editingChecklist.joinToString("\n") { 
+                            if (editState.value.editingNoteType == "CHECKLIST") {
+                                editState.value.editingChecklist.joinToString("\n") { 
                                     (if (it.isChecked) "[x] " else "[ ] ") + it.text 
                                 }
                             } else {
-                                state.value.editingContent.text
+                                editState.value.editingContent.text
                             }
                         }
 
@@ -1239,20 +1315,20 @@ class NotesViewModel @Inject constructor(
     }
 
     private suspend fun saveNote(shouldCollapse: Boolean) {
-        val expandedId = state.value.expandedNoteId
+        val expandedId = editState.value.expandedNoteId
         if (expandedId == null) return
         
         // If it's a new note (-1), check if we already have a real ID from a previous auto-save
         val noteId = if (expandedId == -1 && lastCreatedNoteId != null) lastCreatedNoteId!! else expandedId
 
-        val title = state.value.editingTitle
-        val content = if (state.value.editingNoteType == "TEXT") {
-            HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString)
+        val title = editState.value.editingTitle
+        val content = if (editState.value.editingNoteType == "TEXT") {
+            HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
         } else {
             ""
         }
 
-        if (title.isBlank() && (state.value.editingNoteType == "TEXT" && content.isBlank() || state.value.editingNoteType == "CHECKLIST" && state.value.editingChecklist.all { it.text.isBlank() })) {
+        if (title.isBlank() && (editState.value.editingNoteType == "TEXT" && content.isBlank() || editState.value.editingNoteType == "CHECKLIST" && editState.value.editingChecklist.all { it.text.isBlank() })) {
             if (noteId != -1) { // It's an existing note, so delete it
                 repository.getNoteById(noteId)?.let { repository.updateNote(it.note.copy(isBinned = true, binnedOn = System.currentTimeMillis())) }
             }
@@ -1264,15 +1340,15 @@ class NotesViewModel @Inject constructor(
                     content = content,
                     createdAt = currentTime,
                     lastEdited = currentTime,
-                    color = state.value.editingColor,
-                    isPinned = state.value.isPinned,
-                    isArchived = state.value.isArchived,
-                    label = state.value.editingLabel,
-                    linkPreviews = state.value.linkPreviews,
-                    noteType = state.value.editingNoteType,
-                    isLocked = state.value.editingIsLocked,
-                    reminderTime = state.value.editingReminderTime,
-                    repeatOption = state.value.editingRepeatOption
+                    color = editState.value.editingColor,
+                    isPinned = editState.value.isPinned,
+                    isArchived = editState.value.isArchived,
+                    label = editState.value.editingLabel,
+                    linkPreviews = editState.value.linkPreviews,
+                    noteType = editState.value.editingNoteType,
+                    isLocked = editState.value.editingIsLocked,
+                    reminderTime = editState.value.editingReminderTime,
+                    repeatOption = editState.value.editingRepeatOption
                 )
             } else { // Existing note
                 repository.getNoteById(noteId)?.let { existingNote ->
@@ -1280,16 +1356,16 @@ class NotesViewModel @Inject constructor(
                         title = title,
                         content = content,
                         lastEdited = currentTime,
-                        color = state.value.editingColor,
-                        isPinned = state.value.isPinned,
-                        isArchived = state.value.isArchived,
-                        label = state.value.editingLabel,
-                        linkPreviews = state.value.linkPreviews,
-                        noteType = state.value.editingNoteType,
-                        isLocked = state.value.editingIsLocked,
-                        reminderTime = state.value.editingReminderTime,
-                        repeatOption = state.value.editingRepeatOption,
-                        aiSummary = state.value.summaryResult
+                        color = editState.value.editingColor,
+                        isPinned = editState.value.isPinned,
+                        isArchived = editState.value.isArchived,
+                        label = editState.value.editingLabel,
+                        linkPreviews = editState.value.linkPreviews,
+                        noteType = editState.value.editingNoteType,
+                        isLocked = editState.value.editingIsLocked,
+                        reminderTime = editState.value.editingReminderTime,
+                        repeatOption = editState.value.editingRepeatOption,
+                        aiSummary = editState.value.summaryResult
                     )
                 }
             }
@@ -1319,15 +1395,15 @@ class NotesViewModel @Inject constructor(
                 }
                 require(currentNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
 
-                if (state.value.editingReminderTime != null) {
+                if (editState.value.editingReminderTime != null) {
                     alarmScheduler.schedule(note.copy(id = currentNoteId.toInt()))
                 } else if (noteId != -1) {
                     alarmScheduler.cancel(note.copy(id = currentNoteId.toInt()))
                 }
 
                 // Handle Checklist Items
-                if (state.value.editingNoteType == "CHECKLIST") {
-                    val checklistItems = state.value.editingChecklist.mapIndexed { index, item ->
+                if (editState.value.editingNoteType == "CHECKLIST") {
+                    val checklistItems = editState.value.editingChecklist.mapIndexed { index, item ->
                         item.copy(noteId = currentNoteId.toInt(), position = index)
                     }
                     repository.deleteChecklistForNote(currentNoteId.toInt())
@@ -1341,14 +1417,14 @@ class NotesViewModel @Inject constructor(
                     emptyList()
                 }
 
-                val attachmentsToAdd = state.value.editingAttachments.filter { uiAttachment ->
+                val attachmentsToAdd = editState.value.editingAttachments.filter { uiAttachment ->
                     existingAttachmentsInDb.none { dbAttachment ->
                         dbAttachment.uri == uiAttachment.uri && dbAttachment.type == uiAttachment.type
                     }
                 }
 
                 val attachmentsToRemove = existingAttachmentsInDb.filter { dbAttachment ->
-                    state.value.editingAttachments.none { uiAttachment ->
+                    editState.value.editingAttachments.none { uiAttachment ->
                         uiAttachment.uri == dbAttachment.uri && uiAttachment.type == dbAttachment.type
                     }
                 }
@@ -1365,7 +1441,7 @@ class NotesViewModel @Inject constructor(
                 // We update editingIsNewNote to false so next saves know it's not new anymore.
                 // But we DO NOT update expandedNoteId yet if it was -1, to avoid the 'jolt' in AnimatedContent.
                 if (expandedId == -1 && lastCreatedNoteId == null) {
-                    _state.value = state.value.copy(
+                    _editState.value = editState.value.copy(
                         editingIsNewNote = false,
                         expandedNoteId = -1 // Keep it -1 to avoid triggering NoteTransition in NotesScreen
                     )
@@ -1377,7 +1453,7 @@ class NotesViewModel @Inject constructor(
         if (shouldCollapse) {
             lastCreatedNoteId = null
             // Reset editing state and collapse
-            _state.value = state.value.copy(
+            _editState.value = editState.value.copy(
                 expandedNoteId = null,
                 editingTitle = "",
                 editingContent = TextFieldValue(),

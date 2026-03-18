@@ -32,7 +32,12 @@ sealed class NotesEvent {
     data class SetReminderForSelectedNotes(val date: LocalDate, val time: LocalTime, val repeatOption: RepeatOption) : NotesEvent()
     object ToggleImportantForSelectedNotes : NotesEvent()
     data class SetLabelForSelectedNotes(val label: String) : NotesEvent()
-    data class ExpandNote(val noteId: Int, val noteType: String = "TEXT") : NotesEvent()
+    data class ExpandNote(
+        val noteId: Int, 
+        val noteType: String = "TEXT",
+        val authenticatedCipherTitle: javax.crypto.Cipher? = null,
+        val authenticatedCipherContent: javax.crypto.Cipher? = null
+    ) : NotesEvent()
     object CollapseNote : NotesEvent()
 
     // Checklist Events
