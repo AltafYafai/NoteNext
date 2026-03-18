@@ -20,4 +20,5 @@
     <string name="unlock_with_biometrics">Unlock with Biometrics</string>
     <string name="biometric_setup_required">Biometric setup is required to enable app lock.</string>
     <string name="crash_toast_text">NoteNext crashed. A report has been sent to the developer.</string>
+    <string name="drawing">Drawing</string>
     </resources>

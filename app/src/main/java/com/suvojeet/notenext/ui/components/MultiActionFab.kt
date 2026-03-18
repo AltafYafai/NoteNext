@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.TaskAlt
@@ -46,6 +47,7 @@ fun MultiActionFab(
     onNoteClick: () -> Unit,
     onChecklistClick: () -> Unit,
     onProjectClick: () -> Unit,
+    onDrawingClick: () -> Unit = {},
     onTodoClick: () -> Unit = {},
     showProjectButton: Boolean = true,
     themeMode: ThemeMode,
@@ -59,6 +61,7 @@ fun MultiActionFab(
 
     var showProject by remember { mutableStateOf(false) }
     var showTodo by remember { mutableStateOf(false) }
+    var showDrawing by remember { mutableStateOf(false) }
     var showChecklist by remember { mutableStateOf(false) }
     var showNote by remember { mutableStateOf(false) }
 
@@ -68,6 +71,8 @@ fun MultiActionFab(
             kotlinx.coroutines.delay(40)
             showChecklist = true
             kotlinx.coroutines.delay(40)
+            showDrawing = true
+            kotlinx.coroutines.delay(40)
             showTodo = true
             kotlinx.coroutines.delay(40)
             showProject = true
@@ -75,6 +80,8 @@ fun MultiActionFab(
             showProject = false
             kotlinx.coroutines.delay(30)
             showTodo = false
+            kotlinx.coroutines.delay(30)
+            showDrawing = false
             kotlinx.coroutines.delay(30)
             showChecklist = false
             kotlinx.coroutines.delay(30)
@@ -118,6 +125,22 @@ fun MultiActionFab(
                 label = stringResource(id = R.string.todo),
                 onClick = {
                     onTodoClick()
+                    onExpandedChange(false)
+                },
+                themeMode = themeMode
+            )
+        }
+
+        AnimatedVisibility(
+            visible = showDrawing,
+            enter = fadeIn(bouncySpringSpec) + slideInVertically(initialOffsetY = { it / 2 }, animationSpec = bouncyIntOffsetSpec) + scaleIn(initialScale = 0.5f, animationSpec = bouncySpringSpec),
+            exit = fadeOut(spring()) + slideOutVertically(targetOffsetY = { it / 2 }, animationSpec = spring()) + scaleOut(targetScale = 0.8f, animationSpec = spring())
+        ) {
+            FabItem(
+                icon = Icons.Default.Brush,
+                label = stringResource(id = R.string.drawing),
+                onClick = {
+                    onDrawingClick()
                     onExpandedChange(false)
                 },
                 themeMode = themeMode

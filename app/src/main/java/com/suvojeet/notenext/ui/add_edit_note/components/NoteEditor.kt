@@ -146,14 +146,36 @@ fun NoteContentEditor(
             onValueChange = { newContent -> 
                 onEvent(NotesEvent.OnContentChange(newContent))
                 val cursor = newContent.selection.start
-                if (cursor > 0 && newContent.text.isNotEmpty() && cursor <= newContent.text.length) {
-                    val lastChar = newContent.text[cursor - 1]
+                val text = newContent.text
+                if (cursor > 0 && text.isNotEmpty() && cursor <= text.length) {
+                    val lastChar = text[cursor - 1]
                     if (lastChar == '/') {
-                         val precedingChar = if (cursor > 1) newContent.text[cursor - 2] else ' '
+                         val precedingChar = if (cursor > 1) text[cursor - 2] else ' '
                          if (precedingChar.isWhitespace()) {
                              onSlashCommand()
                          }
                     }
+                    
+                    // Mention detection
+                    val textBeforeCursor = text.substring(0, cursor)
+                    val lastAtSymbol = textBeforeCursor.lastIndexOf('@')
+                    if (lastAtSymbol != -1) {
+                        val isStartOrSpace = lastAtSymbol == 0 || textBeforeCursor[lastAtSymbol - 1].isWhitespace() || textBeforeCursor[lastAtSymbol - 1] == '\n'
+                        if (isStartOrSpace) {
+                            val query = textBeforeCursor.substring(lastAtSymbol + 1)
+                            if (!query.contains(Regex("\\s"))) {
+                                onEvent(NotesEvent.OnMentionSearchQueryChange(query))
+                            } else {
+                                onEvent(NotesEvent.CloseMentionPopup)
+                            }
+                        } else {
+                            onEvent(NotesEvent.CloseMentionPopup)
+                        }
+                    } else {
+                        onEvent(NotesEvent.CloseMentionPopup)
+                    }
+                } else {
+                    onEvent(NotesEvent.CloseMentionPopup)
                 }
             },
             modifier = Modifier

@@ -76,6 +76,7 @@ fun NotesScreen(
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit,
+    onDrawingClick: () -> Unit = {},
     onTodoClick: () -> Unit = {},
     events: SharedFlow<NotesUiEvent>
 ) {
@@ -286,6 +287,10 @@ fun NotesScreen(
                                 },
                                 onProjectClick = {
                                     showCreateProjectDialog = true
+                                    isFabExpanded = false
+                                },
+                                onDrawingClick = {
+                                    onDrawingClick()
                                     isFabExpanded = false
                                 },
                                 onTodoClick = {

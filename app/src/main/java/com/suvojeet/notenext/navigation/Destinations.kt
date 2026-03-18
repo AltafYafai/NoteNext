@@ -53,4 +53,7 @@ sealed interface Destination {
     
     @Serializable
     data class AddEditNote(val projectId: Int = -1, val noteType: String = "TEXT") : Destination
+    
+    @Serializable
+    data object Drawing : Destination
 }

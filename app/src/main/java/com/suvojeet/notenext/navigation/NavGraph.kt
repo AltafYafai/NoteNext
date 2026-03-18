@@ -77,6 +77,8 @@ import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.settings.BackupScreen
 import com.suvojeet.notenext.ui.todo.TodoScreen
 
+import com.suvojeet.notenext.ui.drawing.DrawingScreen
+
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
@@ -493,6 +495,7 @@ private fun NavGraphBuilder.notesRoute(
             themeMode = themeMode,
             settingsRepository = settingsRepository,
             onMenuClick = onMenuClick,
+            onDrawingClick = { navController.navigate(Destination.Drawing) },
             onTodoClick = { navController.navigate(Destination.Todo) },
             events = notesViewModel.events
         )
@@ -653,6 +656,20 @@ private fun NavGraphBuilder.sharedRoutes(
             themeMode = themeMode,
             settingsRepository = settingsRepository,
             events = viewModel.events.map { it.toNotesUiEvent() }.shareIn(rememberCoroutineScope(), SharingStarted.WhileSubscribed())
+        )
+    }
+
+    composable<Destination.Drawing>(
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
+    ) {
+        DrawingScreen(
+            onSave = { uri ->
+                notesViewModel.onEvent(NotesEvent.ExpandNote(-1))
+                notesViewModel.onEvent(NotesEvent.ImportImage(uri))
+                navController.popBackStack()
+            },
+            onDismiss = { navController.popBackStack() }
         )
     }
 }

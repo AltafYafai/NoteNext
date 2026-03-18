@@ -44,6 +44,7 @@ import kotlin.math.roundToInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.suvojeet.notenext.data.repository.SettingsRepository
+import com.suvojeet.notenext.ui.add_edit_note.components.MentionPopup
 import com.suvojeet.notenext.ui.add_edit_note.components.*
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import com.suvojeet.notenext.ui.components.springPress
@@ -218,6 +219,8 @@ fun AddEditNoteScreen(
                 showImageViewer = false
             } else if (isFocusMode) {
                 isFocusMode = false
+            } else if (state.isMentionPopupVisible) {
+                onEvent(NotesEvent.CloseMentionPopup)
             } else {
                 onDismiss()
             }
@@ -346,12 +349,21 @@ fun AddEditNoteScreen(
                                 onReminderClick = { checkAndRequestReminderPermissions() }
                             )
                             
-                            NoteContentEditor(
-                                state = state,
-                                onEvent = onEvent,
-                                onUrlClick = { url -> clickedUrl = url },
-                                onSlashCommand = { showSlashCommandSheet = true }
-                            )
+                            Box {
+                                NoteContentEditor(
+                                    state = state,
+                                    onEvent = onEvent,
+                                    onUrlClick = { url -> clickedUrl = url },
+                                    onSlashCommand = { showSlashCommandSheet = true }
+                                )
+
+                                MentionPopup(
+                                    isVisible = state.isMentionPopupVisible,
+                                    notes = state.mentionableNotes,
+                                    onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
+                                    onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
+                                )
+                            }
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -396,15 +408,23 @@ fun AddEditNoteScreen(
                                     backgroundColor = backgroundColor
                                 )
                             } else {
-                                item { 
-                                    NoteContentEditor(
-                                        state = state,
-                                        onEvent = onEvent,
-                                        onUrlClick = { url -> clickedUrl = url },
-                                        onSlashCommand = { showSlashCommandSheet = true }
-                                     )
-                                }
-                            }
+                                item {
+                                    Box {
+                                        NoteContentEditor(
+                                            state = state,
+                                            onEvent = onEvent,
+                                            onUrlClick = { url -> clickedUrl = url },
+                                            onSlashCommand = { showSlashCommandSheet = true }
+                                        )
+
+                                        MentionPopup(
+                                            isVisible = state.isMentionPopupVisible,
+                                            notes = state.mentionableNotes,
+                                            onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
+                                            onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
+                                        )
+                                    }
+                                }                            }
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 item { Spacer(modifier = Modifier.height(16.dp)) }

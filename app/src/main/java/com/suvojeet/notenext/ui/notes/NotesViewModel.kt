@@ -139,7 +139,10 @@ class NotesViewModel @Inject constructor(
             isFixingGrammar = edit.isFixingGrammar,
             fixedContentPreview = edit.fixedContentPreview,
             originalContentBackup = edit.originalContentBackup,
-            saveStatus = edit.saveStatus
+            saveStatus = edit.saveStatus,
+            isMentionPopupVisible = edit.isMentionPopupVisible,
+            mentionSearchQuery = edit.mentionSearchQuery,
+            mentionableNotes = edit.mentionableNotes
         )
     }.stateIn(
         viewModelScope, 
@@ -349,6 +352,56 @@ class NotesViewModel @Inject constructor(
                     saveNote(shouldCollapse = false)
                     _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVED)
                 }
+            }
+            is NotesEvent.OnMentionSearchQueryChange -> {
+                val query = event.query
+                val filteredNotes = listState.value.notes.filter { 
+                    it.note.title.contains(query, ignoreCase = true) && 
+                    it.note.id != editState.value.expandedNoteId 
+                }
+                _editState.value = editState.value.copy(
+                    isMentionPopupVisible = true,
+                    mentionSearchQuery = query,
+                    mentionableNotes = filteredNotes
+                )
+            }
+            is NotesEvent.InsertMention -> {
+                val currentText = editState.value.editingContent.text
+                val selection = editState.value.editingContent.selection
+                val mentionText = "@${editState.value.mentionSearchQuery}"
+                
+                // Find the mention text before the cursor and replace it with Markdown link
+                val textBeforeCursor = currentText.substring(0, selection.start)
+                val textAfterCursor = currentText.substring(selection.end)
+                
+                val lastMentionIndex = textBeforeCursor.lastIndexOf(mentionText)
+                if (lastMentionIndex != -1) {
+                    val wikiLink = "[[${event.noteTitle}]]"
+                    val newTextBeforeCursor = textBeforeCursor.substring(0, lastMentionIndex) + wikiLink
+                    
+                    val newAnnotatedString = richTextController.parseMarkdownToAnnotatedString(newTextBeforeCursor + textAfterCursor)
+                    val newCursorPosition = newTextBeforeCursor.length
+                    
+                    _editState.value = editState.value.copy(
+                        editingContent = TextFieldValue(newAnnotatedString, androidx.compose.ui.text.TextRange(newCursorPosition)),
+                        isMentionPopupVisible = false,
+                        mentionSearchQuery = "",
+                        mentionableNotes = emptyList()
+                    )
+                } else {
+                    _editState.value = editState.value.copy(
+                        isMentionPopupVisible = false,
+                        mentionSearchQuery = "",
+                        mentionableNotes = emptyList()
+                    )
+                }
+            }
+            is NotesEvent.CloseMentionPopup -> {
+                _editState.value = editState.value.copy(
+                    isMentionPopupVisible = false,
+                    mentionSearchQuery = "",
+                    mentionableNotes = emptyList()
+                )
             }
             is NotesEvent.ImportImage -> {
                 viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
