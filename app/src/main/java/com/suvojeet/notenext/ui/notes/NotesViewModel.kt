@@ -1029,11 +1029,6 @@ class NotesViewModel @Inject constructor(
                     )
                 }
             }
-            is NotesEvent.OnTitleChange -> {
-                _editState.value = editState.value.copy(editingTitle = event.title)
-                savedStateHandle[KEY_EDITING_TITLE] = event.title
-                scheduleAutoSave()
-            }
             is NotesEvent.OnColorChange -> {
                 _editState.value = editState.value.copy(editingColor = event.color)
                 scheduleAutoSave()

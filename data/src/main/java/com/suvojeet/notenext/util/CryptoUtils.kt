@@ -30,7 +30,9 @@ object CryptoUtils {
         if (requireAuth) {
             builder.setUserAuthenticationRequired(true)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                builder.setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                builder.setUserAuthenticationParameters(300, KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL)
+            } else {
+                builder.setUserAuthenticationValidityDurationSeconds(300)
             }
         }
 

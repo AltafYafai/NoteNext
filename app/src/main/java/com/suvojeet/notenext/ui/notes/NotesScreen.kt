@@ -217,16 +217,10 @@ fun NotesScreen(
                                         onLabelClick = { showLabelDialog = true },
                                         onMoveToProjectClick = { showMoveToProjectDialog = true },
                                         onLockClick = { 
-                                            val selectedNotes = listState.notes.filter { listState.selectedNoteIds.contains(it.note.id) }
-                                            val isAnyNoteLocked = selectedNotes.any { it.note.isLocked }
-                                            if (isAnyNoteLocked) {
-                                                biometricAuthManager?.showBiometricPrompt(
-                                                    onAuthSuccess = { viewModel.onEvent(NotesEvent.ToggleLockForSelectedNotes) },
-                                                    onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
-                                                )
-                                            } else {
-                                                viewModel.onEvent(NotesEvent.ToggleLockForSelectedNotes)
-                                            }
+                                            biometricAuthManager?.showBiometricPrompt(
+                                                onAuthSuccess = { viewModel.onEvent(NotesEvent.ToggleLockForSelectedNotes) },
+                                                onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                                            )
                                         },
                                         onSelectAllClick = { viewModel.onEvent(NotesEvent.SelectAllNotes) }
                                     )

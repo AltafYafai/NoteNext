@@ -113,19 +113,15 @@ fun AddEditNoteDialogs(
                 }
             },
             onToggleLock = {
-                if (state.editingIsLocked) {
-                    val activity = context.findActivity() as? androidx.fragment.app.FragmentActivity
-                    if (activity != null) {
-                        val biometricAuthManager = BiometricAuthManager(context, activity)
-                        biometricAuthManager.showBiometricPrompt(
-                            onAuthSuccess = { onEvent(NotesEvent.OnToggleLockClick) },
-                            onAuthError = { Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show() }
-                        )
-                    } else {
-                        Toast.makeText(context, "Authentication unavailable", Toast.LENGTH_SHORT).show()
-                    }
+                val activity = context.findActivity() as? androidx.fragment.app.FragmentActivity
+                if (activity != null) {
+                    val biometricAuthManager = BiometricAuthManager(context, activity)
+                    biometricAuthManager.showBiometricPrompt(
+                        onAuthSuccess = { onEvent(NotesEvent.OnToggleLockClick) },
+                        onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                    )
                 } else {
-                    onEvent(NotesEvent.OnToggleLockClick)
+                    Toast.makeText(context, "Authentication unavailable", Toast.LENGTH_SHORT).show()
                 }
             }
         )
