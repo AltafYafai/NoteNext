@@ -8,6 +8,14 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.suvojeet.notenext.data.Note
+import com.suvojeet.notenext.data.Label
+import com.suvojeet.notenext.data.Attachment
+import com.suvojeet.notenext.data.Project
+import com.suvojeet.notenext.data.NoteFts
+import com.suvojeet.notenext.data.ChecklistItem
+import com.suvojeet.notenext.data.NoteVersion
+import com.suvojeet.notenext.data.TodoItem
 import kotlinx.serialization.builtins.ListSerializer
 
 @Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 23, exportSchema = true)
@@ -25,9 +33,9 @@ abstract class NoteDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Drop the old FTS4 table
                 db.execSQL("DROP TABLE IF EXISTS notes_fts")
-                // Recreate with FTS5. FTS5 in Room with contentEntity handles content option correctly.
+                // Recreate with FTS4. FTS4 in Room with contentEntity handles content option correctly.
                 // Using backticks for content option as expected by Room for external content tables.
-                db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `notes_fts` USING FTS5(`title`, `content`, `label`, content=`notes`)")
+                db.execSQL("CREATE VIRTUAL TABLE IF NOT EXISTS `notes_fts` USING FTS4(`title`, `content`, `label`, content=`notes`)")
                 // Rebuild the index
                 db.execSQL("INSERT INTO notes_fts(notes_fts) VALUES ('rebuild')")
             }

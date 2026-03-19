@@ -2,6 +2,11 @@ package com.suvojeet.notenext.data
 
 import androidx.room.*
 import androidx.paging.PagingSource
+import com.suvojeet.notenext.data.Note
+import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteVersion
+import com.suvojeet.notenext.data.Attachment
+import com.suvojeet.notenext.data.ChecklistItem
 import kotlinx.coroutines.flow.Flow
 
 @Dao
