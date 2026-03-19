@@ -3,13 +3,13 @@ name: Build and Release
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Allows manual triggering of the workflow
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Required to create releases
+      contents: write
     steps:
     - uses: actions/checkout@v4
 
@@ -25,12 +25,79 @@ jobs:
       with:
         gradle-version: 9.4.0
 
+    - name: Extract Version Info
+      id: version_info
+      run: |
+        VERSION_NAME=$(grep "appVersionName=" gradle.properties | cut -d'=' -f2)
+        VERSION_CODE=$(grep "appVersionCode=" gradle.properties | cut -d'=' -f2)
+        echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+        echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+        echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+    - name: Generate Professional Release Notes
+      id: release_notes
+      shell: python
+      run: |
+        import json
+        import os
+
+        version = os.environ.get('VERSION_NAME')
+        try:
+            with open('changelog.json', 'r') as f:
+                data = json.load(f)
+            
+            release = next((r for r in data['releases'] if r['version'] == version), None)
+            
+            if release:
+                body = f"## Release v{version} ({release['date']})\n\n"
+                
+                # Group by type
+                features = [item for item in release['items'] if item['type'] == 'FEATURE']
+                improvements = [item for item in release['items'] if item['type'] == 'IMPROVEMENT']
+                fixes = [item for item in release['items'] if item['type'] == 'FIX']
+                
+                if features:
+                    body += "### New Features\n"
+                    for item in features:
+                        body += f"- **{item['title']}**: {item['description']}\n"
+                    body += "\n"
+                
+                if improvements:
+                    body += "### Improvements\n"
+                    for item in improvements:
+                        body += f"- **{item['title']}**: {item['description']}\n"
+                    body += "\n"
+                    
+                if fixes:
+                    body += "### Bug Fixes\n"
+                    for item in fixes:
+                        body += f"- **{item['title']}**: {item['description']}\n"
+                    body += "\n"
+                
+                body += "---\n"
+                body += "### Developer Information\n"
+                body += "- **Lead Developer**: Suvojeet Sengupta\n"
+                body += "- **GitHub**: [@suvojeet-sengupta](https://github.com/suvojeet-sengupta)\n"
+                body += "- **Build Version**: " + os.environ.get('VERSION_CODE') + "\n\n"
+                body += "### Links\n"
+                body += f"- [Download Full Changelog](https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY')}/main/changelog.json)\n"
+                body += f"- [Project Repository](https://github.com/{os.environ.get('GITHUB_REPOSITORY')})\n"
+                
+                with open('release_body.md', 'w') as f:
+                    f.write(body)
+            else:
+                with open('release_body.md', 'w') as f:
+                    f.write(f"Automated release for version {version}")
+        except Exception as e:
+            with open('release_body.md', 'w') as f:
+                f.write(f"Automated release for version {version}\n\nError parsing changelog: {str(e)}")
+
     - name: Decode Keystore
       run: |
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.keystore
 
     - name: Build and Sign Release (APK & AAB)
-      run: gradle assembleRelease bundleRelease --parallel --no-daemon
+      run: ./gradlew assembleRelease bundleRelease --parallel --no-daemon
       env:
         KEYSTORE_PATH: "my-release-key.keystore"
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -38,78 +105,25 @@ jobs:
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         GROQ_API_1: ${{ secrets.GROQ_API_1 }}
 
-    - name: Find Build Artifacts
+    - name: Determine Artifact Paths
+      id: paths
       run: |
-        find app/build/outputs/apk/release -name "*.apk"
-        find app/build/outputs/bundle/release -name "*.aab"
-
-    
-
-    - name: Extract version name
-      # Extracts the versionName from app/build.gradle.kts to use in the release tag.
-      id: version
-      run: echo "VERSION_NAME=$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)" >> $GITHUB_ENV
-
-    - name: Determine APK Path
-      id: apk_path
-      run: |
-        # Find the APK file dynamically
         APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-        
-        if [ -n "$APK_FILE" ]; then
-          echo "APK_TO_UPLOAD=$APK_FILE" >> $GITHUB_ENV
-          # Extract the APK name from the path
-          APK_BASENAME=$(basename "$APK_FILE")
-          echo "APK_NAME=$APK_BASENAME" >> $GITHUB_ENV
-        else
-          echo "Error: No APK found to upload."
-          exit 1
-        fi
-
-    - name: Determine AAB Path
-      id: aab_path
-      run: |
         AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
-        if [ -n "$AAB_FILE" ]; then
-          echo "AAB_TO_UPLOAD=$AAB_FILE" >> $GITHUB_ENV
-          AAB_BASENAME=$(basename "$AAB_FILE")
-          echo "AAB_NAME=$AAB_BASENAME" >> $GITHUB_ENV
-        else
-          echo "Error: No AAB found to upload."
-          exit 1
-        fi
-
-    - name: List APK files
-      # Lists the generated APK files for verification.
-      run: ls -l app/build/outputs/apk/release/
-
-    - name: Upload APK as artifact
-      # Uploads the generated APK as a workflow artifact.
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-apk
-        path: ${{ env.APK_TO_UPLOAD }}
-
-    - name: Upload AAB as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-aab
-        path: ${{ env.AAB_TO_UPLOAD }}
+        echo "APK_PATH=$APK_FILE" >> $GITHUB_ENV
+        echo "AAB_PATH=$AAB_FILE" >> $GITHUB_ENV
 
     - name: Create or Update Release
-      # Creates a new GitHub Release or updates an existing one.
-      # The GITHUB_TOKEN is automatically provided by GitHub Actions.
       uses: softprops/action-gh-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v${{ env.VERSION_NAME }}
         name: Release v${{ env.VERSION_NAME }}
-        body: |
-          Automated release for version ${{ env.VERSION_NAME }}
+        body_path: release_body.md
         draft: false
         prerelease: false
         files: |
-          ${{ env.APK_TO_UPLOAD }}
-          ${{ env.AAB_TO_UPLOAD }}
+          ${{ env.APK_PATH }}
+          ${{ env.AAB_PATH }}
         overwrite: true

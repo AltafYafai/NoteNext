@@ -1,12 +1,48 @@
 {
   "releases": [
     {
+      "version": "1.3.3",
+      "date": "March 19, 2026",
+      "items": [
+        {
+          "title": "Drawing Canvas & Multimedia",
+          "description": "Introduced a new drawing canvas with Material 3 Expressive controls and support for cross-note linking, allowing you to connect thoughts visually.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Performance Engine Upgrade",
+          "description": "Migrated to Paging 3 for buttery-smooth scrolling, implemented FTS4 for near-instant search results, and upgraded to Coil 3 for high-performance image loading.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Hardened Biometric Security",
+          "description": "Refactored biometric authentication with cryptographic binding and resolved critical encryption-related crashes for maximum data protection.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Expressive UI Motion",
+          "description": "Upgraded AI dialogs and system transitions to the Material 3 Expressive motion engine, featuring refined spring physics and tactile feedback.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Infrastructure & Stability",
+          "description": "Modernized the build system with Hilt 2.59.2 and AGP 9.1.0 compatibility, while resolving numerous compilation and startup stability issues.",
+          "type": "FIX"
+        },
+        {
+          "title": "Share Link Integration",
+          "description": "Added the direct Play Store link to the app share dialog to help you easily share NoteNext with others.",
+          "type": "FEATURE"
+        }
+      ]
+    },
+    {
       "version": "1.3.2",
       "date": "March 15, 2026",
       "items": [
         {
-          "title": "Gemini & Assistant Integration",
-          "description": "NoteNext is now a first-class citizen! Use voice commands with Gemini or Google Assistant to create notes, add to lists, or find specific notes natively.",
+          "title": "Assistant Integration",
+          "description": "NoteNext is now a first-class citizen! Use voice commands with Google Assistant to create notes, add to lists, or find specific notes natively.",
           "type": "FEATURE"
         },
         {

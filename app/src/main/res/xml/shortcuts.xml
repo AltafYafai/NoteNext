@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- CREATE_NOTE BII for Gemini: "Create a note in NoteNext" or "Create a note with [text]" -->
+    <!-- CREATE_NOTE BII for Assistant: "Create a note in NoteNext" or "Create a note with [text]" -->
     <capability android:name="actions.intent.CREATE_NOTE">
         <intent
             android:action="android.intent.action.VIEW"
@@ -19,7 +19,7 @@
         </intent>
     </capability>
 
-    <!-- GET_NOTE BII for Gemini: "Show my notes in NoteNext" or "Find my [name] note in NoteNext" -->
+    <!-- GET_NOTE BII for Assistant: "Show my notes in NoteNext" or "Find my [name] note in NoteNext" -->
     <capability android:name="actions.intent.GET_NOTE">
         <intent
             android:action="android.intent.action.VIEW"

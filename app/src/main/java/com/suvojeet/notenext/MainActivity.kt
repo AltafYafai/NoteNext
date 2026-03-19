@@ -250,7 +250,7 @@ class MainActivity : FragmentActivity() {
         val noteId = intent.getIntExtra("NOTE_ID", -1)
         _startNoteIdFlow.value = noteId
 
-        // Extract Assistant/Gemini related actions
+        // Extract Assistant related actions
         val isCreateNoteAction = intent.action == "android.intent.action.CREATE_NOTE"
         _startAddNoteFlow.value = intent.getBooleanExtra("START_ADD_NOTE", false) || isCreateNoteAction
         
