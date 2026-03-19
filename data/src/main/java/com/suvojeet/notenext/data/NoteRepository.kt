@@ -1,12 +1,13 @@
 package com.suvojeet.notenext.data
 
 import kotlinx.coroutines.flow.Flow
+import androidx.paging.PagingData
 
 interface NoteRepository {
     // Note operations
     fun getNotes(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<List<NoteWithAttachments>>
     fun getPinnedNotes(): Flow<List<NoteWithAttachments>>
-    fun getOtherNotesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<androidx.paging.PagingData<NoteWithAttachments>>
+    fun getOtherNotesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<PagingData<NoteWithAttachments>>
     fun getArchivedNotes(): Flow<List<NoteWithAttachments>>
     fun getBinnedNotes(): Flow<List<NoteWithAttachments>>
     fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>>

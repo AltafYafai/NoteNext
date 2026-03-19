@@ -2,6 +2,9 @@ package com.suvojeet.notenext.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.suvojeet.notenext.util.CryptoUtils
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,9 +39,9 @@ class NoteRepositoryImpl @Inject constructor(
 
     override fun getPinnedNotes(): Flow<List<NoteWithAttachments>> = noteDao.getPinnedNotes()
 
-    override fun getOtherNotesPaged(searchQuery: String, sortType: SortType): Flow<androidx.paging.PagingData<NoteWithAttachments>> {
-        return androidx.paging.Pager(
-            config = androidx.paging.PagingConfig(pageSize = 20, enablePlaceholders = true),
+    override fun getOtherNotesPaged(searchQuery: String, sortType: SortType): Flow<PagingData<NoteWithAttachments>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = true),
             pagingSourceFactory = {
                 if (searchQuery.isBlank()) {
                     when (sortType) {

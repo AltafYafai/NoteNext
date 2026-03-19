@@ -1,6 +1,7 @@
 package com.suvojeet.notenext.data
 
 import androidx.room.*
+import androidx.paging.PagingSource
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -88,7 +89,7 @@ interface NoteDao {
     // 1. DATE_MODIFIED
     @Transaction
     @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY lastEdited DESC")
-    fun getOtherNotesPagedOrderedByDateModified(): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun getOtherNotesPagedOrderedByDateModified(): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
@@ -98,12 +99,12 @@ interface NoteDao {
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
         ORDER BY notes.lastEdited DESC
     """)
-    fun searchOtherNotesPagedOrderedByDateModified(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun searchOtherNotesPagedOrderedByDateModified(query: String): PagingSource<Int, NoteWithAttachments>
 
     // 2. DATE_CREATED
     @Transaction
     @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY createdAt DESC")
-    fun getOtherNotesPagedOrderedByDateCreated(): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun getOtherNotesPagedOrderedByDateCreated(): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
@@ -113,12 +114,12 @@ interface NoteDao {
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
         ORDER BY notes.createdAt DESC
     """)
-    fun searchOtherNotesPagedOrderedByDateCreated(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun searchOtherNotesPagedOrderedByDateCreated(query: String): PagingSource<Int, NoteWithAttachments>
 
     // 3. TITLE
     @Transaction
     @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY title ASC")
-    fun getOtherNotesPagedOrderedByTitle(): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun getOtherNotesPagedOrderedByTitle(): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
@@ -128,12 +129,12 @@ interface NoteDao {
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
         ORDER BY notes.title ASC
     """)
-    fun searchOtherNotesPagedOrderedByTitle(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun searchOtherNotesPagedOrderedByTitle(query: String): PagingSource<Int, NoteWithAttachments>
 
     // 4. CUSTOM (Position)
     @Transaction
     @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY position ASC")
-    fun getOtherNotesPagedOrderedByPosition(): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun getOtherNotesPagedOrderedByPosition(): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
@@ -143,7 +144,7 @@ interface NoteDao {
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
         ORDER BY notes.position ASC
     """)
-    fun searchOtherNotesPagedOrderedByPosition(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
+    fun searchOtherNotesPagedOrderedByPosition(query: String): PagingSource<Int, NoteWithAttachments>
 
     @Query("UPDATE notes SET position = :position WHERE id = :id")
     suspend fun updateNotePosition(id: Int, position: Int)
