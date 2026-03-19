@@ -102,7 +102,7 @@ fun DrawingScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { if (paths.isNotEmpty()) paths.removeLast() },
+                        onClick = { if (paths.isNotEmpty()) paths.removeAt(paths.lastIndex) },
                         enabled = paths.isNotEmpty(),
                         modifier = Modifier.springPress()
                     ) {
