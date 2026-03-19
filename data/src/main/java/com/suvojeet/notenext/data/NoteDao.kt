@@ -86,6 +86,65 @@ interface NoteDao {
 
     // 1. DATE_MODIFIED
     @Transaction
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, lastEdited DESC")
+    fun getNotesOrderedByDateModified(): Flow<List<NoteWithAttachments>>
+
+    @Transaction
+    @Query("""
+        SELECT notes.* FROM notes
+        JOIN notes_fts ON notes.id = notes_fts.rowid
+        WHERE notes_fts MATCH :query
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
+        ORDER BY notes.isPinned DESC, notes.lastEdited DESC
+    """)
+    fun searchNotesOrderedByDateModified(query: String): Flow<List<NoteWithAttachments>>
+
+    // 2. DATE_CREATED
+    @Transaction
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, createdAt DESC")
+    fun getNotesOrderedByDateCreated(): Flow<List<NoteWithAttachments>>
+
+    @Transaction
+    @Query("""
+        SELECT notes.* FROM notes
+        JOIN notes_fts ON notes.id = notes_fts.rowid
+        WHERE notes_fts MATCH :query
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
+        ORDER BY notes.isPinned DESC, notes.createdAt DESC
+    """)
+    fun searchNotesOrderedByDateCreated(query: String): Flow<List<NoteWithAttachments>>
+
+    // 3. TITLE
+    @Transaction
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, title ASC")
+    fun getNotesOrderedByTitle(): Flow<List<NoteWithAttachments>>
+
+    @Transaction
+    @Query("""
+        SELECT notes.* FROM notes
+        JOIN notes_fts ON notes.id = notes_fts.rowid
+        WHERE notes_fts MATCH :query
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
+        ORDER BY notes.isPinned DESC, notes.title ASC
+    """)
+    fun searchNotesOrderedByTitle(query: String): Flow<List<NoteWithAttachments>>
+
+    // 4. CUSTOM (Position)
+    @Transaction
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, position ASC")
+    fun getNotesOrderedByPosition(): Flow<List<NoteWithAttachments>>
+
+    @Transaction
+    @Query("""
+        SELECT notes.* FROM notes
+        JOIN notes_fts ON notes.id = notes_fts.rowid
+        WHERE notes_fts MATCH :query
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
+        ORDER BY notes.isPinned DESC, notes.position ASC
+    """)
+    fun searchNotesOrderedByPosition(query: String): Flow<List<NoteWithAttachments>>
+
+    @Transaction
     @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 1 ORDER BY lastEdited DESC")
     fun getPinnedNotes(): Flow<List<NoteWithAttachments>>
 
