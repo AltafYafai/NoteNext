@@ -97,7 +97,7 @@ jobs:
         echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.keystore
 
     - name: Build and Sign Release (APK & AAB)
-      run: ./gradlew assembleRelease bundleRelease --parallel --no-daemon
+      run: gradle assembleRelease bundleRelease --parallel --no-daemon
       env:
         KEYSTORE_PATH: "my-release-key.keystore"
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
