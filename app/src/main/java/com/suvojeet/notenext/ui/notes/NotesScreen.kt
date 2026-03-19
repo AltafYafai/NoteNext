@@ -48,10 +48,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import com.suvojeet.notenext.ui.unit.sp
 import androidx.compose.ui.platform.LocalFocusManager
 import android.content.Intent
 import android.widget.Toast

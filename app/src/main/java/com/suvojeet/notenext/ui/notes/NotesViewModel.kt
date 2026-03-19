@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.Job
@@ -189,17 +190,19 @@ class NotesViewModel @Inject constructor(
 
     init {
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-        val combinedFlow = combine(_searchQuery, _sortType) { query, sortType -> query to sortType }
+        val queryFlow = _searchQuery
+        val sortFlow = _sortType
+        val combinedFlow = combine(queryFlow, sortFlow) { query, sortType -> query to sortType }
         
         combinedFlow.flatMapLatest { (query, sortType) ->
-            noteUseCases.getPinnedNotes()
+            repository.getPinnedNotes()
         }.onEach { pinned ->
             _listState.value = _listState.value.copy(pinnedNotes = pinned)
         }.launchIn(viewModelScope)
 
         combinedFlow.onEach { (query, sortType) ->
             _listState.value = _listState.value.copy(
-                pagedNotes = noteUseCases.getOtherNotesPaged(query, sortType).cachedIn(viewModelScope),
+                pagedNotes = repository.getOtherNotesPaged(query, sortType).cachedIn(viewModelScope),
                 searchQuery = query,
                 sortType = sortType
             )
