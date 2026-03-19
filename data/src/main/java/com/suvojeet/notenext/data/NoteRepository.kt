@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 interface NoteRepository {
     // Note operations
     fun getNotes(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<List<NoteWithAttachments>>
+    fun getPinnedNotes(): Flow<List<NoteWithAttachments>>
+    fun getOtherNotesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<androidx.paging.PagingData<NoteWithAttachments>>
     fun getArchivedNotes(): Flow<List<NoteWithAttachments>>
     fun getBinnedNotes(): Flow<List<NoteWithAttachments>>
     fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>>

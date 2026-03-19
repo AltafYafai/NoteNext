@@ -61,6 +61,14 @@ fun NoteItem(
         contentColor.copy(alpha = 0.7f)
     }
 
+    val decryptedNote = remember(note.note.title, note.note.content, note.note.isEncrypted) {
+        if (!note.note.isLocked && note.note.isEncrypted) {
+            com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note)
+        } else {
+            note.note
+        }
+    }
+
     val motionScheme = MaterialTheme.motionScheme
     val elevation by animateDpAsState(
         targetValue = if (isSelected) 4.dp else (if (isDefaultColor) 1.dp else 0.dp),
@@ -116,10 +124,10 @@ fun NoteItem(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                if (note.note.title.isNotEmpty()) {
+                if (decryptedNote.title.isNotEmpty()) {
                     val titleText = if (searchQuery.isNotEmpty()) {
                         buildAnnotatedString {
-                            val text = note.note.title
+                            val text = decryptedNote.title
                             append(text)
                             val lowerText = text.lowercase()
                             val lowerQuery = searchQuery.lowercase()
@@ -137,7 +145,7 @@ fun NoteItem(
                             }
                         }
                     } else {
-                        androidx.compose.ui.text.AnnotatedString(note.note.title)
+                        androidx.compose.ui.text.AnnotatedString(decryptedNote.title)
                     }
 
                     Text(
@@ -150,7 +158,7 @@ fun NoteItem(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                if (note.note.isLocked) {
+                if (decryptedNote.isLocked) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -173,9 +181,9 @@ fun NoteItem(
                         )
                     }
                 } else {
-                    if ((note.note.noteType == "TEXT" && note.note.content.isNotEmpty()) || (note.note.noteType == "CHECKLIST" && note.checklistItems.isNotEmpty())) {
-                        if (note.note.noteType == "TEXT") {
-                            val rawContentLength = note.note.content.length
+                    if ((decryptedNote.noteType == "TEXT" && decryptedNote.content.isNotEmpty()) || (decryptedNote.noteType == "CHECKLIST" && note.checklistItems.isNotEmpty())) {
+                        if (decryptedNote.noteType == "TEXT") {
+                            val rawContentLength = decryptedNote.content.length
                             
                             val (textStyle, maxLines) = when {
                                 rawContentLength < 100 -> MaterialTheme.typography.headlineSmall to 6
@@ -183,11 +191,11 @@ fun NoteItem(
                                 else -> MaterialTheme.typography.bodyMedium to 10
                             }
     
-                            val fontWeight = if (note.note.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
+                            val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
-                            val annotatedContent = remember(note.note.content) {
+                            val annotatedContent = remember(decryptedNote.content) {
                                 // Strip HTML tags for preview to avoid layout jumping and improve performance
-                                val plainText = note.note.content.replace(Regex("<[^>]*>"), "")
+                                val plainText = decryptedNote.content.replace(Regex("<[^>]*>"), "")
                                 androidx.compose.ui.text.AnnotatedString(plainText)
                             }
 

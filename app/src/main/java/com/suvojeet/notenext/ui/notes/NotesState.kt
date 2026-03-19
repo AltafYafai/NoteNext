@@ -67,6 +67,8 @@ data class NotesState(
 
 data class NotesListState(
     val notes: List<NoteWithAttachments> = emptyList(),
+    val pinnedNotes: List<NoteWithAttachments> = emptyList(),
+    val pagedNotes: kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<NoteWithAttachments>> = kotlinx.coroutines.flow.emptyFlow(),
     val layoutType: LayoutType = LayoutType.GRID,
     val sortType: SortType = SortType.DATE_MODIFIED,
     val selectedNoteIds: List<Int> = emptyList(),

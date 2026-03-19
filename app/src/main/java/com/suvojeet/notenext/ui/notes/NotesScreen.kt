@@ -48,7 +48,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemContentType
+import androidx.paging.compose.itemKey
+import com.suvojeet.notenext.ui.unit.sp
 import androidx.compose.ui.platform.LocalFocusManager
 import android.content.Intent
 import android.widget.Toast
@@ -390,17 +393,21 @@ fun NotesScreen(
                         }
 
                         Box(modifier = Modifier.fillMaxSize()) {
+                            val pagedNotes = listState.pagedNotes.collectAsLazyPagingItems()
+                            val pinnedNotes = listState.pinnedNotes
+
                             Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                val notesToDisplay = if (listState.filteredLabel == null) {
-                                    listState.notes
-                                } else {
-                                    listState.notes.filter { it.note.label == listState.filteredLabel }
-                                }
+                                
+                                val isNotesEmpty = pinnedNotes.isEmpty() && 
+                                                 pagedNotes.itemCount == 0 && 
+                                                 pagedNotes.loadState.refresh is androidx.paging.LoadState.NotLoading
+                                
+                                val isLoading = listState.isLoading || pagedNotes.loadState.refresh is androidx.paging.LoadState.Loading
 
-                                if (listState.isLoading) {
+                                if (isLoading) {
                                     ExpressiveLoading()
-                                } else if (notesToDisplay.isEmpty()) {
+                                } else if (isNotesEmpty) {
                                     val currentLabel = listState.filteredLabel
                                     val emptyMessage = if (currentLabel != null) {
                                         stringResource(id = R.string.no_notes_found_label, currentLabel)
@@ -418,10 +425,6 @@ fun NotesScreen(
                                         description = if (listState.searchQuery.isEmpty()) stringResource(id = R.string.create_your_first_note) else null
                                     )
                                 } else {
-                                    val filteredNotes = notesToDisplay
-                                    val pinnedNotes = filteredNotes.filter { it.note.isPinned }
-                                    val otherNotes = filteredNotes.filter { !it.note.isPinned }
-
                                     val onNoteClickAction: (com.suvojeet.notenext.data.NoteWithAttachments) -> Unit = { note ->
                                         if (isSelectionModeActive) {
                                             viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
@@ -508,7 +511,7 @@ fun NotesScreen(
                                                     }
                                                 }
 
-                                                if (otherNotes.isNotEmpty()) {
+                                                if (pagedNotes.itemCount > 0) {
                                                     if (pinnedNotes.isNotEmpty()) {
                                                         item(span = StaggeredGridItemSpan.FullLine) {
                                                             Text(
@@ -519,26 +522,30 @@ fun NotesScreen(
                                                             )
                                                         }
                                                     }
-                                                    StaggeredGridItems(
-                                                        items = otherNotes,
-                                                        key = { it.note.id },
-                                                        contentType = { it.note.noteType }
-                                                    ) { note ->
-                                                        val noteModifier = Modifier.sharedElement(
-                                                            rememberSharedContentState(key = "note-${note.note.id}"),
-                                                            animatedVisibilityScope = this@AnimatedContent
-                                                        )
-                                                        NoteItem(
-                                                            modifier = noteModifier,
-                                                            note = note,
-                                                            isSelected = listState.selectedNoteIds.contains(note.note.id),
-                                                            searchQuery = listState.searchQuery,
-                                                            onNoteClick = { onNoteClickAction(note) },
-                                                            onNoteLongClick = {
-                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
-                                                            },
-                                                            isDarkTheme = isDarkTheme
-                                                        )
+                                                    
+                                                    // Paged items
+                                                    items(
+                                                        count = pagedNotes.itemCount,
+                                                        key = pagedNotes.itemKey { it.note.id },
+                                                        contentType = pagedNotes.itemContentType { it.note.noteType }
+                                                    ) { index ->
+                                                        pagedNotes[index]?.let { note ->
+                                                            val noteModifier = Modifier.sharedElement(
+                                                                rememberSharedContentState(key = "note-${note.note.id}"),
+                                                                animatedVisibilityScope = this@AnimatedContent
+                                                            )
+                                                            NoteItem(
+                                                                modifier = noteModifier,
+                                                                note = note,
+                                                                isSelected = listState.selectedNoteIds.contains(note.note.id),
+                                                                searchQuery = listState.searchQuery,
+                                                                onNoteClick = { onNoteClickAction(note) },
+                                                                onNoteLongClick = {
+                                                                    viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                                },
+                                                                isDarkTheme = isDarkTheme
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
@@ -582,7 +589,7 @@ fun NotesScreen(
                                                     }
                                                 }
 
-                                                if (otherNotes.isNotEmpty()) {
+                                                if (pagedNotes.itemCount > 0) {
                                                     if (pinnedNotes.isNotEmpty()) {
                                                         item {
                                                             Text(
@@ -593,26 +600,30 @@ fun NotesScreen(
                                                             )
                                                         }
                                                     }
+                                                    
+                                                    // Paged items
                                                     items(
-                                                        items = otherNotes,
-                                                        key = { it.note.id },
-                                                        contentType = { it.note.noteType }
-                                                    ) { note ->
-                                                        val noteModifier = Modifier.sharedElement(
-                                                            rememberSharedContentState(key = "note-${note.note.id}"),
-                                                            animatedVisibilityScope = this@AnimatedContent
-                                                        )
-                                                        NoteItem(
-                                                            modifier = noteModifier,
-                                                            note = note,
-                                                            isSelected = listState.selectedNoteIds.contains(note.note.id),
-                                                            searchQuery = listState.searchQuery,
-                                                            onNoteClick = { onNoteClickAction(note) },
-                                                            onNoteLongClick = {
-                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
-                                                            },
-                                                            isDarkTheme = isDarkTheme
-                                                        )
+                                                        count = pagedNotes.itemCount,
+                                                        key = pagedNotes.itemKey { it.note.id },
+                                                        contentType = pagedNotes.itemContentType { it.note.noteType }
+                                                    ) { index ->
+                                                        pagedNotes[index]?.let { note ->
+                                                            val noteModifier = Modifier.sharedElement(
+                                                                rememberSharedContentState(key = "note-${note.note.id}"),
+                                                                animatedVisibilityScope = this@AnimatedContent
+                                                            )
+                                                            NoteItem(
+                                                                modifier = noteModifier,
+                                                                note = note,
+                                                                isSelected = listState.selectedNoteIds.contains(note.note.id),
+                                                                searchQuery = listState.searchQuery,
+                                                                onNoteClick = { onNoteClickAction(note) },
+                                                                onNoteLongClick = {
+                                                                    viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                                },
+                                                                isDarkTheme = isDarkTheme
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }

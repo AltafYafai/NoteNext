@@ -80,63 +80,70 @@ interface NoteDao {
 
     // 1. DATE_MODIFIED
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, lastEdited DESC")
-    fun getNotesOrderedByDateModified(): Flow<List<NoteWithAttachments>>
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 1 ORDER BY lastEdited DESC")
+    fun getPinnedNotes(): Flow<List<NoteWithAttachments>>
+
+    // Paging Queries for "Others" (Non-pinned)
+
+    // 1. DATE_MODIFIED
+    @Transaction
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY lastEdited DESC")
+    fun getOtherNotesPagedOrderedByDateModified(): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
-        ORDER BY notes.isPinned DESC, notes.lastEdited DESC
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
+        ORDER BY notes.lastEdited DESC
     """)
-    fun searchNotesOrderedByDateModified(query: String): Flow<List<NoteWithAttachments>>
+    fun searchOtherNotesPagedOrderedByDateModified(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     // 2. DATE_CREATED
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, createdAt DESC")
-    fun getNotesOrderedByDateCreated(): Flow<List<NoteWithAttachments>>
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY createdAt DESC")
+    fun getOtherNotesPagedOrderedByDateCreated(): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
-        ORDER BY notes.isPinned DESC, notes.createdAt DESC
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
+        ORDER BY notes.createdAt DESC
     """)
-    fun searchNotesOrderedByDateCreated(query: String): Flow<List<NoteWithAttachments>>
+    fun searchOtherNotesPagedOrderedByDateCreated(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     // 3. TITLE
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, title ASC")
-    fun getNotesOrderedByTitle(): Flow<List<NoteWithAttachments>>
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY title ASC")
+    fun getOtherNotesPagedOrderedByTitle(): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
-        ORDER BY notes.isPinned DESC, notes.title ASC
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
+        ORDER BY notes.title ASC
     """)
-    fun searchNotesOrderedByTitle(query: String): Flow<List<NoteWithAttachments>>
+    fun searchOtherNotesPagedOrderedByTitle(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     // 4. CUSTOM (Position)
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND projectId IS NULL ORDER BY isPinned DESC, position ASC")
-    fun getNotesOrderedByPosition(): Flow<List<NoteWithAttachments>>
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND projectId IS NULL ORDER BY position ASC")
+    fun getOtherNotesPagedOrderedByPosition(): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     @Transaction
     @Query("""
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND projectId IS NULL
-        ORDER BY notes.isPinned DESC, notes.position ASC
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 AND projectId IS NULL
+        ORDER BY notes.position ASC
     """)
-    fun searchNotesOrderedByPosition(query: String): Flow<List<NoteWithAttachments>>
+    fun searchOtherNotesPagedOrderedByPosition(query: String): androidx.paging.PagingSource<Int, NoteWithAttachments>
 
     @Query("UPDATE notes SET position = :position WHERE id = :id")
     suspend fun updateNotePosition(id: Int, position: Int)

@@ -11,6 +11,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.LabelDao
@@ -188,24 +189,28 @@ class NotesViewModel @Inject constructor(
 
     init {
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-        combine(
-            combine(_searchQuery, _sortType) { query, sortType -> query to sortType }
-                .flatMapLatest { (query, sortType) ->
-                    noteUseCases.getNotes(query, sortType)
-                },
-            repository.getLabels(),
-            repository.getProjects(),
-            _sortType,
-            _searchQuery
-        ) { notes, labels, projects, sortType, query ->
+        val combinedFlow = combine(_searchQuery, _sortType) { query, sortType -> query to sortType }
+        
+        combinedFlow.flatMapLatest { (query, sortType) ->
+            noteUseCases.getPinnedNotes()
+        }.onEach { pinned ->
+            _listState.value = _listState.value.copy(pinnedNotes = pinned)
+        }.launchIn(viewModelScope)
+
+        combinedFlow.onEach { (query, sortType) ->
             _listState.value = _listState.value.copy(
-                notes = notes,
-                labels = labels.map { it.name },
-                projects = projects,
-                isLoading = false,
-                sortType = sortType,
-                searchQuery = query
+                pagedNotes = noteUseCases.getOtherNotesPaged(query, sortType).cachedIn(viewModelScope),
+                searchQuery = query,
+                sortType = sortType
             )
+        }.launchIn(viewModelScope)
+
+        repository.getLabels().onEach { labels ->
+            _listState.value = _listState.value.copy(labels = labels.map { it.name })
+        }.launchIn(viewModelScope)
+
+        repository.getProjects().onEach { projects ->
+            _listState.value = _listState.value.copy(projects = projects, isLoading = false)
         }.launchIn(viewModelScope)
 
         selectionActionsJob = viewModelScope.launch {

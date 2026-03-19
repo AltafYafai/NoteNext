@@ -25,6 +25,7 @@ import java.util.*
 @Composable
 fun NoteHistoryDialog(
     versions: List<NoteVersion>,
+    isLocked: Boolean,
     onVersionClick: (NoteVersion) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -44,7 +45,7 @@ fun NoteHistoryDialog(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(versions.sortedByDescending { it.timestamp }) { version ->
-                        VersionItem(version, onClick = { onVersionClick(version) })
+                        VersionItem(version, isLocked = isLocked, onClick = { onVersionClick(version) })
                     }
                 }
             }
@@ -58,9 +59,19 @@ fun NoteHistoryDialog(
 }
 
 @Composable
-private fun VersionItem(version: NoteVersion, onClick: () -> Unit) {
+private fun VersionItem(version: NoteVersion, isLocked: Boolean, onClick: () -> Unit) {
     val date = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault()).format(Date(version.timestamp))
     
+    val decryptedVersion = androidx.compose.runtime.remember(version.title, version.content, version.isEncrypted) {
+        if (version.isEncrypted) {
+            // Note: If this requires biometric auth and the duration has expired, this might fail or show error text.
+            // But usually the user just opened the note, so auth duration should be active.
+            com.suvojeet.notenext.util.CryptoUtils.decryptNoteVersion(version, isLocked) 
+        } else {
+            version
+        }
+    }
+
     Surface(
         onClick = onClick,
         shape = MaterialTheme.shapes.medium,
@@ -75,7 +86,7 @@ private fun VersionItem(version: NoteVersion, onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = date, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 Text(
-                    text = version.content.take(60).replace("\n", " ") + if (version.content.length > 60) "..." else "",
+                    text = decryptedVersion.content.take(60).replace("\n", " ") + if (decryptedVersion.content.length > 60) "..." else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1

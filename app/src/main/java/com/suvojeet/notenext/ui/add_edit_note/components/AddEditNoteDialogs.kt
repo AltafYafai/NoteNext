@@ -159,6 +159,7 @@ fun AddEditNoteDialogs(
     if (showHistoryDialog) {
         NoteHistoryDialog(
             versions = state.editingNoteVersions,
+            isLocked = state.editingIsLocked,
             onVersionClick = { version ->
                 onEvent(NotesEvent.OnRestoreVersion(version))
                 onShowHistoryDialogChange(false)

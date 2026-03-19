@@ -31,33 +31,43 @@ class NoteRepositoryImpl @Inject constructor(
                 SortType.CUSTOM -> noteDao.searchNotesOrderedByPosition(formattedQuery)
             }
         }
-        return flow.map { list -> 
-            list.map { 
-                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
-            } 
-        }
+        return flow
+    }
+
+    override fun getPinnedNotes(): Flow<List<NoteWithAttachments>> = noteDao.getPinnedNotes()
+
+    override fun getOtherNotesPaged(searchQuery: String, sortType: SortType): Flow<androidx.paging.PagingData<NoteWithAttachments>> {
+        return androidx.paging.Pager(
+            config = androidx.paging.PagingConfig(pageSize = 20, enablePlaceholders = true),
+            pagingSourceFactory = {
+                if (searchQuery.isBlank()) {
+                    when (sortType) {
+                        SortType.DATE_MODIFIED -> noteDao.getOtherNotesPagedOrderedByDateModified()
+                        SortType.DATE_CREATED -> noteDao.getOtherNotesPagedOrderedByDateCreated()
+                        SortType.TITLE -> noteDao.getOtherNotesPagedOrderedByTitle()
+                        SortType.CUSTOM -> noteDao.getOtherNotesPagedOrderedByPosition()
+                    }
+                } else {
+                    val formattedQuery = "$searchQuery*"
+                    when (sortType) {
+                        SortType.DATE_MODIFIED -> noteDao.searchOtherNotesPagedOrderedByDateModified(formattedQuery)
+                        SortType.DATE_CREATED -> noteDao.searchOtherNotesPagedOrderedByDateCreated(formattedQuery)
+                        SortType.TITLE -> noteDao.searchOtherNotesPagedOrderedByTitle(formattedQuery)
+                        SortType.CUSTOM -> noteDao.searchOtherNotesPagedOrderedByPosition(formattedQuery)
+                    }
+                }
+            }
+        ).flow
     }
 
     override fun getArchivedNotes(): Flow<List<NoteWithAttachments>> = 
-        noteDao.getArchivedNotes().map { list -> 
-            list.map { 
-                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
-            } 
-        }
+        noteDao.getArchivedNotes()
 
     override fun getBinnedNotes(): Flow<List<NoteWithAttachments>> = 
-        noteDao.getBinnedNotes().map { list -> 
-            list.map { 
-                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
-            } 
-        }
+        noteDao.getBinnedNotes()
 
     override fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>> = 
-        noteDao.getNotesByProjectId(projectId).map { list -> 
-            list.map { 
-                if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
-            } 
-        }
+        noteDao.getNotesByProjectId(projectId)
 
     override suspend fun getNoteById(id: Int): NoteWithAttachments? = 
         noteDao.getNoteById(id)?.let { 
@@ -138,13 +148,7 @@ class NoteRepositoryImpl @Inject constructor(
     }
 
     override fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>> {
-        return noteDao.getNoteVersions(noteId).map { list -> 
-            val note = noteDao.getNoteById(noteId)
-            val isLocked = note?.note?.isLocked == true
-            list.map { 
-                if (isLocked) it else CryptoUtils.decryptNoteVersion(it, isLocked) 
-            } 
-        }
+        return noteDao.getNoteVersions(noteId)
     }
 
     override suspend fun limitNoteVersions(noteId: Int, limit: Int) = noteDao.limitNoteVersions(noteId, limit)

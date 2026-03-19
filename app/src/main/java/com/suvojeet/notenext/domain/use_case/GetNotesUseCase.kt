@@ -16,4 +16,15 @@ class GetNotesUseCase @Inject constructor(
     ): Flow<List<NoteWithAttachments>> {
         return repository.getNotes(searchQuery, sortType)
     }
+
+    fun getPinnedNotes(): Flow<List<NoteWithAttachments>> {
+        return repository.getPinnedNotes()
+    }
+
+    fun getOtherNotesPaged(
+        searchQuery: String = "",
+        sortType: SortType = SortType.DATE_MODIFIED
+    ): Flow<androidx.paging.PagingData<NoteWithAttachments>> {
+        return repository.getOtherNotesPaged(searchQuery, sortType)
+    }
 }
