@@ -6,5 +6,7 @@ data class EditLabelsState(
     val labels: List<Label> = emptyList(),
     val showAddLabelDialog: Boolean = false,
     val showEditLabelDialog: Boolean = false,
-    val selectedLabel: Label? = null
+    val selectedLabel: Label? = null,
+    val searchQuery: String = "",
+    val isSearchVisible: Boolean = false
 )

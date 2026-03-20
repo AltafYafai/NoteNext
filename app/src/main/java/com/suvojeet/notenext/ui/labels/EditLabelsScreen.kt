@@ -1,20 +1,28 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.labels
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +34,7 @@ import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.SettingsGroupCard
 import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.springPress
+import com.suvojeet.notenext.ui.components.SearchTopAppBar
 
 @Composable
 fun EditLabelsScreen(
@@ -34,76 +43,121 @@ fun EditLabelsScreen(
     val viewModel: EditLabelsViewModel = hiltViewModel()
     val state by viewModel.state.collectAsState()
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val listState = rememberLazyListState()
+    
+    // Determine if FAB should be extended based on scroll
+    val isExpanded by remember {
+        derivedStateOf { listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 10 }
+    }
+
+    val filteredLabels = remember(state.labels, state.searchQuery) {
+        if (state.searchQuery.isEmpty()) {
+            state.labels
+        } else {
+            state.labels.filter { it.name.contains(state.searchQuery, ignoreCase = true) }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
-                title = { 
-                    Text(
-                        stringResource(id = R.string.edit_labels),
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackPressed, modifier = Modifier.springPress()) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+            if (state.isSearchVisible) {
+                SearchTopAppBar(
+                    searchQuery = state.searchQuery,
+                    onSearchQueryChange = { viewModel.onEvent(EditLabelsEvent.OnSearchQueryChange(it)) },
+                    onBackClick = { viewModel.onEvent(EditLabelsEvent.OnSearchVisibilityChange(false)) }
                 )
-            )
+            } else {
+                MediumTopAppBar(
+                    title = { 
+                        Text(
+                            stringResource(id = R.string.edit_labels),
+                            fontWeight = FontWeight.Black
+                        ) 
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackPressed, modifier = Modifier.springPress()) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { viewModel.onEvent(EditLabelsEvent.OnSearchVisibilityChange(true)) },
+                            modifier = Modifier.springPress()
+                        ) {
+                            Icon(Icons.Default.Search, contentDescription = "Search Labels")
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = { viewModel.onEvent(EditLabelsEvent.ShowAddLabelDialog) },
+                expanded = isExpanded,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text(stringResource(id = R.string.add_label), fontWeight = FontWeight.Bold) },
                 shape = MaterialTheme.shapes.extraLarge,
                 modifier = Modifier.springPress(),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.add_label))
-            }
+            )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            if (state.labels.isEmpty()) {
-                EmptyState(
-                    icon = Icons.AutoMirrored.Filled.Label,
-                    message = "No labels yet. Create one to organize your notes."
-                )
-            } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            item {
                 ExpressiveSection(
-                    title = "Organization",
-                    description = "Manage labels to categorize your thoughts"
+                    title = "Label Management",
+                    description = "Create and organize labels to keep your notes structured."
                 ) {
+                    // This section can hold a summary or quick actions if needed
+                }
+            }
+
+            if (filteredLabels.isEmpty()) {
+                item {
+                    EmptyState(
+                        icon = Icons.AutoMirrored.Filled.Label,
+                        message = if (state.searchQuery.isEmpty()) 
+                            "No labels yet. Create one to organize your notes."
+                        else 
+                            "No labels matching \"${state.searchQuery}\""
+                    )
+                }
+            } else {
+                item {
                     SettingsGroupCard {
-                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                            items(state.labels) { label ->
-                                LabelItem(
-                                    label = label,
-                                    onEditClick = { viewModel.onEvent(EditLabelsEvent.ShowEditLabelDialog(label)) }
+                        filteredLabels.forEachIndexed { index, label ->
+                            LabelItem(
+                                label = label,
+                                onEditClick = { viewModel.onEvent(EditLabelsEvent.ShowEditLabelDialog(label)) }
+                            )
+                            if (index < filteredLabels.lastIndex) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                                 )
-                                if (state.labels.last() != label) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                    )
-                                }
                             }
                         }
                     }
                 }
             }
+            
+            // Extra space for FAB
+            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
 
         if (state.showAddLabelDialog) {
-            AddLabelDialog(
+            LabelActionSheet(
+                title = stringResource(id = R.string.add_label),
+                initialName = "",
                 onDismiss = { viewModel.onEvent(EditLabelsEvent.HideDialog) },
                 onConfirm = { name ->
                     viewModel.onEvent(EditLabelsEvent.AddLabel(name))
@@ -113,8 +167,10 @@ fun EditLabelsScreen(
 
         if (state.showEditLabelDialog) {
             state.selectedLabel?.let { label ->
-                EditLabelDialog(
-                    label = label,
+                LabelActionSheet(
+                    title = stringResource(id = R.string.edit_labels),
+                    initialName = label.name,
+                    isEdit = true,
                     onDismiss = { viewModel.onEvent(EditLabelsEvent.HideDialog) },
                     onConfirm = { newName ->
                         viewModel.onEvent(EditLabelsEvent.UpdateLabel(label, newName))
@@ -136,115 +192,149 @@ fun LabelItem(
     ListItem(
         modifier = Modifier
             .fillMaxWidth()
-            .springPress()
             .clickable(onClick = onEditClick),
         headlineContent = { 
             Text(
                 text = label.name,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             ) 
         },
         leadingContent = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Label,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-            )
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Label,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         },
         trailingContent = {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = stringResource(id = R.string.edit_labels),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-            )
+            IconButton(onClick = onEditClick, modifier = Modifier.springPress()) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = stringResource(id = R.string.edit_labels),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+            }
         },
-        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
 }
 
 @Composable
-fun AddLabelDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var name by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = MaterialTheme.shapes.extraLarge,
-        title = { Text(stringResource(id = R.string.add_label)) },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(id = R.string.new_label)) },
-                shape = MaterialTheme.shapes.extraSmall
-            )
-        },
-        confirmButton = {
-            Button(
-                modifier = Modifier.springPress(),
-                onClick = {
-                    if (name.isNotBlank()) {
-                        onConfirm(name)
-                    }
-                }
-            ) {
-                Text(stringResource(id = R.string.add), fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        }
-    )
-}
-
-@Composable
-fun EditLabelDialog(
-    label: Label,
+fun LabelActionSheet(
+    title: String,
+    initialName: String,
+    isEdit: Boolean = false,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: (() -> Unit)? = null
 ) {
-    var name by remember { mutableStateOf(label.name) }
+    var name by remember { mutableStateOf(initialName) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        shape = MaterialTheme.shapes.extraLarge,
-        title = { Text(stringResource(id = R.string.edit_labels)) },
-        text = {
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp, top = 8.dp)
+                .imePadding()
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                if (isEdit && onDelete != null) {
+                    IconButton(
+                        onClick = onDelete,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier.springPress()
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete Label")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(id = R.string.new_label)) },
-                shape = MaterialTheme.shapes.extraSmall
-            )
-        },
-        confirmButton = {
-            Button(
-                modifier = Modifier.springPress(),
-                onClick = {
-                    if (name.isNotBlank()) {
-                        onConfirm(name)
+                label = { Text("Label Name") },
+                placeholder = { Text("Enter label name...") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                singleLine = true,
+                leadingIcon = {
+                    Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null)
+                },
+                trailingIcon = {
+                    if (name.isNotEmpty()) {
+                        IconButton(onClick = { name = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear")
+                        }
                     }
-                }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                )
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = { if (name.isNotBlank()) onConfirm(name) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .springPress(),
+                shape = MaterialTheme.shapes.extraLarge,
+                enabled = name.isNotBlank()
             ) {
-                Text(stringResource(id = R.string.save), fontWeight = FontWeight.Bold)
+                Text(
+                    if (isEdit) "Save Changes" else "Create Label",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
-        },
-        dismissButton = {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = onDelete, modifier = Modifier.springPress()) {
-                    Text(stringResource(id = R.string.delete), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = onDismiss, modifier = Modifier.springPress()) {
-                    Text(stringResource(id = R.string.cancel))
-                }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .springPress(),
+                shape = MaterialTheme.shapes.extraLarge
+            ) {
+                Text("Cancel", style = MaterialTheme.typography.titleMedium)
             }
         }
-    )
+    }
 }

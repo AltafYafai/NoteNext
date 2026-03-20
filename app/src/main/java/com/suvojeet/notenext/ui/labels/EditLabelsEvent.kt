@@ -9,4 +9,7 @@ sealed class EditLabelsEvent {
     object ShowAddLabelDialog : EditLabelsEvent()
     data class ShowEditLabelDialog(val label: Label) : EditLabelsEvent()
     object HideDialog : EditLabelsEvent()
+    
+    data class OnSearchQueryChange(val query: String) : EditLabelsEvent()
+    data class OnSearchVisibilityChange(val isVisible: Boolean) : EditLabelsEvent()
 }
