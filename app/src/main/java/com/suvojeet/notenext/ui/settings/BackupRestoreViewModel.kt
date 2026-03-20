@@ -50,7 +50,7 @@ data class BackupRestoreState(
     val isDeleting: Boolean = false,
     val isAutoBackupEnabled: Boolean = false,
     val backupFrequency: String = "Daily",
-    val foundProjects: List<com.suvojeet.notenext.data.Project> = emptyList(),
+    val foundBackupDetails: com.suvojeet.notenext.data.backup.BackupScanResult? = null,
     val isScanning: Boolean = false,
     val googleAccountEmail: String? = null,
     val uploadProgress: String? = null,
@@ -62,8 +62,11 @@ data class BackupRestoreState(
     val isLoadingVersions: Boolean = false,
     val isPasswordRequired: Boolean = false,
     val pendingRestoreUri: String? = null,
+    val pendingMerge: Boolean = false,
     val isEncryptionEnabled: Boolean = false,
-    val hasPasswordSet: Boolean = false
+    val hasPasswordSet: Boolean = false,
+    val lastBackupTime: Long = 0L,
+    val lastBackupStatus: String? = null
 )
 
 @HiltViewModel
@@ -102,6 +105,9 @@ class BackupRestoreViewModel @Inject constructor(
         }
         
         val hasPassword = SecurityUtils.getBackupPassword(application) != null
+        
+        val lastTime = sharedPrefs.getLong("last_backup_time", 0L)
+        val lastStatus = sharedPrefs.getString("last_backup_status", null)
 
         _state.value = _state.value.copy(
             isAutoBackupEnabled = enabled, 
@@ -110,8 +116,20 @@ class BackupRestoreViewModel @Inject constructor(
             sdCardFolderUri = sdCardUri,
             includeAttachments = includeAttachments,
             isEncryptionEnabled = encryptionEnabled,
-            hasPasswordSet = hasPassword
+            hasPasswordSet = hasPassword,
+            lastBackupTime = lastTime,
+            lastBackupStatus = lastStatus
         )
+    }
+
+    private fun updateLastBackup(status: String) {
+        val time = System.currentTimeMillis()
+        val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
+        sharedPrefs.edit()
+            .putLong("last_backup_time", time)
+            .putString("last_backup_status", status)
+            .apply()
+        _state.value = _state.value.copy(lastBackupTime = time, lastBackupStatus = status)
     }
 
     fun setGoogleAccount(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount?) {
@@ -221,6 +239,7 @@ class BackupRestoreViewModel @Inject constructor(
                             backupRepository.createBackupZip(outputStream, state.value.includeAttachments)
                         }
                         _state.value = _state.value.copy(isBackingUp = false, backupResult = "Local Backup successful")
+                        updateLastBackup("Success (Local)")
                     } else {
                         backupRepository.backupToEncryptedStream(
                             application.contentResolver.openOutputStream(uri), 
@@ -228,10 +247,12 @@ class BackupRestoreViewModel @Inject constructor(
                             state.value.includeAttachments
                         )
                         _state.value = _state.value.copy(isBackingUp = false, backupResult = "Encrypted Local Backup successful")
+                        updateLastBackup("Success (Encrypted Local)")
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                     _state.value = _state.value.copy(isBackingUp = false, backupResult = "Local Backup failed: ${e.message}")
+                    updateLastBackup("Failed (Local)")
                 }
             }
         }
@@ -268,6 +289,7 @@ class BackupRestoreViewModel @Inject constructor(
                         driveBackupExists = true,
                         uploadProgress = null
                     )
+                    updateLastBackup("Success (Drive)")
                     refreshBackupVersions(account)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -276,12 +298,13 @@ class BackupRestoreViewModel @Inject constructor(
                         backupResult = "Drive Backup failed: ${e.message}",
                         uploadProgress = null
                     )
+                    updateLastBackup("Failed (Drive)")
                 }
             }
         }
     }
 
-    fun restoreBackup(uri: Uri) {
+    fun restoreBackup(uri: Uri, merge: Boolean = false) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isRestoring = true, restoreResult = null)
             withContext(Dispatchers.IO) {
@@ -289,7 +312,8 @@ class BackupRestoreViewModel @Inject constructor(
                     _state.value = _state.value.copy(
                         isRestoring = false, 
                         isPasswordRequired = true, 
-                        pendingRestoreUri = uri.toString()
+                        pendingRestoreUri = uri.toString(),
+                        pendingMerge = merge
                     )
                     return@withContext
                 }
@@ -297,10 +321,10 @@ class BackupRestoreViewModel @Inject constructor(
                 try {
                     application.contentResolver.openInputStream(uri)?.use { inputStream ->
                         ZipInputStream(inputStream).use { zis ->
-                            readBackupFromZip(zis)
+                            readBackupFromZip(zis, merge)
                         }
                     }
-                    _state.value = _state.value.copy(isRestoring = false, restoreResult = "Local Restore successful")
+                    _state.value = _state.value.copy(isRestoring = false, restoreResult = if (merge) "Merge successful" else "Local Restore successful")
                 } catch (e: Exception) {
                     e.printStackTrace()
                     _state.value = _state.value.copy(isRestoring = false, restoreResult = "Local Restore failed: ${e.message}")
@@ -312,6 +336,7 @@ class BackupRestoreViewModel @Inject constructor(
     fun restoreEncryptedBackup(password: String) {
         val uriString = state.value.pendingRestoreUri ?: return
         val uri = Uri.parse(uriString)
+        val merge = state.value.pendingMerge
         
         viewModelScope.launch {
             _state.value = _state.value.copy(isRestoring = true, restoreResult = null, isPasswordRequired = false)
@@ -321,10 +346,10 @@ class BackupRestoreViewModel @Inject constructor(
                     try {
                         java.io.FileInputStream(tempZipFile).use { inputStream ->
                             ZipInputStream(inputStream).use { zis ->
-                                readBackupFromZip(zis)
+                                readBackupFromZip(zis, merge)
                             }
                         }
-                        _state.value = _state.value.copy(isRestoring = false, restoreResult = "Encrypted Restore successful", pendingRestoreUri = null)
+                        _state.value = _state.value.copy(isRestoring = false, restoreResult = if (merge) "Encrypted Merge successful" else "Encrypted Restore successful", pendingRestoreUri = null, pendingMerge = false)
                     } finally {
                         if (tempZipFile.exists()) tempZipFile.delete()
                     }
@@ -343,7 +368,7 @@ class BackupRestoreViewModel @Inject constructor(
         _state.value = _state.value.copy(isPasswordRequired = false, pendingRestoreUri = null)
     }
     
-    private suspend fun readBackupFromZip(zis: ZipInputStream) {
+    private suspend fun readBackupFromZip(zis: ZipInputStream, merge: Boolean = false) {
         val oldToNewProjectIds = mutableMapOf<Int, Int>()
         var notesJson: String? = null
         var labelsJson: String? = null
@@ -402,11 +427,13 @@ class BackupRestoreViewModel @Inject constructor(
         val notesToRestore = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), notesJson)
 
         repository.runInTransaction {
-            // Only delete local data AFTER we've verified and parsed the backup contents successfully
-            repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
-            repository.getNotes().first().forEach { repository.deleteNote(it.note) }
-            repository.getLabels().first().forEach { repository.deleteLabel(it) }
-            repository.getProjects().first().forEach { repository.deleteProject(it.id) }
+            if (!merge) {
+                // Only delete local data if NOT merging
+                repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
+                repository.getNotes().first().forEach { repository.deleteNote(it.note) }
+                repository.getLabels().first().forEach { repository.deleteLabel(it) }
+                repository.getProjects().first().forEach { repository.deleteProject(it.id) }
+            }
 
             // Pass 3: Restore Data
             projectsToRestore.forEach { project ->
@@ -416,11 +443,17 @@ class BackupRestoreViewModel @Inject constructor(
                 oldToNewProjectIds[oldId] = newId.toInt()
             }
 
-            labelsToRestore.forEach { repository.insertLabel(it) }
+            labelsToRestore.forEach { 
+                try {
+                    repository.insertLabel(it) 
+                } catch (e: Exception) {
+                    // Label might already exist, ignore in merge mode
+                }
+            }
 
             notesToRestore.forEach { noteWithAttachments ->
                 val oldProjectId = noteWithAttachments.note.projectId
-                val newProjectId = oldToNewProjectIds[oldProjectId]
+                val newProjectId = if (oldProjectId != null) oldToNewProjectIds[oldProjectId] else null
                 val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
                 val newNoteId = repository.insertNote(newNote)
                 require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
@@ -443,10 +476,11 @@ class BackupRestoreViewModel @Inject constructor(
             _state.value = _state.value.copy(isRestoring = true, restoreResult = "Importing from Google Keep...")
             withContext(Dispatchers.IO) {
                 try {
+                    var importedCount = 0
                     application.contentResolver.openInputStream(uri)?.use { inputStream ->
                         ZipInputStream(inputStream).use { zis ->
+                            val notesToSave = mutableListOf<KeepNote>()
                             var zipEntry = zis.nextEntry
-                            var importedCount = 0
                             
                             while (zipEntry != null) {
                                 if (!zipEntry.isDirectory && zipEntry.name.endsWith(".json")) {
@@ -454,8 +488,7 @@ class BackupRestoreViewModel @Inject constructor(
                                         val jsonString = readZipEntryText(zis)
                                         val keepNote: KeepNote = json.decodeFromString(KeepNote.serializer(), jsonString)
                                         if (!keepNote.isTrashed) {
-                                            saveKeepNote(keepNote)
-                                            importedCount++
+                                            notesToSave.add(keepNote)
                                         }
                                     } catch (e: Exception) {
                                         e.printStackTrace()
@@ -463,12 +496,21 @@ class BackupRestoreViewModel @Inject constructor(
                                 }
                                 zipEntry = zis.nextEntry
                             }
-                            _state.value = _state.value.copy(
-                                isRestoring = false,
-                                restoreResult = "Imported $importedCount notes from Google Keep"
-                            )
+
+                            if (notesToSave.isNotEmpty()) {
+                                repository.runInTransaction {
+                                    notesToSave.forEach { keepNote ->
+                                        saveKeepNote(keepNote)
+                                        importedCount++
+                                    }
+                                }
+                            }
                         }
                     }
+                    _state.value = _state.value.copy(
+                        isRestoring = false,
+                        restoreResult = "Imported $importedCount notes from Google Keep"
+                    )
                 } catch (e: Exception) {
                     e.printStackTrace()
                     _state.value = _state.value.copy(isRestoring = false, restoreResult = "Import failed: ${e.message}")
@@ -539,9 +581,9 @@ class BackupRestoreViewModel @Inject constructor(
         }
     }
 
-    fun restoreFromDrive(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount, fileId: String? = null) {
+    fun restoreFromDrive(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount, fileId: String? = null, merge: Boolean = false) {
         viewModelScope.launch {
-             _state.value = _state.value.copy(isRestoring = true, restoreResult = "Downloading from Drive...")
+             _state.value = _state.value.copy(isRestoring = true, restoreResult = null)
              val backupName = if (fileId != null) "selected version" else "latest backup"
             withContext(Dispatchers.IO) {
                 val tempFile = File(application.cacheDir, "temp_restore.zip")
@@ -552,7 +594,8 @@ class BackupRestoreViewModel @Inject constructor(
                          _state.value = _state.value.copy(
                             isRestoring = false,
                             isPasswordRequired = true,
-                            pendingRestoreUri = Uri.fromFile(tempFile).toString()
+                            pendingRestoreUri = Uri.fromFile(tempFile).toString(),
+                            pendingMerge = merge
                          )
                          shouldDeleteTempFile = false
                          return@withContext
@@ -560,10 +603,10 @@ class BackupRestoreViewModel @Inject constructor(
 
                      java.io.FileInputStream(tempFile).use { inputStream ->
                          ZipInputStream(inputStream).use { zis ->
-                             readBackupFromZip(zis)
+                             readBackupFromZip(zis, merge)
                          }
                      }
-                    _state.value = _state.value.copy(isRestoring = false, restoreResult = "Drive Restore ($backupName) successful")
+                    _state.value = _state.value.copy(isRestoring = false, restoreResult = if (merge) "Drive Merge successful" else "Drive Restore ($backupName) successful")
                 } catch (e: Exception) {
                     e.printStackTrace()
                     _state.value = _state.value.copy(isRestoring = false, restoreResult = "Drive Restore failed: ${e.message}")
@@ -710,9 +753,11 @@ class BackupRestoreViewModel @Inject constructor(
                          backupRepository.backupToUri(Uri.parse(uriString), state.value.includeAttachments)
                     }
                      _state.value = _state.value.copy(isBackingUp = false, backupResult = result)
+                     updateLastBackup("Success (SD Card)")
                 } catch (e: Exception) {
                     e.printStackTrace()
                      _state.value = _state.value.copy(isBackingUp = false, backupResult = "SD Card Backup failed: ${e.message}")
+                     updateLastBackup("Failed (SD Card)")
                 }
             }
         }
@@ -758,11 +803,11 @@ class BackupRestoreViewModel @Inject constructor(
 
     fun scanBackup(uri: Uri) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isScanning = true, restoreResult = null, foundProjects = emptyList())
+            _state.value = _state.value.copy(isScanning = true, restoreResult = null, foundBackupDetails = null)
             withContext(Dispatchers.IO) {
                 try {
-                    val projects = backupRepository.readProjectsFromZip(uri)
-                    _state.value = _state.value.copy(isScanning = false, foundProjects = projects)
+                    val scanResult = backupRepository.scanBackupContent(uri)
+                    _state.value = _state.value.copy(isScanning = false, foundBackupDetails = scanResult)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     _state.value = _state.value.copy(isScanning = false, restoreResult = "Failed to scan backup: ${e.message}")
@@ -777,7 +822,7 @@ class BackupRestoreViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 try {
                     backupRepository.restoreSelectedProjects(uri, selectedProjectIds)
-                    _state.value = _state.value.copy(isRestoring = false, restoreResult = "Selected projects restored successfully", foundProjects = emptyList())
+                    _state.value = _state.value.copy(isRestoring = false, restoreResult = "Selected projects restored successfully", foundBackupDetails = null)
                 } catch (e: Exception) {
                      e.printStackTrace()
                     _state.value = _state.value.copy(isRestoring = false, restoreResult = "Restore failed: ${e.message}")
@@ -787,6 +832,6 @@ class BackupRestoreViewModel @Inject constructor(
     }
 
     fun clearFoundProjects() {
-        _state.value = _state.value.copy(foundProjects = emptyList())
+        _state.value = _state.value.copy(foundBackupDetails = null)
     }
 }

@@ -77,6 +77,7 @@ fun BackupScreen(
     // State for History Item Dialogs
     var versionToDelete by remember { mutableStateOf<String?>(null) }
     var versionToRestore by remember { mutableStateOf<String?>(null) }
+    var versionToRestoreMerge by remember { mutableStateOf<String?>(null) }
 
     // State for Encryption
     var showPasswordSetDialog by remember { mutableStateOf(false) }
@@ -155,10 +156,10 @@ fun BackupScreen(
         }
     }
 
-    // Selective Restore Dialog
-    if (state.foundProjects.isNotEmpty()) {
-        ProjectSelectionDialog(
-            projects = state.foundProjects,
+    // Selective Restore Dialog (Scan Result)
+    state.foundBackupDetails?.let { details ->
+        BackupScanResultDialog(
+            scanResult = details,
             onDismiss = { 
                 viewModel.clearFoundProjects() 
                 selectedBackupUri = null
@@ -178,23 +179,46 @@ fun BackupScreen(
         AlertDialog(
             onDismissRequest = { showConfirmDialog = null },
             icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text(stringResource(id = R.string.confirm_restore)) },
-            text = { Text(stringResource(id = R.string.restore_confirmation_message)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showConfirmDialog?.let { uri ->
-                             if (restoreType == RestoreType.LOCAL) {
-                                 viewModel.restoreBackup(uri)
-                             }
+            title = { Text("How would you like to restore?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select a restoration method for your backup.")
+                    
+                    OutlinedCard(
+                        onClick = {
+                            showConfirmDialog?.let { uri ->
+                                if (restoreType == RestoreType.LOCAL) viewModel.restoreBackup(uri, merge = true)
+                            }
+                            showConfirmDialog = null
+                            restoreType = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Merge with Current Data", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text("Keep your current notes and add everything from the backup as new entries.", style = MaterialTheme.typography.bodySmall)
                         }
-                        showConfirmDialog = null
-                        restoreType = null
                     }
-                ) {
-                    Text(stringResource(id = R.string.restore_title))
+
+                    Card(
+                        onClick = {
+                            showConfirmDialog?.let { uri ->
+                                if (restoreType == RestoreType.LOCAL) viewModel.restoreBackup(uri, merge = false)
+                            }
+                            showConfirmDialog = null
+                            restoreType = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Full Overwrite (Clean Restore)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                            Text("ERASE all current data and replace it entirely with the backup content.", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             },
+            confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { 
                     showConfirmDialog = null 
@@ -227,10 +251,10 @@ fun BackupScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            // 1. Storage Summary
+            // 1. Backup Health Dashboard
             item {
                 state.backupDetails?.let { details ->
-                    StorageUsageCard(details)
+                    BackupDashboardCard(details, state)
                 } ?: Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -460,20 +484,48 @@ fun BackupScreen(
         AlertDialog(
             onDismissRequest = { versionToRestore = null },
             icon = { Icon(Icons.Default.Restore, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text("Restore this Version?") },
-            text = { Text("Restoring this version will overwrite your current data. This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val id = versionToRestore
-                        val account = GoogleSignIn.getLastSignedInAccount(context)
-                        if (id != null && account != null) {
-                             viewModel.restoreFromDrive(account, id)
+            title = { Text("How would you like to restore?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Select a restoration method for this version.")
+                    
+                    OutlinedCard(
+                        onClick = {
+                            val id = versionToRestore
+                            val account = GoogleSignIn.getLastSignedInAccount(context)
+                            if (id != null && account != null) {
+                                viewModel.restoreFromDrive(account, id, merge = true)
+                            }
+                            versionToRestore = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Merge with Current Data", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text("Keep current notes and add everything from the backup as new entries.", style = MaterialTheme.typography.bodySmall)
                         }
-                        versionToRestore = null
                     }
-                ) { Text("Restore") }
+
+                    Card(
+                        onClick = {
+                            val id = versionToRestore
+                            val account = GoogleSignIn.getLastSignedInAccount(context)
+                            if (id != null && account != null) {
+                                viewModel.restoreFromDrive(account, id, merge = false)
+                            }
+                            versionToRestore = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Full Overwrite (Clean Restore)", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                            Text("ERASE all current data and replace it entirely with the backup content.", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
             },
+            confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { versionToRestore = null }) { Text("Cancel") }
             }
@@ -976,15 +1028,25 @@ fun AutoBackupSettingsCard(
 
 
 @Composable
-fun StorageUsageCard(details: BackupDetails) {
+fun BackupDashboardCard(details: BackupDetails, state: BackupRestoreState) {
+    val isSuccess = state.lastBackupStatus?.contains("Success") == true
+    val statusColor = if (state.lastBackupTime == 0L) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else if (isSuccess) {
+        Color(0xFF4CAF50) // Green
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         ),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(28.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -992,51 +1054,85 @@ fun StorageUsageCard(details: BackupDetails) {
             ) {
                 Column {
                     Text(
-                        text = "Total Usage",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Backup Health",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium
                     )
-                    Text(
-                        text = formatSize(details.totalSize),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(8.dp).background(statusColor, CircleShape))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = if (state.lastBackupTime == 0L) "No Backups Yet" else if (isSuccess) "Everything Secure" else "Backup Failed",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = statusColor
+                        )
+                    }
                 }
                 
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    modifier = Modifier.size(48.dp)
+                    color = statusColor.copy(alpha = 0.1f),
+                    modifier = Modifier.size(52.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Default.CloudQueue,
+                            imageVector = if (isSuccess) Icons.Default.CloudDone else Icons.Default.CloudOff,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
+                            tint = statusColor,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
             }
             
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            // Last Backup Info
+            val lastBackupText = if (state.lastBackupTime > 0) {
+                val sdf = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+                sdf.format(Date(state.lastBackupTime))
+            } else {
+                "Never"
+            }
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Last Attempt", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = lastBackupText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
+                VerticalDivider(modifier = Modifier.height(24.dp).padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Storage Used", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = formatSize(details.totalSize), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     UsageStatItem(
                         icon = Icons.Default.Description,
                         count = details.notesCount.toString(),
-                        label = stringResource(id = R.string.notes_count),
+                        label = "Notes",
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                      UsageStatItem(
                         icon = Icons.Default.Folder,
                         count = details.projectsCount.toString(),
-                        label = stringResource(id = R.string.projects_count),
+                        label = "Projects",
                         color = MaterialTheme.colorScheme.tertiary
                     )
                 }
@@ -1044,14 +1140,14 @@ fun StorageUsageCard(details: BackupDetails) {
                     UsageStatItem(
                         icon = Icons.Default.Label,
                         count = details.labelsCount.toString(),
-                        label = stringResource(id = R.string.labels_count),
+                        label = "Labels",
                         color = MaterialTheme.colorScheme.secondary
                     )
                      Spacer(modifier = Modifier.height(16.dp))
                     UsageStatItem(
                         icon = Icons.Default.AttachFile,
                         count = details.attachmentsCount.toString(),
-                        label = stringResource(id = R.string.attachments_count),
+                        label = "Files",
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -1142,47 +1238,70 @@ enum class RestoreType {
 }
 
 @Composable
-fun ProjectSelectionDialog(
-    projects: List<com.suvojeet.notenext.data.Project>,
+fun BackupScanResultDialog(
+    scanResult: com.suvojeet.notenext.data.backup.BackupScanResult,
     onDismiss: () -> Unit,
     onConfirm: (List<Int>) -> Unit
 ) {
-    val selectedIds = remember { mutableStateListOf<Int>() }
+    val selectedIds = remember { mutableStateListOf<Int>().apply { addAll(scanResult.projects.map { it.id }) } }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Projects to Restore") },
+        title = { 
+            Column {
+                Text("Backup Contents", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                scanResult.backupTimestamp?.let { 
+                    Text(
+                        text = "Created: ${SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(it))}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                items(projects.size) { index ->
-                    val project = projects[index]
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (selectedIds.contains(project.id)) {
-                                    selectedIds.remove(project.id)
-                                } else {
-                                    selectedIds.add(project.id)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Summary Stats
+                Row(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f)).padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    ScanStatItem(count = scanResult.notesCount, label = "Notes", icon = Icons.Default.Description)
+                    ScanStatItem(count = scanResult.labelsCount, label = "Labels", icon = Icons.Default.Label)
+                    ScanStatItem(count = scanResult.attachmentsCount, label = "Files", icon = Icons.Default.AttachFile)
+                }
+
+                Text("Select Projects to Restore", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                
+                LazyColumn(modifier = Modifier.heightIn(max = 250.dp).fillMaxWidth()) {
+                    items(scanResult.projects.size) { index ->
+                        val project = scanResult.projects[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (selectedIds.contains(project.id)) selectedIds.remove(project.id) else selectedIds.add(project.id)
                                 }
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = selectedIds.contains(project.id),
-                            onCheckedChange = { checked ->
-                                if (checked) {
-                                    selectedIds.add(project.id)
-                                } else {
-                                    selectedIds.remove(project.id)
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = selectedIds.contains(project.id),
+                                onCheckedChange = { checked ->
+                                    if (checked) selectedIds.add(project.id) else selectedIds.remove(project.id)
                                 }
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = project.name, style = MaterialTheme.typography.bodyLarge)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = project.name, style = MaterialTheme.typography.bodyLarge)
+                        }
                     }
                 }
+                
+                Text(
+                    "Note: Selected projects will be merged with your current data.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         confirmButton = {
@@ -1199,6 +1318,15 @@ fun ProjectSelectionDialog(
             }
         }
     )
+}
+
+@Composable
+fun ScanStatItem(count: Int, label: String, icon: ImageVector) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
+        Text(text = count.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
 }
 
 @Composable

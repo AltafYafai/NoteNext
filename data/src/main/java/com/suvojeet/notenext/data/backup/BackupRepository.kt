@@ -17,6 +17,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
@@ -26,6 +27,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.async
 
+
+data class BackupScanResult(
+    val projects: List<Project>,
+    val labelsCount: Int,
+    val notesCount: Int,
+    val attachmentsCount: Int,
+    val backupTimestamp: Long? = null
+)
 
 @Singleton
 class BackupRepository @Inject constructor(
@@ -183,7 +192,8 @@ class BackupRepository @Inject constructor(
 
     private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean) {
         val manifest = mutableMapOf<String, String>()
-        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val md = MessageDigest.getInstance("SHA-256")
+        var missingAttachmentsCount = 0
 
         fun writeEntryWithHash(name: String, data: ByteArray) {
             zos.putNextEntry(ZipEntry(name))
@@ -195,66 +205,101 @@ class BackupRepository @Inject constructor(
             manifest[name] = hashString
         }
 
-        // Backup notes
+        // Backup core data
         val notes = repository.getNotes().first()
-        val notesJson = json.encodeToString(ListSerializer(NoteWithAttachments.serializer()), notes)
-        writeEntryWithHash("notes.json", notesJson.toByteArray())
-
-        // Backup labels
         val labels = repository.getLabels().first()
-        val labelsJson = json.encodeToString(ListSerializer(Label.serializer()), labels)
-        writeEntryWithHash("labels.json", labelsJson.toByteArray())
-
-        // Backup projects
         val projects = repository.getProjects().first()
-        val projectsJson = json.encodeToString(ListSerializer(Project.serializer()), projects)
-        writeEntryWithHash("projects.json", projectsJson.toByteArray())
-        
-        // Write manifest
-        val manifestJson = json.encodeToString(manifest)
-        zos.putNextEntry(ZipEntry("manifest.json"))
-        zos.write(manifestJson.toByteArray())
-        zos.closeEntry()
 
+        writeEntryWithHash("notes.json", json.encodeToString(ListSerializer(NoteWithAttachments.serializer()), notes).toByteArray())
+        writeEntryWithHash("labels.json", json.encodeToString(ListSerializer(Label.serializer()), labels).toByteArray())
+        writeEntryWithHash("projects.json", json.encodeToString(ListSerializer(Project.serializer()), projects).toByteArray())
 
-        // Backup attachments
+        // Backup attachments with deduplication
         if (includeAttachments) {
+            val processedHashes = mutableSetOf<String>()
             val attachments = notes.flatMap { it.attachments }
+            
             attachments.forEach { attachment ->
                 try {
                     val attachmentUri = Uri.parse(attachment.uri)
                     context.contentResolver.openInputStream(attachmentUri)?.use { inputStream ->
-                        // Safely get filename using DocumentFile
-                        val documentFile = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, attachmentUri)
-                        val fileName = documentFile?.name ?: File(attachmentUri.path ?: "attachment_${System.currentTimeMillis()}").name
-                        zos.putNextEntry(ZipEntry("attachments/$fileName"))
-                        inputStream.copyTo(zos)
-                        zos.closeEntry()
-                    }
+                        val bytes = inputStream.readBytes()
+                        val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+                        
+                        if (hash !in processedHashes) {
+                            val documentFile = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, attachmentUri)
+                            val fileName = documentFile?.name ?: File(attachmentUri.path ?: "attachment").name
+                            // Store by hash to deduplicate, keeping original extension if possible
+                            val ext = fileName.substringAfterLast('.', "")
+                            val entryName = if (ext.isNotEmpty()) "attachments/$hash.$ext" else "attachments/$hash"
+                            
+                            zos.putNextEntry(ZipEntry(entryName))
+                            zos.write(bytes)
+                            zos.closeEntry()
+                            
+                            manifest[entryName] = hash
+                            processedHashes.add(hash)
+                        }
+                    } ?: run { missingAttachmentsCount++ }
                 } catch (e: Exception) {
+                    missingAttachmentsCount++
                     e.printStackTrace()
                 }
             }
         }
+        
+        // Finalize manifest
+        manifest["backup_timestamp"] = System.currentTimeMillis().toString()
+        manifest["missing_attachments"] = missingAttachmentsCount.toString()
+        val manifestJson = json.encodeToString(manifest)
+        zos.putNextEntry(ZipEntry("manifest.json"))
+        zos.write(manifestJson.toByteArray())
+        zos.closeEntry()
     }
 
 
-    suspend fun readProjectsFromZip(uri: Uri): List<Project> {
+    suspend fun scanBackupContent(uri: Uri): BackupScanResult {
+        if (checkIsEncrypted(uri)) {
+            // Can't scan encrypted content without password
+            return BackupScanResult(emptyList(), 0, 0, 0)
+        }
         var projects: List<Project> = emptyList()
+        var labelsCount = 0
+        var notesCount = 0
+        var attachmentsCount = 0
+        var timestamp: Long? = null
+
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             ZipInputStream(inputStream).use { zis ->
                 var zipEntry = zis.nextEntry
                 while (zipEntry != null) {
-                    if (zipEntry.name == "projects.json") {
-                        val projectsJson = InputStreamReader(zis).readText()
-                        projects = json.decodeFromString(ListSerializer(Project.serializer()), projectsJson)
-                        break
+                    when (zipEntry.name) {
+                        "projects.json" -> {
+                            val jsonStr = InputStreamReader(zis).readText()
+                            projects = json.decodeFromString(ListSerializer(Project.serializer()), jsonStr)
+                        }
+                        "labels.json" -> {
+                            val jsonStr = InputStreamReader(zis).readText()
+                            val labels = json.decodeFromString(ListSerializer(Label.serializer()), jsonStr)
+                            labelsCount = labels.size
+                        }
+                        "notes.json" -> {
+                            val jsonStr = InputStreamReader(zis).readText()
+                            val notes = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), jsonStr)
+                            notesCount = notes.size
+                            attachmentsCount = notes.sumOf { it.attachments.size }
+                        }
+                        "manifest.json" -> {
+                            val jsonStr = InputStreamReader(zis).readText()
+                            val manifest: Map<String, String> = json.decodeFromString(jsonStr)
+                            timestamp = manifest["backup_timestamp"]?.toLongOrNull()
+                        }
                     }
                     zipEntry = zis.nextEntry
                 }
             }
         }
-        return projects
+        return BackupScanResult(projects, labelsCount, notesCount, attachmentsCount, timestamp)
     }
 
     suspend fun restoreSelectedProjects(uri: Uri, selectedProjectIds: List<Int>) {
