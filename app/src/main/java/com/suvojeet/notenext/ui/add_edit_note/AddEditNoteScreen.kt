@@ -254,7 +254,6 @@ fun AddEditNoteScreen(
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
-            modifier = Modifier.imePadding(),
             containerColor = backgroundColor,
             topBar = {
                 AnimatedVisibility(
@@ -326,6 +325,7 @@ fun AddEditNoteScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
+                        .imePadding()
                 ) {
                     if (state.editingNoteType == "TEXT") {
                         Column(
