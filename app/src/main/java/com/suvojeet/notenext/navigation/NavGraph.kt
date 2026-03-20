@@ -673,6 +673,7 @@ private fun NavGraphBuilder.sharedRoutes(
         exitTransition = { slideExit }
     ) {
         DrawingScreen(
+            windowSizeClass = windowSizeClass,
             onSave = { uri ->
                 notesViewModel.onEvent(NotesEvent.ExpandNote(-1))
                 notesViewModel.onEvent(NotesEvent.ImportImage(uri))
