@@ -136,9 +136,10 @@ dependencies {
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
 
-    // DataStore
+    // DataStore & Security
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.datastore.core)
+    implementation(libs.androidx.security.crypto)
 
     // Coil
     implementation(libs.coil.compose)

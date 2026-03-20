@@ -5,17 +5,25 @@ import kotlinx.coroutines.flow.map
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.room.withTransaction
 import com.suvojeet.notenext.util.CryptoUtils
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class NoteRepositoryImpl @Inject constructor(
+    private val db: NoteDatabase,
     private val noteDao: NoteDao,
     private val labelDao: LabelDao,
     private val projectDao: ProjectDao,
     private val checklistItemDao: ChecklistItemDao
 ) : NoteRepository {
+
+    override suspend fun <T> runInTransaction(block: suspend () -> T): T {
+        return db.withTransaction {
+            block()
+        }
+    }
 
     override fun getNotes(searchQuery: String, sortType: SortType): Flow<List<NoteWithAttachments>> {
         val flow = if (searchQuery.isBlank()) {

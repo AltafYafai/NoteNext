@@ -8,6 +8,7 @@ import com.suvojeet.notenext.data.*
 import com.suvojeet.notenext.data.backup.GoogleDriveManager
 import com.suvojeet.notenext.data.backup.KeepNote
 import com.suvojeet.notenext.data.backup.KeepLabel
+import com.suvojeet.notenext.data.backup.SecurityUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -91,8 +92,16 @@ class BackupRestoreViewModel @Inject constructor(
         val sdCardEnabled = sharedPrefs.getBoolean("sd_card_backup_enabled", false)
         val sdCardUri = sharedPrefs.getString("sd_card_folder_uri", null)
         
-        val encryptionEnabled = sharedPrefs.getBoolean("backup_encryption_enabled", false)
-        val hasPassword = !sharedPrefs.getString("backup_password", null).isNullOrBlank()
+        // Migrate legacy plain-text password to EncryptedSharedPreferences
+        var encryptionEnabled = sharedPrefs.getBoolean("backup_encryption_enabled", false)
+        val legacyPassword = sharedPrefs.getString("backup_password", null) ?: sharedPrefs.getString("auto_backup_password", null)
+        
+        if (encryptionEnabled && legacyPassword != null) {
+            SecurityUtils.saveBackupPassword(application, legacyPassword)
+            sharedPrefs.edit().remove("backup_password").remove("auto_backup_password").apply()
+        }
+        
+        val hasPassword = SecurityUtils.getBackupPassword(application) != null
 
         _state.value = _state.value.copy(
             isAutoBackupEnabled = enabled, 
@@ -171,12 +180,11 @@ class BackupRestoreViewModel @Inject constructor(
     }
 
     fun setEncryption(password: String) {
+        SecurityUtils.saveBackupPassword(application, password)
         val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
         sharedPrefs.edit().apply {
             putBoolean("backup_encryption_enabled", true)
-            putString("backup_password", password)
             putBoolean("auto_backup_encryption_enabled", true) 
-            putString("auto_backup_password", password)
             apply()
         }
         _state.value = _state.value.copy(isEncryptionEnabled = true, hasPasswordSet = true)
@@ -184,12 +192,11 @@ class BackupRestoreViewModel @Inject constructor(
     }
 
     fun disableEncryption() {
+        SecurityUtils.saveBackupPassword(application, null)
         val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
         sharedPrefs.edit().apply {
             putBoolean("backup_encryption_enabled", false)
-            remove("backup_password")
             putBoolean("auto_backup_encryption_enabled", false)
-            remove("auto_backup_password")
             apply()
         }
         _state.value = _state.value.copy(isEncryptionEnabled = false, hasPasswordSet = false)
@@ -206,7 +213,7 @@ class BackupRestoreViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 try {
                     val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
-                    val storedPassword = sharedPrefs.getString("backup_password", null)
+                    val storedPassword = SecurityUtils.getBackupPassword(application)
                     val effectivePassword = password ?: if (state.value.isEncryptionEnabled) storedPassword else null
 
                     if (effectivePassword.isNullOrBlank()) {
@@ -240,7 +247,7 @@ class BackupRestoreViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 try {
                     val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
-                    val storedPassword = sharedPrefs.getString("backup_password", null)
+                    val storedPassword = SecurityUtils.getBackupPassword(application)
                     val password = if (state.value.isEncryptionEnabled) storedPassword else null
                     
                     backupRepository.backupToDrive(account, password, state.value.includeAttachments) { uploaded, total ->
@@ -341,6 +348,7 @@ class BackupRestoreViewModel @Inject constructor(
         var notesJson: String? = null
         var labelsJson: String? = null
         var projectsJson: String? = null
+        var manifestJson: String? = null
 
         // Pass 1: Read JSON Data from ZIP
         try {
@@ -350,11 +358,32 @@ class BackupRestoreViewModel @Inject constructor(
                     "notes.json" -> notesJson = InputStreamReader(zis).readText()
                     "labels.json" -> labelsJson = InputStreamReader(zis).readText()
                     "projects.json" -> projectsJson = InputStreamReader(zis).readText()
+                    "manifest.json" -> manifestJson = InputStreamReader(zis).readText()
                 }
                 zipEntry = zis.nextEntry
             }
         } catch (e: Exception) {
             throw Exception("Failed to read backup contents: ${e.message}")
+        }
+
+        // Pass 1.5: Verify Checksums
+        if (manifestJson != null) {
+            val manifest: Map<String, String> = json.decodeFromString(kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.builtins.String.serializer(), kotlinx.serialization.builtins.String.serializer()), manifestJson)
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            
+            fun verify(name: String, content: String?) {
+                if (content != null && manifest.containsKey(name)) {
+                    val hashBytes = md.digest(content.toByteArray())
+                    val hashString = hashBytes.joinToString("") { "%02x".format(it) }
+                    if (hashString != manifest[name]) {
+                        throw Exception("Data corruption detected: $name failed checksum verification.")
+                    }
+                }
+            }
+            
+            verify("notes.json", notesJson)
+            verify("labels.json", labelsJson)
+            verify("projects.json", projectsJson)
         }
 
         // Pass 2: Deserialize into in-memory objects BEFORE deletion
@@ -372,37 +401,39 @@ class BackupRestoreViewModel @Inject constructor(
 
         val notesToRestore = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), notesJson)
 
-        // Only delete local data AFTER we've verified and parsed the backup contents successfully
-        repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
-        repository.getNotes().first().forEach { repository.deleteNote(it.note) }
-        repository.getLabels().first().forEach { repository.deleteLabel(it) }
-        repository.getProjects().first().forEach { repository.deleteProject(it.id) }
+        repository.runInTransaction {
+            // Only delete local data AFTER we've verified and parsed the backup contents successfully
+            repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
+            repository.getNotes().first().forEach { repository.deleteNote(it.note) }
+            repository.getLabels().first().forEach { repository.deleteLabel(it) }
+            repository.getProjects().first().forEach { repository.deleteProject(it.id) }
 
-        // Pass 3: Restore Data
-        projectsToRestore.forEach { project ->
-            val oldId = project.id
-            val newId = repository.insertProject(project.copy(id = 0))
-            require(newId <= Int.MAX_VALUE) { "Project ID overflow" }
-            oldToNewProjectIds[oldId] = newId.toInt()
-        }
+            // Pass 3: Restore Data
+            projectsToRestore.forEach { project ->
+                val oldId = project.id
+                val newId = repository.insertProject(project.copy(id = 0))
+                require(newId <= Int.MAX_VALUE) { "Project ID overflow" }
+                oldToNewProjectIds[oldId] = newId.toInt()
+            }
 
-        labelsToRestore.forEach { repository.insertLabel(it) }
+            labelsToRestore.forEach { repository.insertLabel(it) }
 
-        notesToRestore.forEach { noteWithAttachments ->
-            val oldProjectId = noteWithAttachments.note.projectId
-            val newProjectId = oldToNewProjectIds[oldProjectId]
-            val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
-            val newNoteId = repository.insertNote(newNote)
-            require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
-            
-            if (noteWithAttachments.checklistItems.isNotEmpty()) {
-                val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
-                    checklistItem.copy(
-                        id = java.util.UUID.randomUUID().toString(),
-                        noteId = newNoteId.toInt()
-                    )
+            notesToRestore.forEach { noteWithAttachments ->
+                val oldProjectId = noteWithAttachments.note.projectId
+                val newProjectId = oldToNewProjectIds[oldProjectId]
+                val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
+                val newNoteId = repository.insertNote(newNote)
+                require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
+                
+                if (noteWithAttachments.checklistItems.isNotEmpty()) {
+                    val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
+                        checklistItem.copy(
+                            id = java.util.UUID.randomUUID().toString(),
+                            noteId = newNoteId.toInt()
+                        )
+                    }
+                    repository.insertChecklistItems(newChecklistItems)
                 }
-                repository.insertChecklistItems(newChecklistItems)
             }
         }
     }
@@ -672,7 +703,7 @@ class BackupRestoreViewModel @Inject constructor(
             withContext(Dispatchers.IO) {
                 try {
                     val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
-                    val storedPassword = sharedPrefs.getString("backup_password", null)
+                    val storedPassword = SecurityUtils.getBackupPassword(application)
                     val result = if (state.value.isEncryptionEnabled && !storedPassword.isNullOrBlank()) {
                          backupRepository.backupToEncryptedFolder(Uri.parse(uriString), storedPassword, state.value.includeAttachments)
                     } else {

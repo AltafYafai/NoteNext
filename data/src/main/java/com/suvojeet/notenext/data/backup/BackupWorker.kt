@@ -32,9 +32,8 @@ class BackupWorker @AssistedInject constructor(
         val sdCardFolderUri = sharedPrefs.getString("sd_card_folder_uri", null)
         val includeAttachments = sharedPrefs.getBoolean("include_backup_attachments", true)
         
-        // Use global keys, fallback to legacy auto keys if global not set (during migration if needed, though VM sets both)
         val isEncryptionEnabled = sharedPrefs.getBoolean("backup_encryption_enabled", false) || sharedPrefs.getBoolean("auto_backup_encryption_enabled", false)
-        val encryptionPassword = sharedPrefs.getString("backup_password", null) ?: sharedPrefs.getString("auto_backup_password", null)
+        val encryptionPassword = SecurityUtils.getBackupPassword(applicationContext)
         
         val backupPassword = if (isEncryptionEnabled && !encryptionPassword.isNullOrBlank()) encryptionPassword else null
 

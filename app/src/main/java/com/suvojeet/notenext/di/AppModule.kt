@@ -92,12 +92,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideNoteRepository(
+        db: NoteDatabase,
         noteDao: NoteDao,
         labelDao: LabelDao,
         projectDao: ProjectDao,
         checklistItemDao: ChecklistItemDao
     ): com.suvojeet.notenext.data.NoteRepository {
-        return com.suvojeet.notenext.data.NoteRepositoryImpl(noteDao, labelDao, projectDao, checklistItemDao)
+        return com.suvojeet.notenext.data.NoteRepositoryImpl(db, noteDao, labelDao, projectDao, checklistItemDao)
     }
 
     @Provides

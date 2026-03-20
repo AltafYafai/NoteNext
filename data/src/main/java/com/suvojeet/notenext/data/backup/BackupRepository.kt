@@ -182,26 +182,40 @@ class BackupRepository @Inject constructor(
     }
 
     private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean) {
+        val manifest = mutableMapOf<String, String>()
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+
+        fun writeEntryWithHash(name: String, data: ByteArray) {
+            zos.putNextEntry(ZipEntry(name))
+            zos.write(data)
+            zos.closeEntry()
+            
+            val hashBytes = md.digest(data)
+            val hashString = hashBytes.joinToString("") { "%02x".format(it) }
+            manifest[name] = hashString
+        }
+
         // Backup notes
         val notes = repository.getNotes().first()
         val notesJson = json.encodeToString(ListSerializer(NoteWithAttachments.serializer()), notes)
-        zos.putNextEntry(ZipEntry("notes.json"))
-        zos.write(notesJson.toByteArray())
-        zos.closeEntry()
+        writeEntryWithHash("notes.json", notesJson.toByteArray())
 
         // Backup labels
         val labels = repository.getLabels().first()
         val labelsJson = json.encodeToString(ListSerializer(Label.serializer()), labels)
-        zos.putNextEntry(ZipEntry("labels.json"))
-        zos.write(labelsJson.toByteArray())
-        zos.closeEntry()
+        writeEntryWithHash("labels.json", labelsJson.toByteArray())
 
         // Backup projects
         val projects = repository.getProjects().first()
         val projectsJson = json.encodeToString(ListSerializer(Project.serializer()), projects)
-        zos.putNextEntry(ZipEntry("projects.json"))
-        zos.write(projectsJson.toByteArray())
+        writeEntryWithHash("projects.json", projectsJson.toByteArray())
+        
+        // Write manifest
+        val manifestJson = json.encodeToString(kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.builtins.String.serializer(), kotlinx.serialization.builtins.String.serializer()), manifest)
+        zos.putNextEntry(ZipEntry("manifest.json"))
+        zos.write(manifestJson.toByteArray())
         zos.closeEntry()
+
 
         // Backup attachments
         if (includeAttachments) {
@@ -264,61 +278,63 @@ class BackupRepository @Inject constructor(
             }
         }
 
-        // 1. Restore Labels (All)
-        labelsJson?.let {
-            val labels: List<Label> = json.decodeFromString(ListSerializer(Label.serializer()), it)
-            labels.forEach { repository.insertLabel(it) }
-        }
-
-        // 2. Restore Selected Projects
-        projectsJson?.let {
-            val allProjects: List<Project> = json.decodeFromString(ListSerializer(Project.serializer()), it)
-            val selectedProjects = allProjects.filter { project -> selectedProjectIds.contains(project.id) }
-            
-            selectedProjects.forEach { project ->
-                val oldId = project.id
-                val newId = repository.insertProject(project.copy(id = 0)).toInt()
-                oldToNewProjectIds[oldId] = newId
-            }
-        }
-
-        // 3. Restore Notes & Prepare Attachment Extraction
         val attachmentsToExtract = mutableListOf<Pair<String, File>>() // ZipEntryName -> TargetFile
 
-        notesJson?.let {
-            val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), it)
-            
-            notesWithAttachments.forEach { noteWithAttachments ->
-                val oldProjectId = noteWithAttachments.note.projectId
-                // Only restore if the note belongs to a selected project
-                if (oldToNewProjectIds.containsKey(oldProjectId)) {
-                    val newProjectId = oldToNewProjectIds[oldProjectId]!!
-                    val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
-                    val newNoteId = repository.insertNote(newNote).toInt()
+        repository.runInTransaction {
+            // 1. Restore Labels (All)
+            labelsJson?.let {
+                val labels: List<Label> = json.decodeFromString(ListSerializer(Label.serializer()), it)
+                labels.forEach { repository.insertLabel(it) }
+            }
 
-                    // Handle Attachments
-                    noteWithAttachments.attachments.forEach { attachment ->
-                        try {
-                            val originalUri = Uri.parse(attachment.uri)
-                            // We assume the filename in the zip matches the original filename
-                            val fileName = File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
-                            val zipEntryName = "attachments/$fileName"
-                            
-                            // Create target file in internal storage
-                            val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
-                            val attachmentsDir = File(context.filesDir, "attachments")
-                            if (!attachmentsDir.exists()) attachmentsDir.mkdirs()
-                            
-                            val targetFile = File(attachmentsDir, uniqueFileName)
-                            
-                            val newUri = Uri.fromFile(targetFile).toString()
-                            
-                            val newAttachment = attachment.copy(id = 0, noteId = newNoteId, uri = newUri)
-                            repository.insertAttachment(newAttachment)
-                            
-                            attachmentsToExtract.add(zipEntryName to targetFile)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+            // 2. Restore Selected Projects
+            projectsJson?.let {
+                val allProjects: List<Project> = json.decodeFromString(ListSerializer(Project.serializer()), it)
+                val selectedProjects = allProjects.filter { project -> selectedProjectIds.contains(project.id) }
+                
+                selectedProjects.forEach { project ->
+                    val oldId = project.id
+                    val newId = repository.insertProject(project.copy(id = 0)).toInt()
+                    oldToNewProjectIds[oldId] = newId
+                }
+            }
+
+            // 3. Restore Notes & Prepare Attachment Extraction
+            notesJson?.let {
+                val notesWithAttachments: List<NoteWithAttachments> = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), it)
+                
+                notesWithAttachments.forEach { noteWithAttachments ->
+                    val oldProjectId = noteWithAttachments.note.projectId
+                    // Only restore if the note belongs to a selected project
+                    if (oldToNewProjectIds.containsKey(oldProjectId)) {
+                        val newProjectId = oldToNewProjectIds[oldProjectId]!!
+                        val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
+                        val newNoteId = repository.insertNote(newNote).toInt()
+
+                        // Handle Attachments
+                        noteWithAttachments.attachments.forEach { attachment ->
+                            try {
+                                val originalUri = Uri.parse(attachment.uri)
+                                // We assume the filename in the zip matches the original filename
+                                val fileName = File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
+                                val zipEntryName = "attachments/$fileName"
+                                
+                                // Create target file in internal storage
+                                val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
+                                val attachmentsDir = File(context.filesDir, "attachments")
+                                if (!attachmentsDir.exists()) attachmentsDir.mkdirs()
+                                
+                                val targetFile = File(attachmentsDir, uniqueFileName)
+                                
+                                val newUri = Uri.fromFile(targetFile).toString()
+                                
+                                val newAttachment = attachment.copy(id = 0, noteId = newNoteId, uri = newUri)
+                                repository.insertAttachment(newAttachment)
+                                
+                                attachmentsToExtract.add(zipEntryName to targetFile)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
                     }
                 }

@@ -36,6 +36,7 @@ google-fonts            = "1.7.8"
 paging                  = "3.4.1"
 documentfile            = "1.1.0"
 core-splashscreen       = "1.0.1"
+security-crypto         = "1.1.0-alpha06"
 
 # ── Image Loading (MAJOR: Coil 2 → Coil 3) ─────────────────────
 # Group ID changes from io.coil-kt  →  io.coil-kt.coil3
@@ -126,6 +127,7 @@ androidx-documentfile = { group = "androidx.documentfile", name = "documentfile"
 androidx-paging-runtime = { group = "androidx.paging", name = "paging-runtime", version.ref = "paging" }
 androidx-paging-compose = { group = "androidx.paging", name = "paging-compose", version.ref = "paging" }
 androidx-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
 
 # Kotlin
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
