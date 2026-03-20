@@ -35,8 +35,23 @@ object NetworkModule {
                 HttpLoggingInterceptor.Level.NONE
             }
         }
+
         val authInterceptor = Interceptor { chain ->
-            val apiKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY
+            val encryptedKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY_ENC
+            val xorKey = com.suvojeet.notenext.BuildConfig.GROQ_XOR_KEY
+            
+            val apiKey = if (encryptedKey.isNotBlank()) {
+                try {
+                    val decoded = android.util.Base64.decode(encryptedKey, android.util.Base64.DEFAULT)
+                    val decrypted = decoded.map { (it.toInt() xor xorKey.toInt()).toByte() }.toByteArray()
+                    String(decrypted)
+                } catch (e: Exception) {
+                    ""
+                }
+            } else {
+                ""
+            }
+
             val request = if (apiKey.isNotBlank()) {
                 chain.request().newBuilder()
                     .addHeader("Authorization", "Bearer $apiKey")
@@ -47,8 +62,65 @@ object NetworkModule {
             chain.proceed(request)
         }
 
+        val timeoutInterceptor = Interceptor { chain ->
+            val request = chain.request()
+            val modelId = try {
+                val buffer = okio.Buffer()
+                request.body?.writeTo(buffer)
+                val bodyString = buffer.readUtf8()
+                val match = "\"model\"\\s*:\\s*\"([^\"]+)\"".toRegex().find(bodyString)
+                match?.groupValues?.get(1)
+            } catch (e: Exception) {
+                null
+            }
+
+            // Task 3.5: Timeout differentiation
+            val timeout = when (modelId) {
+                "llama-3.1-8b-instant", "qwen/qwen3-32b" -> 15
+                else -> 30
+            }
+
+            chain.withConnectTimeout(timeout, TimeUnit.SECONDS)
+                .withReadTimeout(timeout, TimeUnit.SECONDS)
+                .withWriteTimeout(timeout, TimeUnit.SECONDS)
+                .proceed(request)
+        }
+
+        val rateLimitInterceptor = Interceptor { chain ->
+            val request = chain.request()
+            val response = chain.proceed(request)
+            
+            // Task 3.1: Capture rate limit headers
+            val modelId = try {
+                val buffer = okio.Buffer()
+                request.body?.writeTo(buffer)
+                val bodyString = buffer.readUtf8()
+                val match = "\"model\"\\s*:\\s*\"([^\"]+)\"".toRegex().find(bodyString)
+                match?.groupValues?.get(1)
+            } catch (e: Exception) {
+                null
+            }
+            
+            val remainingRequests = response.header("x-ratelimit-remaining-requests")?.toIntOrNull()
+            val remainingTokens = response.header("x-ratelimit-remaining-tokens")?.toIntOrNull()
+            val retryAfter = response.header("retry-after")?.toIntOrNull()
+            
+            if (modelId != null) {
+                com.suvojeet.notenext.data.repository.GroqRateLimitManager.update(
+                    modelId, 
+                    remainingRequests, 
+                    remainingTokens, 
+                    retryAfter
+                )
+            }
+            
+            response
+        }
+
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(timeoutInterceptor)
+            .addInterceptor(rateLimitInterceptor)
             .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

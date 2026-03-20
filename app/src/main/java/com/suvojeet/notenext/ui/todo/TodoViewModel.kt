@@ -7,6 +7,9 @@ import androidx.paging.cachedIn
 import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.data.TodoRepository
 import com.suvojeet.notenext.data.repository.GroqRepository
+import com.suvojeet.notenext.data.repository.GroqResult
+import com.suvojeet.notenext.data.repository.onFailure
+import com.suvojeet.notenext.data.repository.onSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -183,9 +186,16 @@ class TodoViewModel @Inject constructor(
                                         showAiTodoDialog = false
                                     )
                                     _events.emit(TodoUiEvent.ShowToast("Successfully generated ${todos.size} tasks"))
-                                }.onFailure {
+                                }.onFailure { failure ->
+                                    val errorMessage = when (failure) {
+                                        is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                        is GroqResult.InvalidKey -> "Invalid API key. Check settings."
+                                        is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                        is GroqResult.AllModelsFailed -> "AI failed to respond. Try again later."
+                                        else -> "Failed to generate tasks."
+                                    }
                                     _state.value = _state.value.copy(isGenerating = false)
-                                    _events.emit(TodoUiEvent.ShowToast("Failed to generate tasks: ${it.message}"))
+                                    _events.emit(TodoUiEvent.ShowToast(errorMessage))
                                 }
                             }
                     } catch (e: Exception) {

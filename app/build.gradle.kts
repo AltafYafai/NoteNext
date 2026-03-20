@@ -1,3 +1,5 @@
+import java.util.Base64
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
@@ -18,7 +20,10 @@ android {
         versionName = project.properties["appVersionName"]?.toString() ?: "1.3.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        resConfigs("en", "hi")
+        androidResources {
+            localeFilters.add("en")
+            localeFilters.add("hi")
+        }
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -200,6 +205,16 @@ dependencies {
 
 android {
     defaultConfig {
-        buildConfigField("String", "GROQ_API_KEY", "\"${System.getenv("GROQ_API_1") ?: ""}\"")
+        val rawKey = System.getenv("GROQ_API_1") ?: ""
+        val xorKey = 0x47.toByte()
+        val encryptedKey = if (rawKey.isNotEmpty()) {
+            val bytes = rawKey.toByteArray()
+            val encrypted = bytes.map { it.toInt() xor xorKey.toInt() }.map { it.toByte() }.toByteArray()
+            Base64.getEncoder().encodeToString(encrypted)
+        } else {
+            ""
+        }
+        buildConfigField("String", "GROQ_API_KEY_ENC", "\"$encryptedKey\"")
+        buildConfigField("byte", "GROQ_XOR_KEY", "(byte)0x47")
     }
 }

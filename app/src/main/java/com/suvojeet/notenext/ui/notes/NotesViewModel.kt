@@ -48,6 +48,10 @@ import kotlinx.coroutines.delay
 
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.repository.GroqRepository
+import com.suvojeet.notenext.data.repository.GroqResult
+import com.suvojeet.notenext.data.repository.onFailure
+import com.suvojeet.notenext.data.repository.onSuccess
 import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.domain.use_case.NoteUseCases
 import com.suvojeet.notenext.ui.util.UndoRedoManager
@@ -68,7 +72,7 @@ class NotesViewModel @Inject constructor(
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
     private val richTextController: RichTextController,
-    private val groqRepository: com.suvojeet.notenext.data.repository.GroqRepository,
+    private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
     private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
@@ -244,18 +248,14 @@ class NotesViewModel @Inject constructor(
                                 isGeneratingChecklist = false,
                                 generatedChecklistPreview = items
                             )
-                        }.onFailure { error ->
+                        }.onFailure { failure ->
                             _editState.value = editState.value.copy(isGeneratingChecklist = false, generatedChecklistPreview = emptyList())
-                            val errorMessage = when {
-                                error.message?.contains("429") == true || 
-                                error.message?.contains("rate limit", ignoreCase = true) == true ->
-                                    "Too many requests. Please wait a moment and try again."
-                                error.message?.contains("401") == true ||
-                                error.message?.contains("unauthorized", ignoreCase = true) == true ->
-                                    "API authentication failed. Please check your API key."
-                                error.message?.contains("timeout", ignoreCase = true) == true ->
-                                    "Request timed out. Please try again."
-                                else -> "Failed to generate checklist: ${error.message}"
+                            val errorMessage = when (failure) {
+                                is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                is GroqResult.InvalidKey -> "Invalid API key. Check your settings."
+                                is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                is GroqResult.AllModelsFailed -> "All AI models failed to respond. Try again later."
+                                else -> "Failed to generate checklist."
                             }
                             _events.emit(NotesUiEvent.ShowToast(errorMessage))
                         }
@@ -343,12 +343,14 @@ class NotesViewModel @Inject constructor(
                                 fixedContentPreview = finalCleanText, // Clean text for Apply
                                 editingContent = TextFieldValue(inlinePreview, selection) // Show Diff Inline
                             )
-                        }.onFailure { error ->
+                        }.onFailure { failure ->
                             _editState.value = editState.value.copy(isFixingGrammar = false, fixedContentPreview = null, originalContentBackup = null)
-                            val errorMessage = when {
-                                error.message?.contains("429") == true -> "Too many requests. Please wait."
-                                error.message?.contains("timeout", ignoreCase = true) == true -> "Request timed out."
-                                else -> "Failed: ${error.message}"
+                            val errorMessage = when (failure) {
+                                is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                is GroqResult.InvalidKey -> "Invalid API key. Check your settings."
+                                is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                is GroqResult.AllModelsFailed -> "All AI models failed to respond. Try again later."
+                                else -> "Failed to fix grammar."
                             }
                             _events.emit(NotesUiEvent.ShowToast(errorMessage))
                         }
@@ -1270,10 +1272,17 @@ class NotesViewModel @Inject constructor(
                             groqRepository.summarizeNote(content).collect { result ->
                                 result.onSuccess { summary ->
                                     _editState.value = editState.value.copy(isSummarizing = false, summaryResult = summary)
-                                }.onFailure {
+                                }.onFailure { failure ->
+                                    val errorMessage = when (failure) {
+                                        is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                        is GroqResult.InvalidKey -> "Invalid API key. Check your settings."
+                                        is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                        is GroqResult.AllModelsFailed -> "All AI models failed to respond. Try again later."
+                                        else -> "Failed to summarize note."
+                                    }
                                     _editState.value = editState.value.copy(
                                         isSummarizing = false,
-                                        summaryResult = "Error: " + it.localizedMessage
+                                        summaryResult = "Error: $errorMessage"
                                     )
                                 }
                             }

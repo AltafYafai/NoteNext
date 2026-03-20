@@ -40,6 +40,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
+import com.suvojeet.notenext.data.repository.GroqRepository
+import com.suvojeet.notenext.data.repository.GroqResult
+import com.suvojeet.notenext.data.repository.onFailure
+import com.suvojeet.notenext.data.repository.onSuccess
 import javax.inject.Inject
 
 @HiltViewModel
@@ -47,7 +51,7 @@ class ProjectNotesViewModel @Inject constructor(
     private val repository: com.suvojeet.notenext.data.NoteRepository,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val groqRepository: com.suvojeet.notenext.data.repository.GroqRepository,
+    private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -615,9 +619,16 @@ class ProjectNotesViewModel @Inject constructor(
                     groqRepository.summarizeNote(content).collect { result ->
                         result.onSuccess { summary ->
                             _state.value = _state.value.copy(isSummarizing = false, summaryResult = summary)
-                        }.onFailure { e ->
+                        }.onFailure { failure ->
+                            val errorMessage = when (failure) {
+                                is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                is GroqResult.InvalidKey -> "Invalid API key. Check settings."
+                                is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                is GroqResult.AllModelsFailed -> "AI failed to respond. Try again later."
+                                else -> "Summarization failed."
+                            }
                             _state.value = _state.value.copy(isSummarizing = false, showSummaryDialog = false)
-                            _events.emit(ProjectNotesUiEvent.ShowToast("Summarization failed: ${e.message}"))
+                            _events.emit(ProjectNotesUiEvent.ShowToast(errorMessage))
                         }
                     }
                 }
@@ -636,9 +647,16 @@ class ProjectNotesViewModel @Inject constructor(
                                 isGeneratingChecklist = false,
                                 generatedChecklistPreview = items
                             )
-                        }.onFailure { e ->
+                        }.onFailure { failure ->
+                            val errorMessage = when (failure) {
+                                is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                is GroqResult.InvalidKey -> "Invalid API key. Check settings."
+                                is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                is GroqResult.AllModelsFailed -> "AI failed to respond. Try again later."
+                                else -> "Generation failed."
+                            }
                             _state.value = _state.value.copy(isGeneratingChecklist = false)
-                            _events.emit(ProjectNotesUiEvent.ShowToast("Generation failed: ${e.message}"))
+                            _events.emit(ProjectNotesUiEvent.ShowToast(errorMessage))
                         }
                     }
                 }
@@ -675,9 +693,16 @@ class ProjectNotesViewModel @Inject constructor(
                                 fixedContentPreview = fixedText,
                                 originalContentBackup = state.value.editingContent
                             )
-                        }.onFailure { e ->
+                        }.onFailure { failure ->
+                            val errorMessage = when (failure) {
+                                is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                                is GroqResult.InvalidKey -> "Invalid API key. Check settings."
+                                is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                                is GroqResult.AllModelsFailed -> "AI failed to respond. Try again later."
+                                else -> "Grammar fix failed."
+                            }
                             _state.value = _state.value.copy(isFixingGrammar = false)
-                            _events.emit(ProjectNotesUiEvent.ShowToast("Grammar fix failed: ${e.message}"))
+                            _events.emit(ProjectNotesUiEvent.ShowToast(errorMessage))
                         }
                     }
                 }
