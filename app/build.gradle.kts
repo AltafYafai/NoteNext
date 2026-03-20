@@ -193,8 +193,10 @@ dependencies {
     // Google Play Billing (Donations)
     implementation(libs.billing)
 
+    // Google Play In-App Review
+    implementation(libs.play.review)
+    implementation(libs.play.review.ktx)
 
-    
     // ACRA
     implementation(libs.acra.core)
     implementation(libs.acra.http)

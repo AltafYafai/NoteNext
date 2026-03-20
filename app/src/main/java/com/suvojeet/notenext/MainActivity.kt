@@ -42,6 +42,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import javax.inject.Inject
 import com.suvojeet.notenext.util.UpdateChecker
+import com.suvojeet.notenext.util.ReviewManager
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.*
@@ -63,6 +64,7 @@ class MainActivity : FragmentActivity() {
     private val _enableAppLockLoaded = MutableStateFlow<Boolean?>(null)
     
     private lateinit var updateChecker: UpdateChecker
+    private lateinit var reviewManager: ReviewManager
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +95,10 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         updateChecker = UpdateChecker(this)
+        reviewManager = ReviewManager(this)
+        
+        // Trigger review check
+        reviewManager.checkAndRequestReview(this)
 
         handleIntent(intent)
 
