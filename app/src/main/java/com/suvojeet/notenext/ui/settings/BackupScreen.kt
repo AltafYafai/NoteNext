@@ -402,7 +402,22 @@ fun BackupScreen(
                 )
             }
 
-            // 4. Danger Zone
+            // 4. Smart & Incremental
+            item {
+                SectionHeader("Smart & Incremental")
+            }
+
+            item {
+                SmartBackupSettingsCard(
+                    state = state,
+                    onToggleIncremental = { viewModel.toggleIncrementalBackup(it) },
+                    onToggleSmart = { viewModel.toggleSmartBackup(it) },
+                    onToggleCharging = { viewModel.toggleChargingConstraint(it) },
+                    onThresholdChange = { viewModel.setEditsThreshold(it) }
+                )
+            }
+
+            // 5. Danger Zone
             item {
                 if (state.driveBackupExists) {
                     Spacer(Modifier.height(8.dp))
@@ -1387,3 +1402,111 @@ fun BouncingOutlinedButton(
 
 // Local dialog implementations removed. Using shared components from ui.components.BackupDialogs
 
+
+@Composable
+fun SmartBackupSettingsCard(
+    state: BackupRestoreState,
+    onToggleIncremental: (Boolean) -> Unit,
+    onToggleSmart: (Boolean) -> Unit,
+    onToggleCharging: (Boolean) -> Unit,
+    onThresholdChange: (Int) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoMode, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(16.dp))
+                Text("Optimization", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+            }
+            
+            Spacer(Modifier.height(24.dp))
+
+            // Incremental Backup
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Incremental Backup", style = MaterialTheme.typography.bodyLarge)
+                    Text("Only save changes since last backup to save data and storage.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = state.isIncrementalEnabled,
+                    onCheckedChange = onToggleIncremental,
+                    thumbContent = if (state.isIncrementalEnabled) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(Modifier.height(24.dp))
+
+            // Smart Trigger
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Smart Backup Trigger", style = MaterialTheme.typography.bodyLarge)
+                    Text("Automatically backup after a certain number of edits.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = state.isSmartBackupEnabled,
+                    onCheckedChange = onToggleSmart,
+                    thumbContent = if (state.isSmartBackupEnabled) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null
+                )
+            }
+
+            if (state.isSmartBackupEnabled) {
+                Spacer(Modifier.height(16.dp))
+                Text("Backup after ${state.editsThreshold} edits", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Slider(
+                    value = state.editsThreshold.toFloat(),
+                    onValueChange = { onThresholdChange(it.toInt()) },
+                    valueRange = 5f..50f,
+                    steps = 9
+                )
+                Text(
+                    "Current edits: ${state.currentEditCount}", 
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.End)
+                )
+            }
+
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            Spacer(Modifier.height(24.dp))
+
+            // Charging Constraint
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Backup while Charging Only", style = MaterialTheme.typography.bodyLarge)
+                    Text("Conserve battery by only backing up when plugged in.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = state.isChargingConstraintEnabled,
+                    onCheckedChange = onToggleCharging,
+                    thumbContent = if (state.isChargingConstraintEnabled) {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(SwitchDefaults.IconSize)) }
+                    } else null
+                )
+            }
+        }
+    }
+}

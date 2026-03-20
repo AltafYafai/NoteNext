@@ -48,21 +48,21 @@ class BackupRepository @Inject constructor(
         coerceInputValues = true
     }
 
-    suspend fun createBackupZip(targetFile: File, includeAttachments: Boolean = true) {
+    suspend fun createBackupZip(targetFile: File, includeAttachments: Boolean = true, since: Long = 0) {
         FileOutputStream(targetFile).use { fos ->
             ZipOutputStream(fos).use { zos ->
-                writeBackupToZip(zos, includeAttachments)
+                writeBackupToZip(zos, includeAttachments, since)
             }
         }
     }
     
-    suspend fun createBackupZip(outputStream: java.io.OutputStream, includeAttachments: Boolean = true) {
+    suspend fun createBackupZip(outputStream: java.io.OutputStream, includeAttachments: Boolean = true, since: Long = 0) {
          ZipOutputStream(outputStream).use { zos ->
-            writeBackupToZip(zos, includeAttachments)
+            writeBackupToZip(zos, includeAttachments, since)
         }
     }
 
-    suspend fun backupToUri(folderUri: Uri, includeAttachments: Boolean = true): String {
+    suspend fun backupToUri(folderUri: Uri, includeAttachments: Boolean = true, since: Long = 0): String {
         return try {
             val validUri = if (folderUri.toString().endsWith("%3A")) {
                  folderUri
@@ -73,12 +73,13 @@ class BackupRepository @Inject constructor(
                  throw Exception("Cannot write to selected folder. Please select a valid directory.")
             }
 
-            val fileName = "NoteNext_Backup_${System.currentTimeMillis()}.zip"
+            val prefix = if (since > 0) "NoteNext_Incremental_" else "NoteNext_Backup_"
+            val fileName = "${prefix}${System.currentTimeMillis()}.zip"
             val file = dir.createFile("application/zip", fileName) 
                 ?: throw Exception("Failed to create file in selected directory.")
 
             context.contentResolver.openOutputStream(file.uri)?.use { outputStream ->
-                createBackupZip(outputStream, includeAttachments)
+                createBackupZip(outputStream, includeAttachments, since)
             }
             "Backup successful: $fileName"
         } catch (e: Exception) {
@@ -87,7 +88,7 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    suspend fun backupToEncryptedFolder(folderUri: Uri, password: String, includeAttachments: Boolean = true): String {
+    suspend fun backupToEncryptedFolder(folderUri: Uri, password: String, includeAttachments: Boolean = true, since: Long = 0): String {
         return try {
              val validUri = if (folderUri.toString().endsWith("%3A")) {
                  folderUri
@@ -98,11 +99,12 @@ class BackupRepository @Inject constructor(
                  throw Exception("Cannot write to selected folder. Please select a valid directory.")
             }
 
-            val fileName = "NoteNext_Backup_Encrypted_${System.currentTimeMillis()}.enc"
+            val prefix = if (since > 0) "NoteNext_Incremental_Encrypted_" else "NoteNext_Backup_Encrypted_"
+            val fileName = "${prefix}${System.currentTimeMillis()}.enc"
             val file = dir.createFile("application/octet-stream", fileName) 
                 ?: throw Exception("Failed to create file in selected directory.")
 
-            backupToEncryptedStream(context.contentResolver.openOutputStream(file.uri), password, includeAttachments)
+            backupToEncryptedStream(context.contentResolver.openOutputStream(file.uri), password, includeAttachments, since)
 
             "Encrypted Backup successful: $fileName"
         } catch (e: Exception) {
@@ -111,7 +113,7 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    suspend fun backupToEncryptedStream(outputStream: java.io.OutputStream?, password: String, includeAttachments: Boolean = true) {
+    suspend fun backupToEncryptedStream(outputStream: java.io.OutputStream?, password: String, includeAttachments: Boolean = true, since: Long = 0) {
         if (outputStream == null) throw Exception("Output stream is null")
         
         // Use Piped streams to avoid writing plain-text temp files to disk for better security
@@ -122,7 +124,7 @@ class BackupRepository @Inject constructor(
             // Launch zip writing in a separate coroutine
             val zipJob = launch(Dispatchers.IO) {
                 try {
-                    createBackupZip(pipedOutputStream, includeAttachments)
+                    createBackupZip(pipedOutputStream, includeAttachments, since)
                 } finally {
                     pipedOutputStream.close()
                 }
@@ -163,9 +165,9 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    suspend fun createEncryptedBackupZip(targetFile: File, password: String, includeAttachments: Boolean = true) {
+    suspend fun createEncryptedBackupZip(targetFile: File, password: String, includeAttachments: Boolean = true, since: Long = 0) {
         FileOutputStream(targetFile).use { fos ->
-            backupToEncryptedStream(fos, password, includeAttachments)
+            backupToEncryptedStream(fos, password, includeAttachments, since)
         }
     }
 
@@ -173,14 +175,15 @@ class BackupRepository @Inject constructor(
         account: GoogleSignInAccount, 
         password: String? = null,
         includeAttachments: Boolean = true, 
+        since: Long = 0,
         onProgress: ((Long, Long) -> Unit)? = null
     ): String {
         val dbFile = File(context.cacheDir, "temp_backup.zip") // Google Drive SDK uses this file to upload
         try {
             if (password.isNullOrBlank()) {
-                createBackupZip(dbFile, includeAttachments)
+                createBackupZip(dbFile, includeAttachments, since)
             } else {
-                createEncryptedBackupZip(dbFile, password, includeAttachments)
+                createEncryptedBackupZip(dbFile, password, includeAttachments, since)
             }
             return googleDriveManager.uploadBackup(context, account, dbFile, onProgress)
         } finally {
@@ -190,7 +193,7 @@ class BackupRepository @Inject constructor(
         }
     }
 
-    private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean) {
+    private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean, since: Long = 0) {
         val manifest = mutableMapOf<String, String>()
         val md = MessageDigest.getInstance("SHA-256")
         var missingAttachmentsCount = 0
@@ -205,8 +208,12 @@ class BackupRepository @Inject constructor(
             manifest[name] = hashString
         }
 
-        // Backup core data
-        val notes = repository.getNotes().first()
+        // Backup core data - if since > 0, filter only modified notes
+        val notes = if (since > 0) {
+            repository.getNotesModifiedSince(since).first()
+        } else {
+            repository.getNotes().first()
+        }
         val labels = repository.getLabels().first()
         val projects = repository.getProjects().first()
 
@@ -215,7 +222,7 @@ class BackupRepository @Inject constructor(
         writeEntryWithHash("projects.json", json.encodeToString(ListSerializer(Project.serializer()), projects).toByteArray())
 
         // Backup attachments with deduplication
-        if (includeAttachments) {
+        if (includeAttachments && notes.isNotEmpty()) {
             val processedHashes = mutableSetOf<String>()
             val attachments = notes.flatMap { it.attachments }
             
@@ -251,6 +258,9 @@ class BackupRepository @Inject constructor(
         // Finalize manifest
         manifest["backup_timestamp"] = System.currentTimeMillis().toString()
         manifest["missing_attachments"] = missingAttachmentsCount.toString()
+        manifest["is_incremental"] = (since > 0).toString()
+        manifest["since_timestamp"] = since.toString()
+        
         val manifestJson = json.encodeToString(manifest)
         zos.putNextEntry(ZipEntry("manifest.json"))
         zos.write(manifestJson.toByteArray())

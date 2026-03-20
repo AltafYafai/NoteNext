@@ -99,7 +99,7 @@ class GoogleDriveManager @Inject constructor() {
         return file.id
     }
 
-    private fun pruneOldBackups(driveService: Drive, maxBackups: Int = 7) {
+    private fun pruneOldBackups(driveService: Drive, maxBackups: Int = 5) {
         try {
             val query = "name contains 'notenext_backup_' and 'appDataFolder' in parents and trashed = false"
             val fileList = driveService.files().list()

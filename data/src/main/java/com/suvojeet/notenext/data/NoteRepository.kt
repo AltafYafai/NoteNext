@@ -11,6 +11,7 @@ interface NoteRepository {
     fun getArchivedNotes(): Flow<List<NoteWithAttachments>>
     fun getBinnedNotes(): Flow<List<NoteWithAttachments>>
     fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>>
+    fun getNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>>
     suspend fun getNoteById(id: Int): NoteWithAttachments?
     suspend fun insertNote(note: Note): Long
     suspend fun updateNote(note: Note)

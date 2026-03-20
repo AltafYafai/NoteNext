@@ -96,9 +96,10 @@ object AppModule {
         noteDao: NoteDao,
         labelDao: LabelDao,
         projectDao: ProjectDao,
-        checklistItemDao: ChecklistItemDao
+        checklistItemDao: ChecklistItemDao,
+        @ApplicationContext context: Context
     ): com.suvojeet.notenext.data.NoteRepository {
-        return com.suvojeet.notenext.data.NoteRepositoryImpl(db, noteDao, labelDao, projectDao, checklistItemDao)
+        return com.suvojeet.notenext.data.NoteRepositoryImpl(db, noteDao, labelDao, projectDao, checklistItemDao, context)
     }
 
     @Provides
