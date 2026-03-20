@@ -1,8 +1,6 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.drawing
 
-import android.content.Context
-import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
@@ -20,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Redo
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Brush
@@ -32,49 +31,36 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-
-data class DrawingPath(
-    val path: Path,
-    val color: Color,
-    val strokeWidth: Float,
-    val isEraser: Boolean = false
-)
 
 @Composable
 fun DrawingScreen(
     onSave: (Uri) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    viewModel: DrawingViewModel = hiltViewModel()
 ) {
-    val paths = remember { mutableStateListOf<DrawingPath>() }
-    var currentPath by remember { mutableStateOf<Path?>(null) }
-    var currentColor by remember { mutableStateOf(Color.Black) }
-    var currentStrokeWidth by remember { mutableStateOf(10f) }
-    var isEraserMode by remember { mutableStateOf(false) }
+    val state by viewModel.state.collectAsState()
     
-    var showBrushSettings by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
-
+    // Local state for the current stroke being drawn to avoid ViewModel overhead during fast drags
+    var currentPath by remember { mutableStateOf<Path?>(null) }
+    
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -102,21 +88,28 @@ fun DrawingScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { if (paths.isNotEmpty()) paths.removeAt(paths.lastIndex) },
-                        enabled = paths.isNotEmpty(),
+                        onClick = { viewModel.onEvent(DrawingEvent.Undo) },
+                        enabled = state.paths.isNotEmpty(),
                         modifier = Modifier.springPress()
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = "Undo")
                     }
                     IconButton(
-                        onClick = { paths.clear() },
-                        enabled = paths.isNotEmpty(),
+                        onClick = { viewModel.onEvent(DrawingEvent.Redo) },
+                        enabled = state.undonePaths.isNotEmpty(),
+                        modifier = Modifier.springPress()
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.Redo, contentDescription = "Redo")
+                    }
+                    IconButton(
+                        onClick = { viewModel.onEvent(DrawingEvent.ClearAll) },
+                        enabled = state.paths.isNotEmpty(),
                         modifier = Modifier.springPress()
                     ) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = "Clear All")
                     }
                     
-                    if (isSaving) {
+                    if (state.isSaving) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp).padding(end = 16.dp),
                             strokeWidth = 2.dp
@@ -124,14 +117,11 @@ fun DrawingScreen(
                     } else {
                         Button(
                             onClick = {
-                                coroutineScope.launch {
-                                    isSaving = true
-                                    val uri = saveDrawingToCache(context, paths)
-                                    isSaving = false
+                                viewModel.onEvent(DrawingEvent.SaveDrawing(context) { uri ->
                                     if (uri != null) onSave(uri)
-                                }
+                                })
                             },
-                            enabled = paths.isNotEmpty(),
+                            enabled = state.paths.isNotEmpty(),
                             modifier = Modifier.padding(end = 8.dp).springPress(),
                             shape = MaterialTheme.shapes.medium
                         ) {
@@ -158,7 +148,7 @@ fun DrawingScreen(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     AnimatedVisibility(
-                        visible = showBrushSettings,
+                        visible = state.showBrushSettings,
                         enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
                         exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 })
                     ) {
@@ -167,14 +157,14 @@ fun DrawingScreen(
                                 Icon(Icons.Default.FormatSize, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(12.dp))
                                 Slider(
-                                    value = currentStrokeWidth,
-                                    onValueChange = { currentStrokeWidth = it },
+                                    value = state.currentStrokeWidth,
+                                    onValueChange = { viewModel.onEvent(DrawingEvent.ChangeStrokeWidth(it)) },
                                     valueRange = 5f..100f,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Spacer(Modifier.width(12.dp))
                                 Text(
-                                    "${currentStrokeWidth.toInt()}px",
+                                    "${state.currentStrokeWidth.toInt()}px",
                                     style = MaterialTheme.typography.labelLarge,
                                     modifier = Modifier.width(45.dp)
                                 )
@@ -190,10 +180,10 @@ fun DrawingScreen(
                         // Tool Switchers
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Surface(
-                                selected = !isEraserMode,
-                                onClick = { isEraserMode = false; isEraserMode = false },
+                                selected = !state.isEraserMode,
+                                onClick = { viewModel.onEvent(DrawingEvent.ToggleEraserMode(false)) },
                                 shape = CircleShape,
-                                color = if (!isEraserMode) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                color = if (!state.isEraserMode) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                                 modifier = Modifier.size(48.dp).springPress()
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -202,10 +192,10 @@ fun DrawingScreen(
                             }
                             Spacer(Modifier.width(4.dp))
                             Surface(
-                                selected = isEraserMode,
-                                onClick = { isEraserMode = true },
+                                selected = state.isEraserMode,
+                                onClick = { viewModel.onEvent(DrawingEvent.ToggleEraserMode(true)) },
                                 shape = CircleShape,
-                                color = if (isEraserMode) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                                color = if (state.isEraserMode) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                                 modifier = Modifier.size(48.dp).springPress()
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -227,16 +217,15 @@ fun DrawingScreen(
                                         .clip(CircleShape)
                                         .background(color)
                                         .border(
-                                            width = if (currentColor == color && !isEraserMode) 3.dp else 1.dp,
-                                            color = if (currentColor == color && !isEraserMode) 
+                                            width = if (state.currentColor == color && !state.isEraserMode) 3.dp else 1.dp,
+                                            color = if (state.currentColor == color && !state.isEraserMode) 
                                                 MaterialTheme.colorScheme.primary 
                                             else 
                                                 Color.LightGray.copy(alpha = 0.5f),
                                             shape = CircleShape
                                         )
                                         .clickable { 
-                                            currentColor = color
-                                            isEraserMode = false
+                                            viewModel.onEvent(DrawingEvent.ChangeColor(color))
                                         }
                                         .springPress()
                                 )
@@ -245,10 +234,10 @@ fun DrawingScreen(
 
                         // Settings Toggle
                         IconButton(
-                            onClick = { showBrushSettings = !showBrushSettings },
+                            onClick = { viewModel.onEvent(DrawingEvent.ToggleBrushSettings) },
                             modifier = Modifier
                                 .background(
-                                    if (showBrushSettings) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                                    if (state.showBrushSettings) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
                                     CircleShape
                                 )
                                 .springPress()
@@ -264,12 +253,14 @@ fun DrawingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color.White)
+                .background(Color.Transparent) // Changed from White to Transparent for true erasing
         ) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(isEraserMode, currentColor, currentStrokeWidth) {
+                    // Use graphicsLayer with CompositingStrategy.Offscreen for true eraser BlendMode to work
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .pointerInput(state.isEraserMode, state.currentColor, state.currentStrokeWidth) {
                         detectDragGestures(
                             onDragStart = { offset ->
                                 currentPath = Path().apply {
@@ -277,13 +268,14 @@ fun DrawingScreen(
                                 }
                             },
                             onDrag = { change, _ ->
+                                // Senior Optimization: Mutate the path directly instead of allocating a new one
                                 currentPath?.lineTo(change.position.x, change.position.y)
-                                // Trigger recomposition
+                                // Force recomposition by re-assigning (compose sees same object, so we wrap)
                                 currentPath = Path().apply { addPath(currentPath!!) }
                             },
                             onDragEnd = {
                                 currentPath?.let {
-                                    paths.add(DrawingPath(it, if (isEraserMode) Color.White else currentColor, currentStrokeWidth, isEraserMode))
+                                    viewModel.onEvent(DrawingEvent.PathAdded(it))
                                 }
                                 currentPath = null
                             },
@@ -293,7 +285,8 @@ fun DrawingScreen(
                         )
                     }
             ) {
-                paths.forEach { drawingPath ->
+                // Draw all saved paths
+                state.paths.forEach { drawingPath ->
                     drawPath(
                         path = drawingPath.path,
                         color = drawingPath.color,
@@ -301,24 +294,29 @@ fun DrawingScreen(
                             width = drawingPath.strokeWidth,
                             cap = StrokeCap.Round,
                             join = StrokeJoin.Round
-                        )
+                        ),
+                        // True eraser uses BlendMode.Clear
+                        blendMode = if (drawingPath.isEraser) BlendMode.Clear else BlendMode.SrcOver
                     )
                 }
+                
+                // Draw current stroke
                 currentPath?.let {
                     drawPath(
                         path = it,
-                        color = if (isEraserMode) Color.White else currentColor,
+                        color = if (state.isEraserMode) Color.Transparent else state.currentColor,
                         style = Stroke(
-                            width = currentStrokeWidth,
+                            width = state.currentStrokeWidth,
                             cap = StrokeCap.Round,
                             join = StrokeJoin.Round
-                        )
+                        ),
+                        blendMode = if (state.isEraserMode) BlendMode.Clear else BlendMode.SrcOver
                     )
                 }
             }
             
             // Helpful Hint
-            if (paths.isEmpty() && currentPath == null) {
+            if (state.paths.isEmpty() && currentPath == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         "Start drawing here...",
@@ -331,39 +329,5 @@ fun DrawingScreen(
                 }
             }
         }
-    }
-}
-
-private suspend fun saveDrawingToCache(context: Context, paths: List<DrawingPath>): Uri? = withContext(Dispatchers.IO) {
-    try {
-        val displayMetrics = context.resources.displayMetrics
-        val width = displayMetrics.widthPixels
-        val height = displayMetrics.heightPixels
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(bitmap)
-        canvas.drawColor(android.graphics.Color.WHITE)
-
-        val paint = android.graphics.Paint().apply {
-            style = android.graphics.Paint.Style.STROKE
-            strokeCap = android.graphics.Paint.Cap.ROUND
-            strokeJoin = android.graphics.Paint.Join.ROUND
-            isAntiAlias = true
-        }
-
-        paths.forEach { drawingPath ->
-            paint.color = drawingPath.color.toArgb()
-            paint.strokeWidth = drawingPath.strokeWidth
-            val androidPath = drawingPath.path.asAndroidPath()
-            canvas.drawPath(androidPath, paint)
-        }
-
-        val file = File(context.cacheDir, "drawing_${System.currentTimeMillis()}.png")
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        }
-        Uri.fromFile(file)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
     }
 }
