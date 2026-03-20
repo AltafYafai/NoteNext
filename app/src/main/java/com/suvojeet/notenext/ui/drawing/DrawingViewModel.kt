@@ -142,8 +142,8 @@ class DrawingViewModel @Inject constructor() : ViewModel() {
                 val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                 val canvas = android.graphics.Canvas(bitmap)
                 
-                // Keep background transparent so it looks good in light/dark mode notes
-                canvas.drawColor(android.graphics.Color.TRANSPARENT)
+                // Match the white background of the drawing screen for better visibility
+                canvas.drawColor(android.graphics.Color.WHITE)
 
                 // Translate canvas so the drawing starts at 0,0
                 canvas.translate(-bounds.left, -bounds.top)
@@ -157,8 +157,9 @@ class DrawingViewModel @Inject constructor() : ViewModel() {
 
                 currentPaths.forEach { drawingPath ->
                     if (drawingPath.isEraser) {
-                        paint.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)
-                        paint.color = android.graphics.Color.TRANSPARENT
+                        // On a white background, eraser should draw with white color
+                        paint.xfermode = null
+                        paint.color = android.graphics.Color.WHITE
                     } else {
                         paint.xfermode = null
                         paint.color = drawingPath.color.toArgb()
