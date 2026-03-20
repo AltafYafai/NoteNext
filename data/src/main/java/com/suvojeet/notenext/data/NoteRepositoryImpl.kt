@@ -6,6 +6,11 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.room.withTransaction
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.suvojeet.notenext.data.backup.BackupWorker
 import com.suvojeet.notenext.util.CryptoUtils
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,7 +21,8 @@ class NoteRepositoryImpl @Inject constructor(
     private val noteDao: NoteDao,
     private val labelDao: LabelDao,
     private val projectDao: ProjectDao,
-    private val checklistItemDao: ChecklistItemDao
+    private val checklistItemDao: ChecklistItemDao,
+    @ApplicationContext private val context: Context
 ) : NoteRepository {
 
     override suspend fun <T> runInTransaction(block: suspend () -> T): T {
@@ -80,20 +86,51 @@ class NoteRepositoryImpl @Inject constructor(
     override fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>> = 
         noteDao.getNotesByProjectId(projectId)
 
+    override fun getNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>> =
+        noteDao.getNotesModifiedSince(timestamp)
+
     override suspend fun getNoteById(id: Int): NoteWithAttachments? = 
         noteDao.getNoteById(id)?.let { 
             // We return it AS IS if locked, so the caller can trigger biometric auth
             if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
         }
 
+    private suspend fun incrementEditCounter() {
+        val sharedPrefs = context.getSharedPreferences("backup_prefs", Context.MODE_PRIVATE)
+        val smartBackupEnabled = sharedPrefs.getBoolean("smart_backup_enabled", false)
+        if (!smartBackupEnabled) return
+
+        val currentCount = sharedPrefs.getInt("edit_counter", 0) + 1
+        val threshold = sharedPrefs.getInt("edits_before_backup", 10)
+
+        if (currentCount >= threshold) {
+            // Trigger backup
+            val email = sharedPrefs.getString("google_account_email", null)
+            val inputData = androidx.work.Data.Builder()
+            if (email != null) inputData.putString("email", email)
+            
+            val workRequest = OneTimeWorkRequestBuilder<BackupWorker>()
+                .setInputData(inputData.build())
+                .build()
+            
+            WorkManager.getInstance(context).enqueue(workRequest)
+            sharedPrefs.edit().putInt("edit_counter", 0).apply()
+        } else {
+            sharedPrefs.edit().putInt("edit_counter", currentCount).apply()
+        }
+    }
+
     override suspend fun insertNote(note: Note): Long {
         val noteToInsert = if (note.isLocked) CryptoUtils.encryptNote(note) else note
-        return noteDao.insertNote(noteToInsert)
+        val id = noteDao.insertNote(noteToInsert)
+        if (id > 0) incrementEditCounter()
+        return id
     }
 
     override suspend fun updateNote(note: Note) {
         val noteToUpdate = if (note.isLocked) CryptoUtils.encryptNote(note) else note
         noteDao.updateNote(noteToUpdate)
+        incrementEditCounter()
     }
 
     override suspend fun updateNotePosition(id: Int, position: Int) = noteDao.updateNotePosition(id, position)

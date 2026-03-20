@@ -66,7 +66,12 @@ data class BackupRestoreState(
     val isEncryptionEnabled: Boolean = false,
     val hasPasswordSet: Boolean = false,
     val lastBackupTime: Long = 0L,
-    val lastBackupStatus: String? = null
+    val lastBackupStatus: String? = null,
+    val isIncrementalEnabled: Boolean = false,
+    val isSmartBackupEnabled: Boolean = false,
+    val isChargingConstraintEnabled: Boolean = false,
+    val editsThreshold: Int = 10,
+    val currentEditCount: Int = 0
 )
 
 @HiltViewModel
@@ -108,6 +113,12 @@ class BackupRestoreViewModel @Inject constructor(
         
         val lastTime = sharedPrefs.getLong("last_backup_time", 0L)
         val lastStatus = sharedPrefs.getString("last_backup_status", null)
+        
+        val incrementalEnabled = sharedPrefs.getBoolean("incremental_backup_enabled", false)
+        val smartEnabled = sharedPrefs.getBoolean("smart_backup_enabled", false)
+        val chargingOnly = sharedPrefs.getBoolean("backup_on_charging_only", false)
+        val threshold = sharedPrefs.getInt("edits_before_backup", 10)
+        val editCount = sharedPrefs.getInt("edit_counter", 0)
 
         _state.value = _state.value.copy(
             isAutoBackupEnabled = enabled, 
@@ -118,7 +129,13 @@ class BackupRestoreViewModel @Inject constructor(
             isEncryptionEnabled = encryptionEnabled,
             hasPasswordSet = hasPassword,
             lastBackupTime = lastTime,
-            lastBackupStatus = lastStatus
+            lastBackupStatus = lastStatus,
+            isIncrementalEnabled = incrementalEnabled,
+            isSmartBackupEnabled = smartEnabled,
+            isChargingConstraintEnabled = chargingOnly,
+            editsThreshold = threshold,
+            currentEditCount = editCount,
+            googleAccountEmail = sharedPrefs.getString("google_account_email", null)
         )
     }
 
@@ -133,6 +150,8 @@ class BackupRestoreViewModel @Inject constructor(
     }
 
     fun setGoogleAccount(account: com.google.android.gms.auth.api.signin.GoogleSignInAccount?) {
+        val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
+        sharedPrefs.edit().putString("google_account_email", account?.email).apply()
         _state.value = _state.value.copy(googleAccountEmail = account?.email)
         if (account != null) {
             checkDriveBackupStatus(account)
@@ -425,10 +444,14 @@ class BackupRestoreViewModel @Inject constructor(
         } ?: emptyList()
 
         val notesToRestore = json.decodeFromString(ListSerializer(NoteWithAttachments.serializer()), notesJson)
+        
+        val manifest = manifestJson?.let { json.decodeFromString<Map<String, String>>(it) }
+        val isIncremental = manifest?.get("is_incremental")?.toBoolean() ?: false
+        val effectiveMerge = merge || isIncremental
 
         repository.runInTransaction {
-            if (!merge) {
-                // Only delete local data if NOT merging
+            if (!effectiveMerge) {
+                // Only delete local data if NOT merging and NOT incremental
                 repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
                 repository.getNotes().first().forEach { repository.deleteNote(it.note) }
                 repository.getLabels().first().forEach { repository.deleteLabel(it) }
@@ -454,11 +477,30 @@ class BackupRestoreViewModel @Inject constructor(
             notesToRestore.forEach { noteWithAttachments ->
                 val oldProjectId = noteWithAttachments.note.projectId
                 val newProjectId = if (oldProjectId != null) oldToNewProjectIds[oldProjectId] else null
-                val newNote = noteWithAttachments.note.copy(id = 0, projectId = newProjectId)
-                val newNoteId = repository.insertNote(newNote)
-                require(newNoteId <= Int.MAX_VALUE) { "Note ID overflow" }
+                
+                // If merging/incremental, check if note with same title exists
+                val existingNoteId = if (effectiveMerge) {
+                    repository.getNoteIdByTitle(noteWithAttachments.note.title)
+                } else null
+
+                val newNoteId = if (existingNoteId != null) {
+                    // Update existing
+                    repository.updateNote(noteWithAttachments.note.copy(id = existingNoteId, projectId = newProjectId))
+                    existingNoteId.toLong()
+                } else {
+                    // Insert new
+                    val id = repository.insertNote(noteWithAttachments.note.copy(id = 0, projectId = newProjectId))
+                    require(id <= Int.MAX_VALUE) { "Note ID overflow" }
+                    id
+                }
                 
                 if (noteWithAttachments.checklistItems.isNotEmpty()) {
+                    // If we updated, we might want to clear old checklist items or just add new ones
+                    // For simplicity, we clear and re-insert if it's a checklist note
+                    if (existingNoteId != null) {
+                        repository.deleteChecklistForNote(existingNoteId)
+                    }
+
                     val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
                         checklistItem.copy(
                             id = java.util.UUID.randomUUID().toString(),
@@ -774,6 +816,39 @@ class BackupRestoreViewModel @Inject constructor(
         }
     }
 
+    fun toggleIncrementalBackup(enabled: Boolean) {
+        viewModelScope.launch {
+            val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
+            sharedPrefs.edit().putBoolean("incremental_backup_enabled", enabled).apply()
+            _state.value = _state.value.copy(isIncrementalEnabled = enabled)
+        }
+    }
+
+    fun toggleSmartBackup(enabled: Boolean) {
+        viewModelScope.launch {
+            val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
+            sharedPrefs.edit().putBoolean("smart_backup_enabled", enabled).apply()
+            _state.value = _state.value.copy(isSmartBackupEnabled = enabled)
+        }
+    }
+
+    fun toggleChargingConstraint(enabled: Boolean) {
+        viewModelScope.launch {
+            val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
+            sharedPrefs.edit().putBoolean("backup_on_charging_only", enabled).apply()
+            _state.value = _state.value.copy(isChargingConstraintEnabled = enabled)
+            refreshWorkerSchedule()
+        }
+    }
+
+    fun setEditsThreshold(threshold: Int) {
+        viewModelScope.launch {
+            val sharedPrefs = application.getSharedPreferences("backup_prefs", android.content.Context.MODE_PRIVATE)
+            sharedPrefs.edit().putInt("edits_before_backup", threshold).apply()
+            _state.value = _state.value.copy(editsThreshold = threshold)
+        }
+    }
+
     private fun scheduleWorker(email: String?, frequency: String) {
         val workManager = androidx.work.WorkManager.getInstance(application)
         val repeatInterval = if (frequency == "Daily") 1L else 7L
@@ -783,9 +858,12 @@ class BackupRestoreViewModel @Inject constructor(
             inputDataBuilder.putString("email", email)
         }
         val inputData = inputDataBuilder.build()
+        
         val constraints = androidx.work.Constraints.Builder()
             .setRequiresBatteryNotLow(true)
+            .setRequiresCharging(state.value.isChargingConstraintEnabled)
             .build()
+            
         val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.suvojeet.notenext.data.backup.BackupWorker>(repeatInterval, timeUnit)
             .setConstraints(constraints)
             .setInputData(inputData)

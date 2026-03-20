@@ -31,6 +31,8 @@ class BackupWorker @AssistedInject constructor(
         val isSdCardBackupEnabled = sharedPrefs.getBoolean("sd_card_backup_enabled", false)
         val sdCardFolderUri = sharedPrefs.getString("sd_card_folder_uri", null)
         val includeAttachments = sharedPrefs.getBoolean("include_backup_attachments", true)
+        val isIncrementalEnabled = sharedPrefs.getBoolean("incremental_backup_enabled", false)
+        val lastBackupTime = if (isIncrementalEnabled) sharedPrefs.getLong("last_successful_backup_time", 0L) else 0L
         
         val isEncryptionEnabled = sharedPrefs.getBoolean("backup_encryption_enabled", false) || sharedPrefs.getBoolean("auto_backup_encryption_enabled", false)
         val encryptionPassword = SecurityUtils.getBackupPassword(applicationContext)
@@ -45,6 +47,7 @@ class BackupWorker @AssistedInject constructor(
 
         var success = true
         var errorMessage = ""
+        val startTime = System.currentTimeMillis()
 
         try {
             // 1. Google Drive Backup
@@ -55,11 +58,10 @@ class BackupWorker @AssistedInject constructor(
                          backupRepository.backupToDrive(
                              account = account,
                              password = backupPassword,
-                             includeAttachments = includeAttachments
+                             includeAttachments = includeAttachments,
+                             since = lastBackupTime
                          )
                     } else {
-                         // Fallback? If email is in inputData but no account logged in?
-                         // Should not happen if worker is cancelled on logout.
                          throw Exception("Google Account not signed in")
                     }
                 } catch (e: Exception) {
@@ -73,15 +75,22 @@ class BackupWorker @AssistedInject constructor(
             if (isSdCardBackupEnabled && sdCardFolderUri != null) {
                  try {
                      if (backupPassword != null) {
-                         backupRepository.backupToEncryptedFolder(android.net.Uri.parse(sdCardFolderUri), backupPassword, includeAttachments)
+                         backupRepository.backupToEncryptedFolder(android.net.Uri.parse(sdCardFolderUri), backupPassword, includeAttachments, since = lastBackupTime)
                      } else {
-                         backupRepository.backupToUri(android.net.Uri.parse(sdCardFolderUri), includeAttachments)
+                         backupRepository.backupToUri(android.net.Uri.parse(sdCardFolderUri), includeAttachments, since = lastBackupTime)
                      }
                  } catch (e: Exception) {
                      e.printStackTrace()
                      success = false
                      errorMessage = e.message ?: "SD Card backup failed"
                  }
+            }
+            
+            if (success) {
+                sharedPrefs.edit()
+                    .putLong("last_successful_backup_time", startTime)
+                    .putInt("edit_counter", 0) // Reset edit counter on success
+                    .apply()
             }
             
             showCompletionNotification(success, errorMessage)
