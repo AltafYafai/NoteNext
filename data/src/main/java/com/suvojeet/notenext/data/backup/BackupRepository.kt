@@ -211,7 +211,7 @@ class BackupRepository @Inject constructor(
         writeEntryWithHash("projects.json", projectsJson.toByteArray())
         
         // Write manifest
-        val manifestJson = json.encodeToString(kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.builtins.String.serializer(), kotlinx.serialization.builtins.String.serializer()), manifest)
+        val manifestJson = json.encodeToString(manifest)
         zos.putNextEntry(ZipEntry("manifest.json"))
         zos.write(manifestJson.toByteArray())
         zos.closeEntry()

@@ -98,6 +98,9 @@ dependencies {
     // DocumentFile
     implementation(libs.androidx.documentfile)
 
+    // Security
+    implementation(libs.androidx.security.crypto)
+
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
     

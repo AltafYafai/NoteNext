@@ -368,7 +368,7 @@ class BackupRestoreViewModel @Inject constructor(
 
         // Pass 1.5: Verify Checksums
         if (manifestJson != null) {
-            val manifest: Map<String, String> = json.decodeFromString(kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.builtins.String.serializer(), kotlinx.serialization.builtins.String.serializer()), manifestJson)
+            val manifest: Map<String, String> = json.decodeFromString(manifestJson)
             val md = java.security.MessageDigest.getInstance("SHA-256")
             
             fun verify(name: String, content: String?) {
