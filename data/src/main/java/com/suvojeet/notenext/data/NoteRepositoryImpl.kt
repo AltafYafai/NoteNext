@@ -128,7 +128,11 @@ class NoteRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateNote(note: Note) {
-        val noteToUpdate = if (note.isLocked) CryptoUtils.encryptNote(note) else note
+        val noteToUpdate = when {
+            note.isLocked -> CryptoUtils.encryptNote(note)
+            note.isEncrypted -> CryptoUtils.decryptNote(note) // Unlocking: decrypt before saving
+            else -> note
+        }
         noteDao.updateNote(noteToUpdate)
         incrementEditCounter()
     }

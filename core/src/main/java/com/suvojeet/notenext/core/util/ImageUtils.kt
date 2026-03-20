@@ -17,14 +17,35 @@ object ImageUtils {
     suspend fun compressImage(context: Context, uri: Uri): Uri? {
         return withContext(Dispatchers.IO) {
             try {
-                val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-                val originalBitmap = BitmapFactory.decodeStream(inputStream)
-                inputStream?.close()
+                // First decode with inJustDecodeBounds=true to check dimensions
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                context.contentResolver.openInputStream(uri)?.use { 
+                    BitmapFactory.decodeStream(it, null, options)
+                }
+
+                val maxDimension = 1920
+                var inSampleSize = 1
+                if (options.outHeight > maxDimension || options.outWidth > maxDimension) {
+                    val halfHeight: Int = options.outHeight / 2
+                    val halfWidth: Int = options.outWidth / 2
+                    while (halfHeight / inSampleSize >= maxDimension && halfWidth / inSampleSize >= maxDimension) {
+                        inSampleSize *= 2
+                    }
+                }
+
+                // Decode with inSampleSize
+                val decodeOptions = BitmapFactory.Options().apply {
+                    inSampleSize = inSampleSize
+                }
+                val originalBitmap = context.contentResolver.openInputStream(uri)?.use { 
+                    BitmapFactory.decodeStream(it, null, decodeOptions)
+                }
 
                 if (originalBitmap == null) return@withContext null
 
-                // Resize if too big (max 1920px width/height)
-                val maxDimension = 1920
+                // Final resize if still slightly above maxDimension
                 val ratio = Math.min(
                     maxDimension.toDouble() / originalBitmap.width,
                     maxDimension.toDouble() / originalBitmap.height

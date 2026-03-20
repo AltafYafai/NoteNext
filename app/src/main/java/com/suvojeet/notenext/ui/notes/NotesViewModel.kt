@@ -538,7 +538,12 @@ class NotesViewModel @Inject constructor(
                     if (selectedNotes.isEmpty()) return@launch
                     val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
                     for (note in selectedNotes) {
-                        repository.updateNote(note.note.copy(isLocked = areNotesBeingLocked))
+                        var noteToUpdate = note.note.copy(isLocked = areNotesBeingLocked)
+                        if (!areNotesBeingLocked && note.note.isEncrypted) {
+                            // If unlocking, decrypt first using the session's auth duration
+                            noteToUpdate = com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note).copy(isLocked = false)
+                        }
+                        repository.updateNote(noteToUpdate)
                     }
                     _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     val message = if (areNotesBeingLocked) {
@@ -757,17 +762,14 @@ class NotesViewModel @Inject constructor(
             is NotesEvent.OnToggleLockClick -> {
                 viewModelScope.launch {
                     val currentLockState = editState.value.editingIsLocked
-                    _editState.value = editState.value.copy(editingIsLocked = !currentLockState)
-                    // If note exists, update immediately
+                    val newLockState = !currentLockState
+                    _editState.value = editState.value.copy(editingIsLocked = newLockState)
+                    
+                    // If note exists, update immediately using the current decrypted state
                     editState.value.expandedNoteId?.let { noteId ->
                          if (noteId != -1) {
-                             repository.getNoteById(noteId)?.let { note ->
-                                 repository.updateNote(note.note.copy(isLocked = !currentLockState))
-                             }
-                             // Update list locally
-                             val updatedNotesList = listState.value.notes.map { if (it.note.id == noteId) it.copy(note = it.note.copy(isLocked = !currentLockState)) else it }
-                             _listState.value = listState.value.copy(notes = updatedNotesList)
-                             _events.emit(NotesUiEvent.ShowToast(if (!currentLockState) "Note locked" else "Note unlocked"))
+                             saveNote(shouldCollapse = false)
+                             _events.emit(NotesUiEvent.ShowToast(if (newLockState) "Note locked" else "Note unlocked"))
                              updateWidgets()
                          }
                     }
