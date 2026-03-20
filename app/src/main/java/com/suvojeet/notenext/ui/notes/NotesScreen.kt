@@ -207,8 +207,12 @@ fun NotesScreen(
                                 label = "TopAppBar Animation"
                             ) { targetState ->
                                 if (targetState) {
+                                    val isAllPinned = listState.selectedNoteIds.all { id ->
+                                        listState.pinnedNotes.any { it.note.id == id }
+                                    }
                                     ContextualTopAppBar(
                                         selectedItemCount = listState.selectedNoteIds.size,
+                                        isPinned = isAllPinned,
                                         onClearSelection = { viewModel.onEvent(NotesEvent.ClearSelection) },
                                         onTogglePinClick = { viewModel.onEvent(NotesEvent.TogglePinForSelectedNotes) },
                                         onReminderClick = { showReminderSetDialog = true },

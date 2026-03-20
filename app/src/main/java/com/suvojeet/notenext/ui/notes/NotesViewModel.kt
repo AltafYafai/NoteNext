@@ -513,16 +513,20 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.TogglePinForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
-                    val areNotesBeingPinned = selectedNotes.firstOrNull()?.note?.isPinned == false
-                    for (note in selectedNotes) {
+                    val allSelectedNotes = getSelectedNotes()
+                    if (allSelectedNotes.isEmpty()) return@launch
+
+                    val areNotesBeingPinned = allSelectedNotes.any { !it.note.isPinned }
+                    
+                    for (note in allSelectedNotes) {
                         repository.updateNote(note.note.copy(isPinned = areNotesBeingPinned))
                     }
+                    
                     _listState.value = listState.value.copy(selectedNoteIds = emptyList())
                     val message = if (areNotesBeingPinned) {
-                        if (selectedNotes.size > 1) "${selectedNotes.size} notes pinned" else "Note pinned"
+                        if (allSelectedNotes.size > 1) "${allSelectedNotes.size} notes pinned" else "Note pinned"
                     } else {
-                        if (selectedNotes.size > 1) "${selectedNotes.size} notes unpinned" else "Note unpinned"
+                        if (allSelectedNotes.size > 1) "${allSelectedNotes.size} notes unpinned" else "Note unpinned"
                     }
                     _events.emit(NotesUiEvent.ShowToast(message))
                     updateWidgets()
@@ -530,8 +534,9 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.ToggleLockForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
-                     val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
+                    val selectedNotes = getSelectedNotes()
+                    if (selectedNotes.isEmpty()) return@launch
+                    val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isLocked = areNotesBeingLocked))
                     }
@@ -547,7 +552,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.DeleteSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isBinned = true, binnedOn = System.currentTimeMillis()))
                     }
@@ -558,7 +563,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.ArchiveSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isArchived = !note.note.isArchived))
                     }
@@ -568,7 +573,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.ToggleImportantForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isImportant = !note.note.isImportant))
                     }
@@ -577,20 +582,11 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.ChangeColorForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(color = event.color))
                     }
-                    // Update local state immediately so UI reflects the change
-                    val updatedNotesList = listState.value.notes.map { noteWithAttachments ->
-                        if (listState.value.selectedNoteIds.contains(noteWithAttachments.note.id)) {
-                            noteWithAttachments.copy(note = noteWithAttachments.note.copy(color = event.color))
-                        } else {
-                            noteWithAttachments
-                        }
-                    }
                     _listState.value = listState.value.copy(
-                        notes = updatedNotesList,
                         selectedNoteIds = emptyList()
                     )
                     _events.emit(NotesUiEvent.ShowToast("Color updated"))
@@ -598,7 +594,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.CopySelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (noteWithAttachments in selectedNotes) {
                         val copiedNote = noteWithAttachments.note.copy(id = 0, title = "${noteWithAttachments.note.title} (Copy)")
                         val newNoteId = repository.insertNote(copiedNote)
@@ -619,7 +615,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.SendSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     if (selectedNotes.isNotEmpty()) {
                         val title = if (selectedNotes.size == 1) selectedNotes.first().note.title else "Multiple Notes"
                         val contentBuilder = StringBuilder()
@@ -636,7 +632,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.SetReminderForSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     val reminderDateTime = LocalDateTime.of(event.date, event.time)
                     val reminderMillis = reminderDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -657,7 +653,7 @@ class NotesViewModel @Inject constructor(
                     if (event.label.isNotBlank()) {
                         repository.insertLabel(Label(event.label))
                     }
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(label = event.label))
                     }
@@ -1215,7 +1211,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.MoveSelectedNotesToProject -> {
                 viewModelScope.launch {
-                    val selectedNotes = listState.value.notes.filter { listState.value.selectedNoteIds.contains(it.note.id) }
+                    val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(projectId = event.projectId))
                     }
@@ -1367,6 +1363,14 @@ class NotesViewModel @Inject constructor(
         }
     }
 
+
+    private suspend fun getSelectedNotes(): List<NoteWithAttachments> {
+        val selectedIds = listState.value.selectedNoteIds
+        val pinnedNotes = listState.value.pinnedNotes
+        return selectedIds.mapNotNull { id ->
+            pinnedNotes.find { it.note.id == id } ?: repository.getNoteById(id)
+        }
+    }
 
     private fun updateWidgets() {
         val appWidgetManager = AppWidgetManager.getInstance(context)

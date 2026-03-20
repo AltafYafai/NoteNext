@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.DropdownMenu
@@ -76,6 +77,7 @@ import com.suvojeet.notenext.R
 @Composable
 fun ContextualTopAppBar(
     selectedItemCount: Int,
+    isPinned: Boolean = false,
     onClearSelection: () -> Unit,
     onTogglePinClick: () -> Unit,
     onReminderClick: () -> Unit,
@@ -158,8 +160,8 @@ fun ContextualTopAppBar(
                     // Action icons appear with a slight stagger.
                     AnimatedIconButton(
                         onClick = onTogglePinClick,
-                        icon = Icons.Outlined.PushPin,
-                        contentDescription = stringResource(id = R.string.pin_note),
+                        icon = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                        contentDescription = if (isPinned) stringResource(id = R.string.unpin_note) else stringResource(id = R.string.pin_note),
                         delay = 50
                     )
                     AnimatedIconButton(
