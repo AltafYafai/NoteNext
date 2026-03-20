@@ -82,6 +82,7 @@ fun ArchiveScreen(
                             contentType = { it.note.noteType }
                         ) { noteWithAttachments ->
                             NoteItem(
+                                modifier = Modifier.animateItem(),
                                 note = noteWithAttachments,
                                 isSelected = false,
                                 onNoteClick = {

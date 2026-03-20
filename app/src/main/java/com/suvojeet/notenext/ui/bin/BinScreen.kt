@@ -4,6 +4,7 @@ package com.suvojeet.notenext.ui.bin
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -20,10 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
-import com.suvojeet.notenext.ui.components.NoteItem
+import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.data.NoteWithAttachments
-import com.suvojeet.notenext.ui.components.ExpressiveSection
-import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -107,6 +106,7 @@ fun BinScreen(
                                 contentType = { it.note.noteType }
                             ) { noteWithAttachments ->
                                 NoteItem(
+                                    modifier = Modifier.animateItem(),
                                     note = noteWithAttachments,
                                     onNoteClick = {
                                         if (isSelectionModeActive) {
@@ -183,28 +183,47 @@ private fun BinContextualTopAppBar(
     var showMenu by remember { mutableStateOf(false) }
 
     TopAppBar(
-        title = { Text(text = stringResource(id = R.string.x_selected, selectedItemCount)) },
-        navigationIcon = {
-            IconButton(onClick = onClearSelection, modifier = Modifier.springPress()) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.clear_selection))
+        title = {
+            AnimatedContent(
+                targetState = selectedItemCount,
+                transitionSpec = {
+                    (slideInVertically { -it } + fadeIn()).togetherWith(
+                        slideOutVertically { it } + fadeOut()
+                    )
+                },
+                label = "SelectedItemCount"
+            ) { count ->
+                Text(text = stringResource(id = R.string.x_selected, count))
             }
         },
+        navigationIcon = {
+            AnimatedIconButton(
+                onClick = onClearSelection,
+                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(id = R.string.clear_selection)
+            )
+        },
         actions = {
-            IconButton(onClick = onRestoreClick, modifier = Modifier.springPress()) {
-                Icon(Icons.Default.Restore, contentDescription = stringResource(id = R.string.restore))
-            }
+            AnimatedIconButton(
+                onClick = onRestoreClick,
+                icon = Icons.Default.Restore,
+                contentDescription = stringResource(id = R.string.restore),
+                delay = 50
+            )
             Box {
-                IconButton(onClick = { showMenu = !showMenu }, modifier = Modifier.springPress()) {
-                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(id = R.string.more_options))
-                }
+                AnimatedIconButton(
+                    onClick = { showMenu = !showMenu },
+                    icon = Icons.Default.MoreVert,
+                    contentDescription = stringResource(id = R.string.more_options),
+                    delay = 100
+                )
                 DropdownMenu(
                     expanded = showMenu,
                     onDismissRequest = { showMenu = false },
-                    shape = MaterialTheme.shapes.medium,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(id = R.string.delete_permanently)) },
+                    AnimatedDropdownItem(
+                        text = stringResource(id = R.string.delete_permanently),
                         onClick = {
                             onDeletePermanentlyClick()
                             showMenu = false

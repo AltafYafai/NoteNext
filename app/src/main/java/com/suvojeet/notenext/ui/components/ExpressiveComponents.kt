@@ -30,6 +30,100 @@ import androidx.graphics.shapes.toPath
 import com.suvojeet.notenext.R
 import kotlinx.coroutines.delay
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.scale
+
+@Composable
+fun AnimatedIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String,
+    delay: Int = 0,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    modifier: Modifier = Modifier
+) {
+    var isVisible by remember { mutableStateOf(false) }
+    var isPressed by remember { mutableStateOf(false) }
+
+    // Trigger the entrance animation after the specified delay.
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(delay.toLong())
+        isVisible = true
+    }
+
+    // Animate the scale for the entrance.
+    val entranceScale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "IconEntranceScale"
+    )
+
+    // Animate the scale for the press effect.
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.85f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessHigh
+        ),
+        label = "IconPressScale"
+    )
+
+    IconButton(
+        onClick = {
+            isPressed = true
+            onClick()
+        },
+        modifier = modifier.scale(entranceScale * pressScale)
+    ) {
+        AnimatedContent(
+            targetState = icon,
+            transitionSpec = {
+                (fadeIn(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + 
+                 scaleIn(initialScale = 0.7f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)))
+                    .togetherWith(fadeOut(animationSpec = spring()) + scaleOut(targetScale = 0.7f))
+            },
+            label = "IconChange"
+        ) { targetIcon ->
+            Icon(
+                imageVector = targetIcon,
+                contentDescription = contentDescription,
+                tint = tint
+            )
+        }
+    }
+
+    // Reset the press state after a short delay to create a 'pop' effect.
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            kotlinx.coroutines.delay(100)
+            isPressed = false
+        }
+    }
+}
+
+@Composable
+fun AnimatedDropdownItem(
+    text: String,
+    onClick: () -> Unit,
+    textColor: Color = Color.Unspecified
+) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColor
+            )
+        },
+        onClick = onClick,
+        modifier = Modifier.animateContentSize() // Animates size changes.
+    )
+}
+
 @Composable
 fun ExpressiveSection(
     title: String,

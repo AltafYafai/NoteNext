@@ -497,10 +497,12 @@ fun NotesScreen(
                                                         key = { it.note.id },
                                                         contentType = { it.note.noteType }
                                                     ) { note ->
-                                                        val noteModifier = Modifier.sharedElement(
-                                                            rememberSharedContentState(key = "note-${note.note.id}"),
-                                                            animatedVisibilityScope = this@AnimatedContent
-                                                        )
+                                                        val noteModifier = Modifier
+                                                            .animateItem()
+                                                            .sharedElement(
+                                                                rememberSharedContentState(key = "note-${note.note.id}"),
+                                                                animatedVisibilityScope = this@AnimatedContent
+                                                            )
                                                         NoteItem(
                                                             modifier = noteModifier,
                                                             note = note,
@@ -534,10 +536,12 @@ fun NotesScreen(
                                                         contentType = pagedNotes.itemContentType { it.note.noteType }
                                                     ) { index ->
                                                         pagedNotes[index]?.let { note ->
-                                                            val noteModifier = Modifier.sharedElement(
-                                                                rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                animatedVisibilityScope = this@AnimatedContent
-                                                            )
+                                                            val noteModifier = Modifier
+                                                                .animateItem()
+                                                                .sharedElement(
+                                                                    rememberSharedContentState(key = "note-${note.note.id}"),
+                                                                    animatedVisibilityScope = this@AnimatedContent
+                                                                )
                                                             NoteItem(
                                                                 modifier = noteModifier,
                                                                 note = note,
@@ -575,10 +579,12 @@ fun NotesScreen(
                                                         key = { it.note.id },
                                                         contentType = { it.note.noteType }
                                                     ) { note ->
-                                                        val noteModifier = Modifier.sharedElement(
-                                                            rememberSharedContentState(key = "note-${note.note.id}"),
-                                                            animatedVisibilityScope = this@AnimatedContent
-                                                        )
+                                                        val noteModifier = Modifier
+                                                            .animateItem()
+                                                            .sharedElement(
+                                                                rememberSharedContentState(key = "note-${note.note.id}"),
+                                                                animatedVisibilityScope = this@AnimatedContent
+                                                            )
                                                         NoteItem(
                                                             modifier = noteModifier,
                                                             note = note,
@@ -612,10 +618,12 @@ fun NotesScreen(
                                                         contentType = pagedNotes.itemContentType { it.note.noteType }
                                                     ) { index ->
                                                         pagedNotes[index]?.let { note ->
-                                                            val noteModifier = Modifier.sharedElement(
-                                                                rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                animatedVisibilityScope = this@AnimatedContent
-                                                            )
+                                                            val noteModifier = Modifier
+                                                                .animateItem()
+                                                                .sharedElement(
+                                                                    rememberSharedContentState(key = "note-${note.note.id}"),
+                                                                    animatedVisibilityScope = this@AnimatedContent
+                                                                )
                                                             NoteItem(
                                                                 modifier = noteModifier,
                                                                 note = note,
