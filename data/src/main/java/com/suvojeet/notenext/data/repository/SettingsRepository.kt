@@ -24,9 +24,44 @@ object PreferencesKeys {
     val LANGUAGE = stringPreferencesKey("language")
     val LAST_SEEN_VERSION = intPreferencesKey("last_seen_version")
     val DISALLOW_SCREENSHOTS = booleanPreferencesKey("disallow_screenshots")
+    
+    // Groq API Settings
+    val USE_CUSTOM_GROQ_KEY = booleanPreferencesKey("use_custom_groq_key")
+    val CUSTOM_GROQ_KEY = stringPreferencesKey("custom_groq_key")
+    val CUSTOM_FAST_MODEL = stringPreferencesKey("custom_fast_model")
+    val CUSTOM_LARGE_MODEL = stringPreferencesKey("custom_large_model")
 }
 
 class SettingsRepository(private val context: Context) {
+    
+    // Groq API Settings
+    val useCustomGroqKey: Flow<Boolean> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.USE_CUSTOM_GROQ_KEY] ?: false }
+
+    suspend fun saveUseCustomGroqKey(use: Boolean) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.USE_CUSTOM_GROQ_KEY] = use }
+    }
+
+    val customGroqKey: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.CUSTOM_GROQ_KEY] ?: "" }
+
+    suspend fun saveCustomGroqKey(key: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.CUSTOM_GROQ_KEY] = key }
+    }
+
+    val customFastModel: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.CUSTOM_FAST_MODEL] ?: "llama-3.1-8b-instant" }
+
+    suspend fun saveCustomFastModel(model: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.CUSTOM_FAST_MODEL] = model }
+    }
+
+    val customLargeModel: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.CUSTOM_LARGE_MODEL] ?: "llama-3.3-70b-versatile" }
+
+    suspend fun saveCustomLargeModel(model: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.CUSTOM_LARGE_MODEL] = model }
+    }
 
     val lastSeenVersion: Flow<Int> = context.dataStore.data
         .map { preferences ->

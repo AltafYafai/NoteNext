@@ -26,3 +26,15 @@ data class Choice(
     val index: Int,
     val message: Message
 )
+
+@Serializable
+data class ModelListResponse(
+    val data: List<GroqModel>
+)
+
+@Serializable
+data class GroqModel(
+    val id: String,
+    val created: Long,
+    val owned_by: String
+)

@@ -226,4 +226,26 @@
     <string name="crash_report_title">NoteNext crashed</string>
     <string name="crash_report_text">Tap to share the crash report with the developer</string>
     <string name="crash_report_channel">Crash Reports</string>
+
+    <!-- Groq API Settings -->
+    <string name="groq_settings_title">Groq AI Settings</string>
+    <string name="groq_settings_description">Configure your AI experience with Groq.</string>
+    <string name="use_custom_api_key">Use Custom API Key</string>
+    <string name="use_custom_api_key_subtitle">Use your own Groq API key instead of the app default.</string>
+    <string name="enter_groq_api_key">Enter Groq API Key</string>
+    <string name="api_key_placeholder">gsk_...</string>
+    <string name="api_key_instructions_title">How to get an API Key?</string>
+    <string name="api_key_step_1">1. Go to the Groq Console at console.groq.com.</string>
+    <string name="api_key_step_2">2. Sign in or create an account.</string>
+    <string name="api_key_step_3">3. Go to API Keys section and click "Create API Key".</string>
+    <string name="api_key_step_4">4. Copy the key and paste it here.</string>
+    <string name="open_groq_console">Open Groq Console</string>
+    <string name="select_fast_model">Fast Model</string>
+    <string name="select_fast_model_subtitle">Used for quick tasks like grammar and summaries.</string>
+    <string name="select_large_model">Large Model</string>
+    <string name="select_large_model_subtitle">Used for complex tasks like checklist generation.</string>
+    <string name="fetch_models">Fetch Available Models</string>
+    <string name="fetching_models">Fetching models...</string>
+    <string name="models_fetched_successfully">Models fetched successfully!</string>
+    <string name="failed_to_fetch_models">Failed to fetch models. Check your API key and connection.</string>
 </resources>

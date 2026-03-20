@@ -14,6 +14,8 @@ import retrofit2.Retrofit
 import kotlinx.serialization.json.Json
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import javax.inject.Singleton
 
 @Module
@@ -27,7 +29,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(settingsRepository: com.suvojeet.notenext.data.repository.SettingsRepository): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (com.suvojeet.notenext.BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -37,19 +39,29 @@ object NetworkModule {
         }
 
         val authInterceptor = Interceptor { chain ->
-            val encryptedKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY_ENC
-            val xorKey = com.suvojeet.notenext.BuildConfig.GROQ_XOR_KEY
-            
-            val apiKey = if (encryptedKey.isNotBlank()) {
-                try {
-                    val decoded = android.util.Base64.decode(encryptedKey, android.util.Base64.DEFAULT)
-                    val decrypted = decoded.map { (it.toInt() xor xorKey.toInt()).toByte() }.toByteArray()
-                    String(decrypted)
-                } catch (e: Exception) {
+            val settings = runBlocking {
+                val use = settingsRepository.useCustomGroqKey.first()
+                val key = settingsRepository.customGroqKey.first()
+                use to key
+            }
+
+            val apiKey = if (settings.first && settings.second.isNotBlank()) {
+                settings.second
+            } else {
+                val encryptedKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY_ENC
+                val xorKey = com.suvojeet.notenext.BuildConfig.GROQ_XOR_KEY
+                
+                if (encryptedKey.isNotBlank()) {
+                    try {
+                        val decoded = android.util.Base64.decode(encryptedKey, android.util.Base64.DEFAULT)
+                        val decrypted = decoded.map { (it.toInt() xor xorKey.toInt()).toByte() }.toByteArray()
+                        String(decrypted)
+                    } catch (e: Exception) {
+                        ""
+                    }
+                } else {
                     ""
                 }
-            } else {
-                ""
             }
 
             val request = if (apiKey.isNotBlank()) {

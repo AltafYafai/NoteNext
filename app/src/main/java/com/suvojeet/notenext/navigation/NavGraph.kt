@@ -63,6 +63,7 @@ import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
 import com.suvojeet.notenext.ui.settings.AboutScreen
 import com.suvojeet.notenext.ui.settings.CreditsScreen
 import com.suvojeet.notenext.ui.settings.ChangelogScreen
+import com.suvojeet.notenext.ui.settings.GroqSettingsScreen
 import com.suvojeet.notenext.ui.donate.DonationScreen
 import com.suvojeet.notenext.ui.project.ProjectScreen
 import com.suvojeet.notenext.ui.project.ProjectViewModel
@@ -525,10 +526,18 @@ private fun NavGraphBuilder.sharedRoutes(
                     "donate" -> navController.navigate(Destination.Donate)
                     "changelog" -> navController.navigate(Destination.Changelog)
                     "credits" -> navController.navigate(Destination.Credits)
+                    "groq" -> navController.navigate(Destination.GroqSettings)
                     else -> {}
                 }
             }
         )
+    }
+
+    composable<Destination.GroqSettings>(
+        enterTransition = { slideEnter },
+        exitTransition = { slideExit }
+    ) {
+        GroqSettingsScreen(onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.Backup>(

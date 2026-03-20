@@ -229,6 +229,13 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = "Import from Google Keep ZIP",
                         iconColor = tertiaryColor,
                         onClick = { showImportSourceDialog = true }
+                    ),
+                    SettingsItemData(
+                        icon = Icons.Rounded.SmartToy,
+                        title = "Groq AI Settings",
+                        subtitle = "Configure custom API key and models",
+                        iconColor = primaryColor,
+                        onClick = { onNavigate("groq") }
                     )
                 )
             ),

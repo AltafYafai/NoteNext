@@ -1,6 +1,7 @@
 package com.suvojeet.notenext.data.remote
 
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.POST
 
@@ -10,4 +11,7 @@ interface GroqApiService {
     suspend fun getChatCompletion(
         @Body request: ChatCompletionRequest
     ): ChatCompletionResponse
+
+    @GET("openai/v1/models")
+    suspend fun getModels(): ModelListResponse
 }

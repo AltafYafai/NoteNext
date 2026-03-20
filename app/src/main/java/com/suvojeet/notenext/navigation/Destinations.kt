@@ -46,6 +46,9 @@ sealed interface Destination {
     @Serializable
     data object Donate : Destination
     
+    @Serializable
+    data object GroqSettings : Destination
+    
 
     
     @Serializable

@@ -17,6 +17,9 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.flow.first
+import com.suvojeet.notenext.data.remote.ModelListResponse
+import com.suvojeet.notenext.data.remote.GroqModel
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -76,7 +79,8 @@ object GroqRateLimitManager {
 
 @Singleton
 class GroqRepository @Inject constructor(
-    private val apiService: GroqApiService
+    private val apiService: GroqApiService,
+    private val settingsRepository: SettingsRepository
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -106,15 +110,43 @@ class GroqRepository @Inject constructor(
         "llama-3.1-8b-instant"
     )
 
+    private suspend fun getTargetModels(isFast: Boolean): List<String> {
+        val useCustom = settingsRepository.useCustomGroqKey.first()
+        return if (useCustom) {
+            val customModel = if (isFast) {
+                settingsRepository.customFastModel.first()
+            } else {
+                settingsRepository.customLargeModel.first()
+            }
+            if (customModel.isNotBlank()) {
+                listOf(customModel)
+            } else {
+                if (isFast) fastModels else largeModels
+            }
+        } else {
+            if (isFast) fastModels else largeModels
+        }
+    }
+
+    suspend fun fetchAvailableModels(): Result<List<GroqModel>> {
+        return try {
+            val response = apiService.getModels()
+            Result.success(response.data)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     /**
      * Task 3: Executes the API request with model fallback, rate-limit awareness, and smarter retries.
      */
     private suspend fun <T> executeWithRetry(
-        models: List<String>,
+        isFast: Boolean,
         messages: List<Message>,
         maxRetriesPerModel: Int = 2,
         processor: (String) -> T
     ): GroqResult<T> {
+        val models = getTargetModels(isFast)
         var lastException: Exception? = null
 
         for (model in models) {
@@ -205,14 +237,14 @@ class GroqRepository @Inject constructor(
 
         val result = deduplicate("summarize_${content.hashCode()}") {
             val wordCount = content.split("\\s+".toRegex()).size
-            val models = if (wordCount < 1000) fastModels else largeModels
+            val isFast = wordCount < 1000
 
             val messages = listOf(
                 Message(role = "system", content = "You are a helpful assistant that summarizes notes concisely."),
                 Message(role = "user", content = "Summarize the following note:\n\n$content")
             )
 
-            executeWithRetry(models, messages) { it.trim() }
+            executeWithRetry(isFast, messages) { it.trim() }
         }
         
         if (result is GroqResult.Success) {
@@ -236,7 +268,7 @@ class GroqRepository @Inject constructor(
                 Message(role = "user", content = "Create a checklist for: $topic")
             )
 
-            executeWithRetry(largeModels, messages) { content ->
+            executeWithRetry(false, messages) { content ->
                 val cleaned = content.replace("```json", "").replace("```", "").trim()
                 if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
                     try {
@@ -266,7 +298,7 @@ class GroqRepository @Inject constructor(
                 Message(role = "user", content = "Convert this into a todo list:\n\n$input")
             )
 
-            executeWithRetry(largeModels, messages) { content ->
+            executeWithRetry(false, messages) { content ->
                 val cleaned = content.replace("```json", "").replace("```", "").trim()
                 try {
                     val todoList = json.decodeFromString<List<Map<String, String>>>(cleaned)
@@ -301,7 +333,7 @@ class GroqRepository @Inject constructor(
                 Message(role = "user", content = text)
             )
 
-            executeWithRetry(fastModels, messages) { it.trim() }
+            executeWithRetry(true, messages) { it.trim() }
         }
         
         if (result is GroqResult.Success) {
