@@ -167,7 +167,6 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(Unit) {
                 kotlinx.coroutines.delay(2000L)
                 updateChecker.checkForUpdate()
-                updateChecker.resumeUpdateCheck(this@MainActivity)
             }
 
             LaunchedEffect(updateStatus) {

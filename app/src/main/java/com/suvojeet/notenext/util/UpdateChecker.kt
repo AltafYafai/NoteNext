@@ -35,6 +35,10 @@ class UpdateChecker(private val context: Context) {
     val updateStatus: StateFlow<UpdateStatus> = _updateStatus.asStateFlow()
 
     private var appUpdateInfo: AppUpdateInfo? = null
+    
+    private var isChecking = false
+    private var lastCheckTime = 0L
+    private val CHECK_THROTTLE_MS = 60 * 60 * 1000L // 1 hour
 
     sealed class UpdateStatus {
         object Idle : UpdateStatus()
@@ -90,45 +94,72 @@ class UpdateChecker(private val context: Context) {
     }
 
     /**
-     * Checks for updates from the Play Store.
+     * Checks for updates from the Play Store with internal throttling.
      */
-    suspend fun checkForUpdate(): Result<UpdateResult> = suspendCancellableCoroutine { continuation ->
-        _updateStatus.value = UpdateStatus.Checking
-        appUpdateManager.appUpdateInfo
-            .addOnSuccessListener { info ->
-                this.appUpdateInfo = info
-                val availability = info.updateAvailability()
-                val isAvailable = availability == UpdateAvailability.UPDATE_AVAILABLE || 
-                                  availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
-                
-                val priority = info.updatePriority() // 0-5, 5 is highest
-                val staleness = info.clientVersionStalenessDays() ?: 0
-                
-                // Recommend immediate if priority > 3 or staleness > 7 days
-                val recommendImmediate = priority >= 4 || staleness > 7
+    suspend fun checkForUpdate(force: Boolean = false): Result<UpdateResult> {
+        val now = System.currentTimeMillis()
+        if (!force && isChecking) {
+            Log.d(TAG, "Check already in progress, skipping redundant call.")
+            return Result.failure(Exception("Check already in progress"))
+        }
+        
+        if (!force && now - lastCheckTime < CHECK_THROTTLE_MS) {
+            Log.d(TAG, "Check throttled. Last check was ${(now - lastCheckTime) / 1000}s ago.")
+            return Result.failure(Exception("Throttled"))
+        }
 
-                if (isAvailable) {
-                    _updateStatus.value = UpdateStatus.UpdateAvailable(info, recommendImmediate)
-                } else {
-                    _updateStatus.value = UpdateStatus.NoUpdateAvailable
-                }
+        return suspendCancellableCoroutine { continuation ->
+            isChecking = true
+            _updateStatus.value = UpdateStatus.Checking
+            
+            appUpdateManager.appUpdateInfo
+                .addOnSuccessListener { info ->
+                    isChecking = false
+                    lastCheckTime = System.currentTimeMillis()
+                    this.appUpdateInfo = info
+                    
+                    // First, handle ongoing background installation/download
+                    if (info.installStatus() == InstallStatus.DOWNLOADED) {
+                        _updateStatus.value = UpdateStatus.Downloaded
+                    } else if (info.installStatus() == InstallStatus.DOWNLOADING) {
+                         appUpdateManager.registerListener(installStateListener)
+                         _updateStatus.value = UpdateStatus.Downloading
+                    }
 
-                continuation.resume(
-                    Result.success(
-                        UpdateResult(
-                            isUpdateAvailable = isAvailable,
-                            availableVersionCode = info.availableVersionCode(),
-                            currentVersionCode = getCurrentVersionCode(),
-                            stalenessDays = info.clientVersionStalenessDays(),
-                            updatePriority = priority
+                    val availability = info.updateAvailability()
+                    val isAvailable = availability == UpdateAvailability.UPDATE_AVAILABLE || 
+                                      availability == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
+                    
+                    val priority = info.updatePriority() // 0-5, 5 is highest
+                    val staleness = info.clientVersionStalenessDays() ?: 0
+                    
+                    // Recommend immediate if priority > 3 or staleness > 7 days
+                    val recommendImmediate = priority >= 4 || staleness > 7
+
+                    if (isAvailable && _updateStatus.value !is UpdateStatus.Downloaded) {
+                        _updateStatus.value = UpdateStatus.UpdateAvailable(info, recommendImmediate)
+                    } else if (!isAvailable && _updateStatus.value !is UpdateStatus.Downloaded) {
+                        _updateStatus.value = UpdateStatus.NoUpdateAvailable
+                    }
+
+                    continuation.resume(
+                        Result.success(
+                            UpdateResult(
+                                isUpdateAvailable = isAvailable,
+                                availableVersionCode = info.availableVersionCode(),
+                                currentVersionCode = getCurrentVersionCode(),
+                                stalenessDays = info.clientVersionStalenessDays(),
+                                updatePriority = priority
+                            )
                         )
                     )
-                )
-            }
-            .addOnFailureListener { exception ->
-                _updateStatus.value = UpdateStatus.Error(exception.message ?: "Check failed")
-                continuation.resume(Result.failure(exception))
-            }
+                }
+                .addOnFailureListener { exception ->
+                    isChecking = false
+                    _updateStatus.value = UpdateStatus.Error(exception.message ?: "Check failed")
+                    continuation.resume(Result.failure(exception))
+                }
+        }
     }
 
     /**
