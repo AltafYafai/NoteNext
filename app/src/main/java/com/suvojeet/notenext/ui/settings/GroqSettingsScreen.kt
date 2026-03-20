@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -181,7 +182,10 @@ fun GroqSettingsScreen(
                                 iconColor = Color(0xFFFFC107)
                             )
                             
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), alpha = 0.5f)
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
                             
                             ModelSelector(
                                 title = stringResource(R.string.select_large_model),
