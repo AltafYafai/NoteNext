@@ -62,7 +62,9 @@ fun NoteItem(
     }
 
     val decryptedNote = remember(note.note.title, note.note.content, note.note.isEncrypted) {
-        if (!note.note.isLocked && note.note.isEncrypted) {
+        if (note.note.isEncrypted) {
+            // Decrypt the note using available session auth. 
+            // Titles are generally safe to show in the list.
             com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note)
         } else {
             note.note
