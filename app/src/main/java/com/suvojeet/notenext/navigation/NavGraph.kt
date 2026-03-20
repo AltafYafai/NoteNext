@@ -196,300 +196,301 @@ fun NavGraph(
             }
         ) {
             AppNavHost(
-            navController = navController,
-            notesViewModel = notesViewModel,
-            themeMode = themeMode,
-            windowSizeClass = windowSizeClass,
-            settingsRepository = settingsRepository,
-            onMenuClick = { scope.launch { drawerState.open() } },
-            isCompact = false
+                navController = navController,
+                notesViewModel = notesViewModel,
+                themeMode = themeMode,
+                windowSizeClass = windowSizeClass,
+                settingsRepository = settingsRepository,
+                onMenuClick = { scope.launch { drawerState.open() } },
+                isCompact = false
             )
-            }
-            } else {
-            ModalNavigationDrawer(
+        }
+    } else {
+        ModalNavigationDrawer(
             drawerState = drawerState,
             gesturesEnabled = notesState.expandedNoteId == null,
             drawerContent = {
-            ModalDrawerSheet(
-                modifier = Modifier.fillMaxWidth(0.85f),
-                drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
-            ) {
-                DrawerContent(
-                    navController = navController,
-                    notesState = notesState,
-                    notesViewModel = notesViewModel,
-                    onCloseDrawer = { scope.launch { drawerState.close() } }
-                )
+                ModalDrawerSheet(
+                    modifier = Modifier.fillMaxWidth(0.85f),
+                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+                ) {
+                    DrawerContent(
+                        navController = navController,
+                        notesState = notesState,
+                        notesViewModel = notesViewModel,
+                        onCloseDrawer = { scope.launch { drawerState.close() } }
+                    )
+                }
             }
-            }
-            ) {
+        ) {
             AppNavHost(
-            navController = navController,
-            notesViewModel = notesViewModel,
-            themeMode = themeMode,
-            windowSizeClass = windowSizeClass,
-            settingsRepository = settingsRepository,
-            onMenuClick = { scope.launch { drawerState.open() } },
-            isCompact = true
+                navController = navController,
+                notesViewModel = notesViewModel,
+                themeMode = themeMode,
+                windowSizeClass = windowSizeClass,
+                settingsRepository = settingsRepository,
+                onMenuClick = { scope.launch { drawerState.open() } },
+                isCompact = true
             )
-            }
-            }
-            }
+        }
+    }
+}
 
-            // ─── Shared drawer content ───────────────────────────────────────────
+// ─── Shared drawer content ───────────────────────────────────────────
 
-            @Composable
-            private fun DrawerContent(
-            navController: NavHostController,
-            notesState: NotesState,
-            notesViewModel: NotesViewModel,
-            onCloseDrawer: () -> Unit
-            ) {
-            Text(
-            text = stringResource(id = R.string.app_name),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.padding(24.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
+@Composable
+private fun DrawerContent(
+    navController: NavHostController,
+    notesState: NotesState,
+    notesViewModel: NotesViewModel,
+    onCloseDrawer: () -> Unit
+) {
+    Text(
+        text = stringResource(id = R.string.app_name),
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Black,
+        modifier = Modifier.padding(24.dp)
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
 
-            data class DrawerItem(val label: Int, val icon: @Composable () -> Unit, val isSelected: Boolean, val onClick: () -> Unit)
+    data class DrawerItem(val label: Int, val icon: @Composable () -> Unit, val isSelected: Boolean, val onClick: () -> Unit)
 
-            val items = listOf(
-            DrawerItem(
+    val items = listOf(
+        DrawerItem(
             R.string.notes, 
             { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) }, 
             currentDestination?.hasRoute<Destination.Notes>() == true && notesState.filteredLabel == null
-            ) {
+        ) {
             onCloseDrawer()
             if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != null) {
-            notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
-            navController.navigate(Destination.Notes()) {
+                notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
+                navController.navigate(Destination.Notes()) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        },
+        DrawerItem(
+            R.string.projects, 
+            { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, 
+            currentDestination?.hasRoute<Destination.Projects>() == true
+        ) {
+            onCloseDrawer()
+            navController.navigate(Destination.Projects) {
                 popUpTo(navController.graph.findStartDestination().id) {
                     saveState = true
                 }
                 launchSingleTop = true
                 restoreState = true
             }
-            }
-            },
-            DrawerItem(
-            R.string.projects, 
-            { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, 
-            currentDestination?.hasRoute<Destination.Projects>() == true
-            ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Projects) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-            }
-            launchSingleTop = true
-            restoreState = true
-            }
-            },
-            DrawerItem(
+        },
+        DrawerItem(
             R.string.archive, 
             { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) }, 
             currentDestination?.hasRoute<Destination.Archive>() == true
-            ) {
+        ) {
             onCloseDrawer()
             navController.navigate(Destination.Archive) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
-            launchSingleTop = true
-            restoreState = true
-            }
-            },
-            DrawerItem(
+        },
+        DrawerItem(
             R.string.reminders, 
             { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) }, 
             currentDestination?.hasRoute<Destination.Reminder>() == true
-            ) {
+        ) {
             onCloseDrawer()
             navController.navigate(Destination.Reminder) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
-            launchSingleTop = true
-            restoreState = true
-            }
-            },
-            DrawerItem(
+        },
+        DrawerItem(
             R.string.todos, 
             { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) }, 
             currentDestination?.hasRoute<Destination.Todo>() == true
-            ) {
+        ) {
             onCloseDrawer()
             navController.navigate(Destination.Todo) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
-            launchSingleTop = true
-            restoreState = true
-            }
-            },
-            DrawerItem(
+        },
+        DrawerItem(
             R.string.bin, 
             { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) }, 
             currentDestination?.hasRoute<Destination.Bin>() == true
-            ) {
+        ) {
             onCloseDrawer()
             navController.navigate(Destination.Bin) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
-            launchSingleTop = true
-            restoreState = true
-            }
-            },
-            DrawerItem(
+        },
+        DrawerItem(
             R.string.settings, 
             { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) }, 
             currentDestination?.hasRoute<Destination.Settings>() == true
-            ) {
+        ) {
             onCloseDrawer()
             navController.navigate(Destination.Settings) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
             }
-            launchSingleTop = true
-            restoreState = true
-            }
-            }
-            )
+        }
+    )
 
-            items.forEach { item ->
-            NavigationDrawerItem(
+    items.forEach { item ->
+        NavigationDrawerItem(
             icon = { item.icon() },
             label = { Text(stringResource(id = item.label), fontWeight = FontWeight.Bold) },
             selected = item.isSelected,
             onClick = item.onClick,
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-            )
-            }
+        )
+    }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp))
 
-            if (notesState.labels.isEmpty()) {
-            NavigationDrawerItem(
+    if (notesState.labels.isEmpty()) {
+        NavigationDrawerItem(
             icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.create_new_label)) },
             label = { Text(stringResource(id = R.string.create_new_label), fontWeight = FontWeight.Bold) },
             selected = false,
             onClick = {
-            onCloseDrawer()
-            navController.navigate(Destination.EditLabels) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+                onCloseDrawer()
+                navController.navigate(Destination.EditLabels) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
-            }
             },
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-            )
-            } else {
-            Row(
+        )
+    } else {
+        Row(
             modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 8.dp),
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-            text = stringResource(id = R.string.labels_title),
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+        ) {
+            Text(
+                text = stringResource(id = R.string.labels_title),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             IconButton(onClick = {
-            onCloseDrawer()
-            navController.navigate(Destination.EditLabels) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            }
-            }, modifier = Modifier.size(24.dp).springPress()) {
-            Icon(
-                imageVector = Icons.Default.Edit,
-                contentDescription = stringResource(id = R.string.edit_labels),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            }
-            }
-
-            notesState.labels.forEach { label ->
-            NavigationDrawerItem(
-            icon = { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = label) },
-            label = { Text(label, fontWeight = FontWeight.Medium) },
-            selected = notesState.filteredLabel == label,
-            onClick = {
                 onCloseDrawer()
-                notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
-                if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != label) {
-                    navController.navigate(Destination.Notes()) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
+                navController.navigate(Destination.EditLabels) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
                     }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-            },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
+            }, modifier = Modifier.size(24.dp).springPress()) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = stringResource(id = R.string.edit_labels),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        notesState.labels.forEach { label ->
+            NavigationDrawerItem(
+                icon = { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = label) },
+                label = { Text(label, fontWeight = FontWeight.Medium) },
+                selected = notesState.filteredLabel == label,
+                onClick = {
+                    onCloseDrawer()
+                    notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
+                    if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != label) {
+                        navController.navigate(Destination.Notes()) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
             )
-            }
-            }
-            }
+        }
+    }
+}
 
-            // ─── Shared NavHost ──────────────────────────────────────────────────
+// ─── Shared NavHost ──────────────────────────────────────────────────
 
-            @Composable
-            private fun AppNavHost(
-            navController: NavHostController,
-            notesViewModel: NotesViewModel,
-            themeMode: ThemeMode,
-            windowSizeClass: WindowSizeClass,
-            settingsRepository: SettingsRepository,
-            onMenuClick: () -> Unit,
-            isCompact: Boolean
-            ) {
-            NavHost(
-            navController = navController,
-            startDestination = Destination.Notes(),
-            modifier = Modifier.background(MaterialTheme.colorScheme.background)
-            ) {
-            notesRoute(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, isCompact)
-            sharedRoutes(navController, notesViewModel, themeMode, windowSizeClass, settingsRepository, onMenuClick)
-            }
-            }
+@Composable
+private fun AppNavHost(
+    navController: NavHostController,
+    notesViewModel: NotesViewModel,
+    themeMode: ThemeMode,
+    windowSizeClass: WindowSizeClass,
+    settingsRepository: SettingsRepository,
+    onMenuClick: () -> Unit,
+    isCompact: Boolean
+) {
+    NavHost(
+        navController = navController,
+        startDestination = Destination.Notes(),
+        modifier = Modifier.background(MaterialTheme.colorScheme.background)
+    ) {
+        notesRoute(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, isCompact)
+        sharedRoutes(navController, notesViewModel, themeMode, windowSizeClass, settingsRepository, onMenuClick)
+    }
+}
 
-            private fun NavGraphBuilder.notesRoute(
-            navController: NavHostController,
-            notesViewModel: NotesViewModel,
-            themeMode: ThemeMode,
-            settingsRepository: SettingsRepository,
-            onMenuClick: () -> Unit,
-            isCompact: Boolean
-            ) {
-            composable<Destination.Notes>(
-            enterTransition = { fadeIn(animationSpec = spring()) },
-            exitTransition = { fadeOut(animationSpec = spring()) }
-            ) { backStackEntry ->
-            if (isCompact) {
+private fun NavGraphBuilder.notesRoute(
+    navController: NavHostController,
+    notesViewModel: NotesViewModel,
+    themeMode: ThemeMode,
+    settingsRepository: SettingsRepository,
+    onMenuClick: () -> Unit,
+    isCompact: Boolean
+) {
+    composable<Destination.Notes>(
+        enterTransition = { fadeIn(animationSpec = spring()) },
+        exitTransition = { fadeOut(animationSpec = spring()) }
+    ) { backStackEntry ->
+        if (isCompact) {
             val route: Destination.Notes = backStackEntry.toRoute()
             val noteId = route.noteId
             LaunchedEffect(noteId) {
-            if (noteId != -1) {
-                notesViewModel.onEvent(NotesEvent.ExpandNote(noteId))
+                if (noteId != -1) {
+                    notesViewModel.onEvent(NotesEvent.ExpandNote(noteId))
+                }
             }
-            }
-            }
-            NotesScreen(
+        }
+        NotesScreen(
             viewModel = notesViewModel,
             onSettingsClick = { navController.navigate(Destination.Settings) },
             onArchiveClick = { navController.navigate(Destination.Archive) },
@@ -501,18 +502,19 @@ fun NavGraph(
             onDrawingClick = { navController.navigate(Destination.Drawing) },
             onTodoClick = { navController.navigate(Destination.Todo) },
             events = notesViewModel.events
-            )
-            }
-            }
+        )
+    }
+}
 
-            private fun NavGraphBuilder.sharedRoutes(
-            navController: NavHostController,
-            notesViewModel: NotesViewModel,
-            themeMode: ThemeMode,
-            windowSizeClass: WindowSizeClass,
-            settingsRepository: SettingsRepository,
-            onMenuClick: () -> Unit
-            ) {    val slideEnter = slideInHorizontally(initialOffsetX = { it }, animationSpec = spring()) + fadeIn(spring())
+private fun NavGraphBuilder.sharedRoutes(
+    navController: NavHostController,
+    notesViewModel: NotesViewModel,
+    themeMode: ThemeMode,
+    windowSizeClass: WindowSizeClass,
+    settingsRepository: SettingsRepository,
+    onMenuClick: () -> Unit
+) {
+    val slideEnter = slideInHorizontally(initialOffsetX = { it }, animationSpec = spring()) + fadeIn(spring())
     val slideExit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = spring()) + fadeOut(spring())
 
     composable<Destination.Settings>(
