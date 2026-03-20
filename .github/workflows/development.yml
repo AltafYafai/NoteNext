@@ -1,0 +1,112 @@
+name: Development Build (Pre-release)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: 9.4.0
+
+    - name: Extract Version Info
+      id: version_info
+      run: |
+        VERSION_NAME=$(grep "appVersionName=" gradle.properties | cut -d'=' -f2)
+        VERSION_CODE=$(grep "appVersionCode=" gradle.properties | cut -d'=' -f2)
+        echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+        echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+        echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+
+    - name: Generate Testing Release Notes
+      id: release_notes
+      shell: python
+      run: |
+        import json
+        import os
+
+        version = os.environ.get('VERSION_NAME')
+        run_number = os.environ.get('GITHUB_RUN_NUMBER')
+        repo = os.environ.get('GITHUB_REPOSITORY')
+        
+        body = f"## 🛠 Testing Build v{version} (Build #{run_number})\n\n"
+        body += "> [!IMPORTANT]\n"
+        body += "> This is an automated **testing build** for development purposes. It may be unstable and is not intended for production use.\n\n"
+        
+        try:
+            with open('changelog.json', 'r') as f:
+                data = json.load(f)
+            
+            release = next((r for r in data['releases'] if r['version'] == version), None)
+            
+            if release:
+                body += "### Recent Changes (from v" + version + ")\n"
+                for item in release['items']:
+                    body += f"- [{item['type']}] **{item['title']}**: {item['description']}\n"
+                body += "\n"
+            
+            body += "---\n"
+            body += "### Technical Details\n"
+            body += f"- **Build Number**: `{run_number}`\n"
+            body += f"- **Version Name**: `{version}`\n"
+            body += f"- **Version Code**: `" + os.environ.get('VERSION_CODE') + "`\n"
+            body += f"- **Commit**: [`{os.environ.get('GITHUB_SHA')[:7]}`](https://github.com/{repo}/commit/{os.environ.get('GITHUB_SHA')})\n\n"
+            
+            with open('release_body.md', 'w') as f:
+                f.write(body)
+        except Exception as e:
+            body += f"\nError parsing changelog: {str(e)}"
+            with open('release_body.md', 'w') as f:
+                f.write(body)
+
+    - name: Decode Keystore
+      run: |
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.keystore
+
+    - name: Build and Sign Testing Artifacts (APK & AAB)
+      run: gradle assembleRelease bundleRelease --parallel --no-daemon
+      env:
+        KEYSTORE_PATH: "my-release-key.keystore"
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        GROQ_API_1: ${{ secrets.GROQ_API_1 }}
+
+    - name: Determine Artifact Paths
+      id: paths
+      run: |
+        APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+        AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+        echo "APK_PATH=$APK_FILE" >> $GITHUB_ENV
+        echo "AAB_PATH=$AAB_FILE" >> $GITHUB_ENV
+
+    - name: Create Development Pre-release
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: dev-v${{ env.VERSION_NAME }}-b${{ github.run_number }}
+        name: Testing Build v${{ env.VERSION_NAME }} (Build #${{ github.run_number }})
+        body_path: release_body.md
+        draft: false
+        prerelease: true
+        files: |
+          ${{ env.APK_PATH }}
+          ${{ env.AAB_PATH }}
+        overwrite: true
