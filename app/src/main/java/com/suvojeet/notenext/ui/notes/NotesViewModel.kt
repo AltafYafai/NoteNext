@@ -1494,6 +1494,7 @@ class NotesViewModel @Inject constructor(
                             repository.limitNoteVersions(noteId, 10)
                         }
                     }
+                    check(!note.isEncrypted) { "Attempting to save encrypted note from ViewModel — decrypt first." }
                     repository.updateNote(note)
                     noteId.toLong() // Convert Int to Long for consistency
                 }

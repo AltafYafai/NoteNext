@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.android.billingclient.api.*
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,10 @@ class BillingManager @Inject constructor(
     private val _products = MutableStateFlow<List<ProductDetails>>(emptyList())
     val products: StateFlow<List<ProductDetails>> = _products.asStateFlow()
 
+    private var reconnectAttempts = 0
+    private val maxReconnectAttempts = 5
+    private val reconnectScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
     private val billingClient: BillingClient = BillingClient.newBuilder(context)
         .setListener(this)
         .enablePendingPurchases(
@@ -68,6 +73,7 @@ class BillingManager @Inject constructor(
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(result: BillingResult) {
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                    reconnectAttempts = 0
                     _billingState.value = BillingState.Ready
                     queryProducts()
                 } else {
@@ -77,10 +83,21 @@ class BillingManager @Inject constructor(
 
             override fun onBillingServiceDisconnected() {
                 _billingState.value = BillingState.Error
-                // Auto-retry connection
-                connectToPlayBilling()
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    val delayMs = (Math.pow(2.0, reconnectAttempts.toDouble()) * 1000L).toLong().coerceAtMost(30_000L)
+                    reconnectAttempts++
+                    reconnectScope.launch {
+                        delay(delayMs)
+                        connectToPlayBilling()
+                    }
+                }
             }
         })
+    }
+
+    fun destroy() {
+        reconnectScope.cancel()
+        if (billingClient.isReady) billingClient.endConnection()
     }
 
     private fun queryProducts() {

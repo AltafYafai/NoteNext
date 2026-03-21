@@ -12,23 +12,10 @@ import java.util.Locale
 fun createImageFile(context: Context): Uri {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
     val imageFileName = "JPEG_${timeStamp}_"
-
-    // Use cacheDir as primary — always guaranteed to exist and be writable.
-    // getExternalFilesDir is unreliable on Android 16+ due to storage restrictions.
-    val storageDir = File(context.cacheDir, "camera_photos").apply {
+    val storageDir = File(context.filesDir, "camera_photos").apply {
         if (!exists()) mkdirs()
     }
-
-    // Absolute fallback to filesDir if cacheDir somehow fails
-    val resolvedDir = if (storageDir.exists() && storageDir.canWrite()) {
-        storageDir
-    } else {
-        File(context.filesDir, "camera_photos").apply {
-            if (!exists()) mkdirs()
-        }
-    }
-
-    val image = File.createTempFile(imageFileName, ".jpg", resolvedDir)
+    val image = File.createTempFile(imageFileName, ".jpg", storageDir)
     return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", image)
 }
 

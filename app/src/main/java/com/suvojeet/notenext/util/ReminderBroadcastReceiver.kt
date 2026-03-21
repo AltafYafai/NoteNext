@@ -34,7 +34,8 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val pendingResult = goAsync()
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val job = SupervisorJob()
+        val scope = CoroutineScope(job + Dispatchers.IO)
         
         scope.launch {
             try {
@@ -78,6 +79,7 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
                 }
             } finally {
                 pendingResult.finish()
+                job.cancel()
             }
         }
     }

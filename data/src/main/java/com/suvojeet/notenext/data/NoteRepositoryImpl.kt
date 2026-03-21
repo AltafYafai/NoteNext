@@ -25,6 +25,8 @@ class NoteRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context
 ) : NoteRepository {
 
+    private val editCounterMutex = kotlinx.coroutines.sync.Mutex()
+
     override suspend fun <T> runInTransaction(block: suspend () -> T): T {
         return db.withTransaction {
             block()
@@ -111,27 +113,29 @@ class NoteRepositoryImpl @Inject constructor(
         }
 
     private suspend fun incrementEditCounter() {
-        val sharedPrefs = context.getSharedPreferences("backup_prefs", Context.MODE_PRIVATE)
-        val smartBackupEnabled = sharedPrefs.getBoolean("smart_backup_enabled", false)
-        if (!smartBackupEnabled) return
+        editCounterMutex.withLock {
+            val sharedPrefs = context.getSharedPreferences("backup_prefs", Context.MODE_PRIVATE)
+            val smartBackupEnabled = sharedPrefs.getBoolean("smart_backup_enabled", false)
+            if (!smartBackupEnabled) return
 
-        val currentCount = sharedPrefs.getInt("edit_counter", 0) + 1
-        val threshold = sharedPrefs.getInt("edits_before_backup", 10)
+            val currentCount = sharedPrefs.getInt("edit_counter", 0) + 1
+            val threshold = sharedPrefs.getInt("edits_before_backup", 10)
 
-        if (currentCount >= threshold) {
-            // Trigger backup
-            val email = sharedPrefs.getString("google_account_email", null)
-            val inputData = androidx.work.Data.Builder()
-            if (email != null) inputData.putString("email", email)
-            
-            val workRequest = OneTimeWorkRequestBuilder<BackupWorker>()
-                .setInputData(inputData.build())
-                .build()
-            
-            WorkManager.getInstance(context).enqueue(workRequest)
-            sharedPrefs.edit().putInt("edit_counter", 0).apply()
-        } else {
-            sharedPrefs.edit().putInt("edit_counter", currentCount).apply()
+            if (currentCount >= threshold) {
+                // Trigger backup
+                val email = sharedPrefs.getString("google_account_email", null)
+                val inputData = androidx.work.Data.Builder()
+                if (email != null) inputData.putString("email", email)
+                
+                val workRequest = OneTimeWorkRequestBuilder<BackupWorker>()
+                    .setInputData(inputData.build())
+                    .build()
+                
+                WorkManager.getInstance(context).enqueue(workRequest)
+                sharedPrefs.edit().putInt("edit_counter", 0).apply()
+            } else {
+                sharedPrefs.edit().putInt("edit_counter", currentCount).apply()
+            }
         }
     }
 
@@ -143,18 +147,11 @@ class NoteRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateNote(note: Note) {
-        val noteToUpdate = when {
-            note.isLocked -> CryptoUtils.encryptNote(note)
-            note.isEncrypted -> {
-                val decrypted = CryptoUtils.decryptNote(note)
-                if (decrypted.isEncrypted) {
-                    throw IllegalStateException("Failed to decrypt note for update. Authentication may be required.")
-                }
-                decrypted
-            }
-            else -> note
+        require(!note.isEncrypted) {
+            "updateNote() must receive a plaintext note. Decrypt before calling this function."
         }
-        noteDao.updateNote(noteToUpdate)
+        val noteToSave = if (note.isLocked) CryptoUtils.encryptNote(note) else note
+        noteDao.updateNote(noteToSave)
         incrementEditCounter()
     }
 

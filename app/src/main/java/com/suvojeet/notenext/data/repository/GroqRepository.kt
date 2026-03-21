@@ -64,10 +64,8 @@ object GroqRateLimitManager {
     fun isRateLimited(modelId: String): Boolean {
         val resetTime = modelResetTimes[modelId] ?: 0L
         if (System.currentTimeMillis() < resetTime) return true
-        
-        val remaining = modelRemainingRequests[modelId] ?: Int.MAX_VALUE
-        // Task 3.1: Skip if remaining requests < 5
-        return remaining < 5
+        val remaining = modelRemainingRequests[modelId] ?: return false
+        return remaining <= 1
     }
 
     fun getRetryAfter(modelId: String): Int {
@@ -175,8 +173,9 @@ class GroqRepository @Inject constructor(
                     
                     // Task 3.2: Error classification and smart retries
                     if (message.contains("429")) {
-                        val retryAfter = GroqRateLimitManager.getRetryAfter(model).coerceAtLeast(1)
-                        return GroqResult.RateLimited(retryAfter)
+                        val retryAfter = GroqRateLimitManager.getRetryAfter(model).coerceAtLeast(60)
+                        GroqRateLimitManager.update(model, remaining = 0, tokens = null, retryAfter = retryAfter)
+                        break // try next model
                     }
                     
                     if (message.contains("401")) {
