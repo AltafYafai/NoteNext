@@ -1,6 +1,47 @@
 {
   "releases": [
     {
+      "version": "1.3.4",
+      "date": "March 21, 2026",
+      "items": [
+        {
+          "title": "AI Power & Customization",
+          "description": "Added support for custom Groq API keys and model selection. Enjoy faster AI with intelligent rate-limit awareness and secure key encryption.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Ultra-Reliable Backups",
+          "description": "Complete overhaul of the backup system. Now featuring atomic restores for data safety, SHA-256 integrity verification, and secure password storage.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Smart Auto-Backups",
+          "description": "Never lose a note again with incremental backups that trigger automatically when you edit or charge your device.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Privacy First",
+          "description": "Locked notes now show their titles for easier organization while keeping content fully encrypted. Added a 2-minute session timeout for enhanced security.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "New Drawing Experience",
+          "description": "Redesigned drawing canvas with a clean white background, responsive Material 3 tools, and true erasing capabilities.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Fluid UI Animations",
+          "description": "Experience the new Material 3 Expressive motion engine with smooth animations for note pinning and label management.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "System Stability",
+          "description": "Resolved critical memory leaks, fixed Android 15 compatibility issues, and improved database migration reliability.",
+          "type": "FIX"
+        }
+      ]
+    },
+    {
       "version": "1.3.3",
       "date": "March 19, 2026",
       "items": [
