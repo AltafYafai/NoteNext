@@ -175,17 +175,24 @@ class ProjectNotesViewModel @Inject constructor(
             is ProjectNotesEvent.ToggleLockForSelectedNotes -> {
                 viewModelScope.launch {
                     val selectedNotes = state.value.notes.filter { state.value.selectedNoteIds.contains(it.note.id) }
-                     val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
-                    for (note in selectedNotes) {
-                        repository.updateNote(note.note.copy(isLocked = areNotesBeingLocked))
+                    if (selectedNotes.isEmpty()) return@launch
+                    val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
+                    try {
+                        for (note in selectedNotes) {
+                            repository.updateNote(note.note.copy(isLocked = areNotesBeingLocked))
+                        }
+                        _state.value = state.value.copy(selectedNoteIds = emptyList())
+                        val message = if (areNotesBeingLocked) {
+                            if (selectedNotes.size > 1) "${selectedNotes.size} notes locked" else "Note locked"
+                        } else {
+                            if (selectedNotes.size > 1) "${selectedNotes.size} notes unlocked" else "Note unlocked"
+                        }
+                        _events.emit(ProjectNotesUiEvent.ShowToast(message))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        val errorMessage = if (areNotesBeingLocked) "Failed to lock notes" else "Failed to unlock notes: Authentication may be required"
+                        _events.emit(ProjectNotesUiEvent.ShowToast(errorMessage))
                     }
-                    _state.value = state.value.copy(selectedNoteIds = emptyList())
-                    val message = if (areNotesBeingLocked) {
-                        if (selectedNotes.size > 1) "${selectedNotes.size} notes locked" else "Note locked"
-                    } else {
-                        if (selectedNotes.size > 1) "${selectedNotes.size} notes unlocked" else "Note unlocked"
-                    }
-                    _events.emit(ProjectNotesUiEvent.ShowToast(message))
                 }
             }
             is ProjectNotesEvent.DeleteSelectedNotes -> {
@@ -774,17 +781,13 @@ class ProjectNotesViewModel @Inject constructor(
             is ProjectNotesEvent.OnToggleLockClick -> {
                 viewModelScope.launch {
                     val currentLockState = state.value.editingIsLocked
-                    _state.value = state.value.copy(editingIsLocked = !currentLockState)
-                    // If note exists, update immediately
+                    val newLockState = !currentLockState
+                    _state.value = state.value.copy(editingIsLocked = newLockState)
+                    // If note exists, update immediately using the current decrypted state
                     state.value.expandedNoteId?.let { noteId ->
                          if (noteId != -1) {
-                             repository.getNoteById(noteId)?.let { note ->
-                                 repository.updateNote(note.note.copy(isLocked = !currentLockState))
-                             }
-                             // Update list locally
-                             val updatedNotesList = state.value.notes.map { if (it.note.id == noteId) it.copy(note = it.note.copy(isLocked = !currentLockState)) else it }
-                             _state.value = _state.value.copy(notes = updatedNotesList)
-                             _events.emit(ProjectNotesUiEvent.ShowToast(if (!currentLockState) "Note locked" else "Note unlocked"))
+                             onEvent(ProjectNotesEvent.OnSaveNoteClick(shouldCollapse = false))
+                             _events.emit(ProjectNotesUiEvent.ShowToast(if (newLockState) "Note locked" else "Note unlocked"))
                          }
                     }
                 }
@@ -879,7 +882,9 @@ class ProjectNotesViewModel @Inject constructor(
                                     projectId = projectId,
                                     isLocked = state.value.editingIsLocked,
                                     reminderTime = state.value.editingReminderTime,
-                                    repeatOption = state.value.editingRepeatOption
+                                    repeatOption = state.value.editingRepeatOption,
+                                    isEncrypted = false,
+                                    iv = null
                                 )
                             }
                         }

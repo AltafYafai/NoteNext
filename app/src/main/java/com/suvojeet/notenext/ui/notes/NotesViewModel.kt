@@ -541,22 +541,30 @@ class NotesViewModel @Inject constructor(
                     val selectedNotes = getSelectedNotes()
                     if (selectedNotes.isEmpty()) return@launch
                     val areNotesBeingLocked = selectedNotes.firstOrNull()?.note?.isLocked == false
-                    for (note in selectedNotes) {
-                        var noteToUpdate = note.note.copy(isLocked = areNotesBeingLocked)
-                        if (!areNotesBeingLocked && note.note.isEncrypted) {
-                            // If unlocking, decrypt first using the session's auth duration
-                            noteToUpdate = com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note).copy(isLocked = false)
+                    try {
+                        for (note in selectedNotes) {
+                            var noteToUpdate = note.note.copy(isLocked = areNotesBeingLocked)
+                            if (!areNotesBeingLocked && note.note.isEncrypted) {
+                                // If unlocking, decrypt first using the session's auth duration
+                                // This will either succeed or return a note where isEncrypted is still true
+                                val decrypted = com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note)
+                                noteToUpdate = decrypted.copy(isLocked = false)
+                            }
+                            repository.updateNote(noteToUpdate)
                         }
-                        repository.updateNote(noteToUpdate)
+                        _listState.value = listState.value.copy(selectedNoteIds = emptyList())
+                        val message = if (areNotesBeingLocked) {
+                            if (selectedNotes.size > 1) "${selectedNotes.size} notes locked" else "Note locked"
+                        } else {
+                            if (selectedNotes.size > 1) "${selectedNotes.size} notes unlocked" else "Note unlocked"
+                        }
+                        _events.emit(NotesUiEvent.ShowToast(message))
+                        updateWidgets()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        val errorMessage = if (areNotesBeingLocked) "Failed to lock notes" else "Failed to unlock notes: Authentication may be required"
+                        _events.emit(NotesUiEvent.ShowToast(errorMessage))
                     }
-                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
-                    val message = if (areNotesBeingLocked) {
-                        if (selectedNotes.size > 1) "${selectedNotes.size} notes locked" else "Note locked"
-                    } else {
-                        if (selectedNotes.size > 1) "${selectedNotes.size} notes unlocked" else "Note unlocked"
-                    }
-                    _events.emit(NotesUiEvent.ShowToast(message))
-                    updateWidgets()
                 }
             }
             is NotesEvent.DeleteSelectedNotes -> {
@@ -1460,7 +1468,9 @@ class NotesViewModel @Inject constructor(
                         isLocked = editState.value.editingIsLocked,
                         reminderTime = editState.value.editingReminderTime,
                         repeatOption = editState.value.editingRepeatOption,
-                        aiSummary = editState.value.summaryResult
+                        aiSummary = editState.value.summaryResult,
+                        isEncrypted = false,
+                        iv = null
                     )
                 }
             }

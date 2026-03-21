@@ -145,7 +145,13 @@ class NoteRepositoryImpl @Inject constructor(
     override suspend fun updateNote(note: Note) {
         val noteToUpdate = when {
             note.isLocked -> CryptoUtils.encryptNote(note)
-            note.isEncrypted -> CryptoUtils.decryptNote(note) // Unlocking: decrypt before saving
+            note.isEncrypted -> {
+                val decrypted = CryptoUtils.decryptNote(note)
+                if (decrypted.isEncrypted) {
+                    throw IllegalStateException("Failed to decrypt note for update. Authentication may be required.")
+                }
+                decrypted
+            }
             else -> note
         }
         noteDao.updateNote(noteToUpdate)
