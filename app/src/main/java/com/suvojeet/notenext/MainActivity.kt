@@ -62,6 +62,10 @@ class MainActivity : FragmentActivity() {
 
     private val _isSetupCompleteLoaded = MutableStateFlow<Boolean?>(null)
     private val _enableAppLockLoaded = MutableStateFlow<Boolean?>(null)
+    private val _lockTrigger = MutableStateFlow(0L)
+
+    private var unlocked = false
+    private var lastPauseTime: Long = 0
     
     private lateinit var updateChecker: UpdateChecker
     private lateinit var reviewManager: ReviewManager
@@ -153,8 +157,9 @@ class MainActivity : FragmentActivity() {
 
             val enableAppLockLoaded by _enableAppLockLoaded.collectAsState()
             val isSetupCompleteLoaded by _isSetupCompleteLoaded.collectAsState()
+            val lockTrigger by _lockTrigger.collectAsState()
 
-            var unlocked by remember { mutableStateOf(false) }
+            var unlockedByAuth by remember(lockTrigger) { mutableStateOf(unlocked) }
 
             // In-App Update Handling
             val updateStatus by updateChecker.updateStatus.collectAsState()
@@ -224,8 +229,11 @@ class MainActivity : FragmentActivity() {
                                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                             } else if (isSetupCompleteLoaded == false) {
                                 SetupScreen { }
-                            } else if (enableAppLockLoaded!! && !unlocked) {
-                                LockScreen(onUnlock = { unlocked = true })
+                            } else if (enableAppLockLoaded!! && !unlockedByAuth) {
+                                LockScreen(onUnlock = { 
+                                    unlocked = true
+                                    unlockedByAuth = true 
+                                })
                             } else {
                                 val startNoteId by _startNoteIdFlow.collectAsState()
                                 val startAddNote by _startAddNoteFlow.collectAsState()
@@ -272,6 +280,23 @@ class MainActivity : FragmentActivity() {
             else -> null
         }
         _sharedTextFlow.value = sharedText
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // If app was in background for more than 2 minutes, re-lock
+        if (_enableAppLockLoaded.value == true && lastPauseTime > 0) {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastPauseTime > 120_000) { // 2 minutes
+                unlocked = false
+                _lockTrigger.value = currentTime
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        lastPauseTime = System.currentTimeMillis()
     }
 
     override fun onResume() {

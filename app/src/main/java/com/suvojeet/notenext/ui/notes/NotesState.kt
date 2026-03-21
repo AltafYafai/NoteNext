@@ -19,6 +19,7 @@ data class NotesState(
     val isLoading: Boolean = true,
     val projects: List<Project> = emptyList(),
     val searchQuery: String = "",
+    val filteredProjectId: Int? = null,
 
     val expandedNoteId: Int? = null,
     val editingTitle: String = "",
@@ -76,7 +77,8 @@ data class NotesListState(
     val filteredLabel: String? = null,
     val isLoading: Boolean = true,
     val projects: List<Project> = emptyList(),
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val filteredProjectId: Int? = null
 )
 
 data class NotesEditState(

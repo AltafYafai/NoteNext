@@ -107,6 +107,7 @@ class NotesViewModel @Inject constructor(
             isLoading = list.isLoading,
             projects = list.projects,
             searchQuery = list.searchQuery,
+            filteredProjectId = list.filteredProjectId,
             
             expandedNoteId = edit.expandedNoteId,
             editingTitle = edit.editingTitle,
@@ -169,6 +170,7 @@ class NotesViewModel @Inject constructor(
 
     private val _searchQuery = MutableStateFlow("")
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
+    private val _filteredProjectId = MutableStateFlow<Int?>(null)
 
     private var autoSaveJob: Job? = null
     private var selectionActionsJob: Job? = null
@@ -196,19 +198,21 @@ class NotesViewModel @Inject constructor(
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
         val queryFlow = _searchQuery
         val sortFlow = _sortType
-        val combinedFlow = combine(queryFlow, sortFlow) { query, sortType -> query to sortType }
+        val projectFlow = _filteredProjectId
+        val combinedFlow = combine(queryFlow, sortFlow, projectFlow) { query, sortType, projectId -> Triple(query, sortType, projectId) }
         
-        combinedFlow.flatMapLatest { (query, sortType) ->
-            repository.getPinnedNotes()
+        combinedFlow.flatMapLatest { (query, sortType, projectId) ->
+            repository.getPinnedNotes(query, projectId)
         }.onEach { pinned ->
             _listState.value = _listState.value.copy(pinnedNotes = pinned)
         }.launchIn(viewModelScope)
 
-        combinedFlow.onEach { (query, sortType) ->
+        combinedFlow.onEach { (query, sortType, projectId) ->
             _listState.value = _listState.value.copy(
-                pagedNotes = repository.getOtherNotesPaged(query, sortType).cachedIn(viewModelScope),
+                pagedNotes = repository.getOtherNotesPaged(query, sortType, projectId).cachedIn(viewModelScope),
                 searchQuery = query,
-                sortType = sortType
+                sortType = sortType,
+                filteredProjectId = projectId
             )
         }.launchIn(viewModelScope)
 
@@ -685,8 +689,21 @@ class NotesViewModel @Inject constructor(
                             } else {
                                 AnnotatedString("")
                             }
+                            
                             val checklist = if (note.noteType == "CHECKLIST") {
-                                noteWithAttachments.checklistItems.sortedBy { it.position }
+                                // Decrypt checklist items if the note is locked and we have ciphers, 
+                                // or if it's already decrypted (via Repo for unlocked notes)
+                                noteWithAttachments.checklistItems.sortedBy { it.position }.map { item ->
+                                    if (note.isLocked && item.isEncrypted) {
+                                        // For locked notes being expanded with auth, we use CryptoUtils
+                                        // Note: decryptChecklistItem doesn't take authenticated cipher yet, 
+                                        // but since we just authenticated, getDecryptionCipher will work 
+                                        // within the 60s window.
+                                        com.suvojeet.notenext.util.CryptoUtils.decryptChecklistItem(item, isLocked = true)
+                                    } else {
+                                        item
+                                    }
+                                }
                             } else {
                                 emptyList<ChecklistItem>()
                             }
@@ -1136,6 +1153,9 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.FilterByLabel -> {
                 _listState.value = listState.value.copy(filteredLabel = event.label)
+            }
+            is NotesEvent.FilterByProject -> {
+                _filteredProjectId.value = event.projectId
             }
             is NotesEvent.ToggleLayout -> {
                 val newLayout = if (listState.value.layoutType == LayoutType.GRID) LayoutType.LIST else LayoutType.GRID

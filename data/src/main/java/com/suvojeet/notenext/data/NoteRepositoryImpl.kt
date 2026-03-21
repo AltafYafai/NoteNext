@@ -31,46 +31,53 @@ class NoteRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getNotes(searchQuery: String, sortType: SortType): Flow<List<NoteWithAttachments>> {
+    override fun getNotes(searchQuery: String, sortType: SortType, projectId: Int?): Flow<List<NoteWithAttachments>> {
         val flow = if (searchQuery.isBlank()) {
             when (sortType) {
-                SortType.DATE_MODIFIED -> noteDao.getNotesOrderedByDateModified()
-                SortType.DATE_CREATED -> noteDao.getNotesOrderedByDateCreated()
-                SortType.TITLE -> noteDao.getNotesOrderedByTitle()
-                SortType.CUSTOM -> noteDao.getNotesOrderedByPosition()
+                SortType.DATE_MODIFIED -> noteDao.getNotesOrderedByDateModified(projectId)
+                SortType.DATE_CREATED -> noteDao.getNotesOrderedByDateCreated(projectId)
+                SortType.TITLE -> noteDao.getNotesOrderedByTitle(projectId)
+                SortType.CUSTOM -> noteDao.getNotesOrderedByPosition(projectId)
             }
         } else {
             val formattedQuery = "$searchQuery*"
             when (sortType) {
-                SortType.DATE_MODIFIED -> noteDao.searchNotesOrderedByDateModified(formattedQuery)
-                SortType.DATE_CREATED -> noteDao.searchNotesOrderedByDateCreated(formattedQuery)
-                SortType.TITLE -> noteDao.searchNotesOrderedByTitle(formattedQuery)
-                SortType.CUSTOM -> noteDao.searchNotesOrderedByPosition(formattedQuery)
+                SortType.DATE_MODIFIED -> noteDao.searchNotesOrderedByDateModified(formattedQuery, projectId)
+                SortType.DATE_CREATED -> noteDao.searchNotesOrderedByDateCreated(formattedQuery, projectId)
+                SortType.TITLE -> noteDao.searchNotesOrderedByTitle(formattedQuery, projectId)
+                SortType.CUSTOM -> noteDao.searchNotesOrderedByPosition(formattedQuery, projectId)
             }
         }
         return flow
     }
 
-    override fun getPinnedNotes(): Flow<List<NoteWithAttachments>> = noteDao.getPinnedNotes()
+    override fun getPinnedNotes(searchQuery: String, projectId: Int?): Flow<List<NoteWithAttachments>> {
+        return if (searchQuery.isBlank()) {
+            noteDao.getPinnedNotes(projectId)
+        } else {
+            val formattedQuery = "$searchQuery*"
+            noteDao.searchPinnedNotes(formattedQuery, projectId)
+        }
+    }
 
-    override fun getOtherNotesPaged(searchQuery: String, sortType: SortType): Flow<PagingData<NoteWithAttachments>> {
+    override fun getOtherNotesPaged(searchQuery: String, sortType: SortType, projectId: Int?): Flow<PagingData<NoteWithAttachments>> {
         return Pager(
             config = PagingConfig(pageSize = 20, enablePlaceholders = true),
             pagingSourceFactory = {
                 if (searchQuery.isBlank()) {
                     when (sortType) {
-                        SortType.DATE_MODIFIED -> noteDao.getOtherNotesPagedOrderedByDateModified()
-                        SortType.DATE_CREATED -> noteDao.getOtherNotesPagedOrderedByDateCreated()
-                        SortType.TITLE -> noteDao.getOtherNotesPagedOrderedByTitle()
-                        SortType.CUSTOM -> noteDao.getOtherNotesPagedOrderedByPosition()
+                        SortType.DATE_MODIFIED -> noteDao.getOtherNotesPagedOrderedByDateModified(projectId)
+                        SortType.DATE_CREATED -> noteDao.getOtherNotesPagedOrderedByDateCreated(projectId)
+                        SortType.TITLE -> noteDao.getOtherNotesPagedOrderedByTitle(projectId)
+                        SortType.CUSTOM -> noteDao.getOtherNotesPagedOrderedByPosition(projectId)
                     }
                 } else {
                     val formattedQuery = "$searchQuery*"
                     when (sortType) {
-                        SortType.DATE_MODIFIED -> noteDao.searchOtherNotesPagedOrderedByDateModified(formattedQuery)
-                        SortType.DATE_CREATED -> noteDao.searchOtherNotesPagedOrderedByDateCreated(formattedQuery)
-                        SortType.TITLE -> noteDao.searchOtherNotesPagedOrderedByTitle(formattedQuery)
-                        SortType.CUSTOM -> noteDao.searchOtherNotesPagedOrderedByPosition(formattedQuery)
+                        SortType.DATE_MODIFIED -> noteDao.searchOtherNotesPagedOrderedByDateModified(formattedQuery, projectId)
+                        SortType.DATE_CREATED -> noteDao.searchOtherNotesPagedOrderedByDateCreated(formattedQuery, projectId)
+                        SortType.TITLE -> noteDao.searchOtherNotesPagedOrderedByTitle(formattedQuery, projectId)
+                        SortType.CUSTOM -> noteDao.searchOtherNotesPagedOrderedByPosition(formattedQuery, projectId)
                     }
                 }
             }
@@ -92,7 +99,15 @@ class NoteRepositoryImpl @Inject constructor(
     override suspend fun getNoteById(id: Int): NoteWithAttachments? = 
         noteDao.getNoteById(id)?.let { 
             // We return it AS IS if locked, so the caller can trigger biometric auth
-            if (it.note.isLocked) it else it.copy(note = CryptoUtils.decryptNote(it.note)) 
+            if (it.note.isLocked) {
+                it
+            } else {
+                val decryptedNote = CryptoUtils.decryptNote(it.note)
+                val decryptedChecklist = it.checklistItems.map { item -> 
+                    CryptoUtils.decryptChecklistItem(item, isLocked = false) 
+                }
+                it.copy(note = decryptedNote, checklistItems = decryptedChecklist)
+            }
         }
 
     private suspend fun incrementEditCounter() {
@@ -182,11 +197,38 @@ class NoteRepositoryImpl @Inject constructor(
 
     override fun getAllReminders(): Flow<List<Note>> = noteDao.getAllReminders()
 
-    override suspend fun insertChecklistItems(items: List<ChecklistItem>) = checklistItemDao.insertChecklistItems(items)
+    override suspend fun insertChecklistItems(items: List<ChecklistItem>) {
+        if (items.isEmpty()) return
+        val noteId = items.first().noteId
+        val note = noteDao.getNoteById(noteId)
+        val isLocked = note?.note?.isLocked == true
+        val encryptedItems = if (isLocked) {
+            items.map { CryptoUtils.encryptChecklistItem(it, isLocked) }
+        } else {
+            items
+        }
+        checklistItemDao.insertChecklistItems(encryptedItems)
+    }
 
-    override suspend fun updateChecklistItem(item: ChecklistItem) = checklistItemDao.updateChecklistItem(item)
+    override suspend fun updateChecklistItem(item: ChecklistItem) {
+        val note = noteDao.getNoteById(item.noteId)
+        val isLocked = note?.note?.isLocked == true
+        val itemToUpdate = if (isLocked) CryptoUtils.encryptChecklistItem(item, isLocked) else item
+        checklistItemDao.updateChecklistItem(itemToUpdate)
+    }
 
-    override suspend fun updateChecklistItems(items: List<ChecklistItem>) = checklistItemDao.updateChecklistItems(items)
+    override suspend fun updateChecklistItems(items: List<ChecklistItem>) {
+        if (items.isEmpty()) return
+        val noteId = items.first().noteId
+        val note = noteDao.getNoteById(noteId)
+        val isLocked = note?.note?.isLocked == true
+        val itemsToUpdate = if (isLocked) {
+            items.map { CryptoUtils.encryptChecklistItem(it, isLocked) }
+        } else {
+            items
+        }
+        checklistItemDao.updateChecklistItems(itemsToUpdate)
+    }
 
     override suspend fun deleteChecklistItem(item: ChecklistItem) = checklistItemDao.deleteChecklistItem(item)
 

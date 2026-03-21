@@ -27,5 +27,7 @@ data class ChecklistItem(
     val text: String,
     val isChecked: Boolean,
     val position: Int = 0,
-    val level: Int = 0
+    val level: Int = 0,
+    val iv: String? = null,
+    val isEncrypted: Boolean = false
 )

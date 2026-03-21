@@ -5,9 +5,9 @@ import androidx.paging.PagingData
 
 interface NoteRepository {
     // Note operations
-    fun getNotes(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<List<NoteWithAttachments>>
-    fun getPinnedNotes(): Flow<List<NoteWithAttachments>>
-    fun getOtherNotesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED): Flow<PagingData<NoteWithAttachments>>
+    fun getNotes(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED, projectId: Int? = null): Flow<List<NoteWithAttachments>>
+    fun getPinnedNotes(searchQuery: String = "", projectId: Int? = null): Flow<List<NoteWithAttachments>>
+    fun getOtherNotesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED, projectId: Int? = null): Flow<PagingData<NoteWithAttachments>>
     fun getArchivedNotes(): Flow<List<NoteWithAttachments>>
     fun getBinnedNotes(): Flow<List<NoteWithAttachments>>
     fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>>

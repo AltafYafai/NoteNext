@@ -32,9 +32,9 @@ object CryptoUtils {
         if (requireAuth) {
             builder.setUserAuthenticationRequired(true)
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                builder.setUserAuthenticationParameters(300, KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                builder.setUserAuthenticationParameters(60, KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL)
             } else {
-                builder.setUserAuthenticationValidityDurationSeconds(300)
+                builder.setUserAuthenticationValidityDurationSeconds(60)
             }
         }
 
@@ -146,6 +146,48 @@ object CryptoUtils {
             note.copy(
                 title = if (note.title.length > 20) "⚠ Decryption Failed" else note.title,
                 content = "Unable to decrypt this note. It may require biometric authentication or the key was lost.",
+                isEncrypted = true
+            )
+        }
+    }
+
+    fun encryptChecklistItem(item: com.suvojeet.notenext.data.ChecklistItem, isLocked: Boolean): com.suvojeet.notenext.data.ChecklistItem {
+        if (item.isEncrypted) return item
+
+        val cipher = getEncryptionCipher(isLocked)
+        val iv = cipher.iv
+        val encryptedText = Base64.encodeToString(cipher.doFinal(item.text.toByteArray()), Base64.DEFAULT)
+
+        val combinedIv = if (isLocked) "v2:" + Base64.encodeToString(iv, Base64.DEFAULT) else Base64.encodeToString(iv, Base64.DEFAULT)
+
+        return item.copy(
+            text = encryptedText,
+            iv = combinedIv,
+            isEncrypted = true
+        )
+    }
+
+    fun decryptChecklistItem(item: com.suvojeet.notenext.data.ChecklistItem, isLocked: Boolean): com.suvojeet.notenext.data.ChecklistItem {
+        if (!item.isEncrypted || item.iv == null) return item
+
+        return try {
+            val rawIv = item.iv
+            val isV2 = rawIv.startsWith("v2:")
+            val cleanIv = if (isV2) rawIv.substring(3) else rawIv
+            val iv = Base64.decode(cleanIv, Base64.DEFAULT)
+            
+            val cipher = getDecryptionCipher(iv, isLocked, useV1 = !isV2)
+            val decryptedText = String(cipher.doFinal(Base64.decode(item.text, Base64.DEFAULT)))
+
+            item.copy(
+                text = decryptedText,
+                iv = null,
+                isEncrypted = false
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            item.copy(
+                text = "⚠ Decryption Failed",
                 isEncrypted = true
             )
         }

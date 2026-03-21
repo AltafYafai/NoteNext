@@ -46,20 +46,22 @@ fun LockScreen(onUnlock: () -> Unit) {
     }
 
     val canAuthenticateResult = biometricAuthManager?.canAuthenticate()
+    val isAuthAvailable = canAuthenticateResult == BiometricManager.BIOMETRIC_SUCCESS || 
+                         canAuthenticateResult == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
 
     LaunchedEffect(biometricAuthManager) {
-        if (canAuthenticateResult == BiometricManager.BIOMETRIC_SUCCESS) {
+        if (isAuthAvailable) {
             biometricAuthManager?.showBiometricPrompt(
                 onAuthSuccess = { _ -> onUnlock() },
                 onAuthError = {
-                    if (it != "Authentication error: User Canceled") {
+                    if (it != "Authentication error: User Canceled" && !it.contains("Canceled")) {
                         error = it
                     }
                 },
                 onAuthFailed = { error = biometricAuthFailedString }
             )
         } else {
-             error = "Biometric authentication not available"
+             error = "Security lock not available"
         }
     }
 
@@ -102,20 +104,20 @@ fun LockScreen(onUnlock: () -> Unit) {
             )
             
             Text(
-                text = "Protected with biometric security",
+                text = "Protected with device security",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
             Spacer(modifier = Modifier.height(48.dp))
 
-            if (canAuthenticateResult == BiometricManager.BIOMETRIC_SUCCESS) {
+            if (isAuthAvailable) {
                  FilledTonalButton(
                     onClick = {
                         biometricAuthManager?.showBiometricPrompt(
                             onAuthSuccess = { _ -> onUnlock() },
                             onAuthError = {
-                                if (it != "Authentication error: User Canceled") {
+                                if (it != "Authentication error: User Canceled" && !it.contains("Canceled")) {
                                     error = it
                                 }
                             },
@@ -130,7 +132,7 @@ fun LockScreen(onUnlock: () -> Unit) {
                 ) {
                     Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(stringResource(id = R.string.unlock_with_biometrics), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Text("Unlock with Biometrics or PIN", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                 }
             } else {
                 Surface(
@@ -139,7 +141,7 @@ fun LockScreen(onUnlock: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                         text = "Biometric authentication is not available on this device", 
+                         text = "Security lock is not available on this device", 
                          color = MaterialTheme.colorScheme.onErrorContainer,
                          modifier = Modifier.padding(16.dp),
                          textAlign = TextAlign.Center,

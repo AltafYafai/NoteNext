@@ -69,6 +69,7 @@ sealed class NotesEvent {
     data class OnLabelChange(val label: String) : NotesEvent()
     object DismissLabelDialog : NotesEvent()
     data class FilterByLabel(val label: String?) : NotesEvent()
+    data class FilterByProject(val projectId: Int?) : NotesEvent()
     data class OnReminderChange(val time: Long?, val repeatOption: String?) : NotesEvent()
 
     data class OnLinkDetected(val url: String) : NotesEvent()
