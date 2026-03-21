@@ -131,41 +131,37 @@ fun NoteItem(
                 }
 
                 if (decryptedNote.title.isNotEmpty()) {
-                    // Don't render raw base64 as title for encrypted locked notes
-                    val displayTitle = if (note.note.isLocked && note.note.isEncrypted) "" else decryptedNote.title
-                    if (displayTitle.isNotEmpty()) {
-                        val titleText = if (searchQuery.isNotEmpty()) {
-                            buildAnnotatedString {
-                                val text = displayTitle
-                                append(text)
-                                val lowerText = text.lowercase()
-                                val lowerQuery = searchQuery.lowercase()
-                                var index = lowerText.indexOf(lowerQuery)
-                                while (index >= 0) {
-                                    addStyle(
-                                        style = SpanStyle(
-                                            background = MaterialTheme.colorScheme.primaryContainer,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        ),
-                                        start = index,
-                                        end = index + searchQuery.length
-                                    )
-                                    index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                                }
+                    val titleText = if (searchQuery.isNotEmpty()) {
+                        buildAnnotatedString {
+                            val text = decryptedNote.title
+                            append(text)
+                            val lowerText = text.lowercase()
+                            val lowerQuery = searchQuery.lowercase()
+                            var index = lowerText.indexOf(lowerQuery)
+                            while (index >= 0) {
+                                addStyle(
+                                    style = SpanStyle(
+                                        background = MaterialTheme.colorScheme.primaryContainer,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    ),
+                                    start = index,
+                                    end = index + searchQuery.length
+                                )
+                                index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
                             }
-                        } else {
-                            androidx.compose.ui.text.AnnotatedString(displayTitle)
                         }
-
-                        Text(
-                            text = titleText,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = contentColor,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    } else {
+                        androidx.compose.ui.text.AnnotatedString(decryptedNote.title)
                     }
+
+                    Text(
+                        text = titleText,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = contentColor,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 if (decryptedNote.isLocked) {

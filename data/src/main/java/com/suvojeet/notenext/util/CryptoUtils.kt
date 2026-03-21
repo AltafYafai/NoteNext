@@ -65,25 +65,23 @@ object CryptoUtils {
 
         val isLocked = note.isLocked
         
-        // Encrypt title
-        val cipherTitle = getEncryptionCipher(isLocked)
-        val ivTitle = cipherTitle.iv
-        val encryptedTitle = Base64.encodeToString(cipherTitle.doFinal(note.title.toByteArray()), Base64.DEFAULT)
+        // Title is no longer encrypted as per requirement.
+        val unencryptedTitle = note.title
 
         // Encrypt content
         val cipherContent = getEncryptionCipher(isLocked)
         val ivContent = cipherContent.iv
         val encryptedContent = Base64.encodeToString(cipherContent.doFinal(note.content.toByteArray()), Base64.DEFAULT)
 
-        // Combine IVs: v2:ivTitle:ivContent (v2 prefix for new keys)
+        // Combine IVs: v3:ivContent (v3 prefix: title unencrypted, content encrypted)
         val combinedIv = if (isLocked) {
-            "v2:" + Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+            "v3:" + Base64.encodeToString(ivContent, Base64.DEFAULT)
         } else {
-            Base64.encodeToString(ivTitle, Base64.DEFAULT) + ":" + Base64.encodeToString(ivContent, Base64.DEFAULT)
+            "v3-plain:" + Base64.encodeToString(ivContent, Base64.DEFAULT)
         }
 
         return note.copy(
-            title = encryptedTitle,
+            title = unencryptedTitle,
             content = encryptedContent,
             iv = combinedIv,
             isEncrypted = true
@@ -100,12 +98,32 @@ object CryptoUtils {
 
         return try {
             val rawIv = note.iv
+            val isV3 = rawIv.startsWith("v3:") || rawIv.startsWith("v3-plain:")
             val isV2 = rawIv.startsWith("v2:")
-            val cleanIv = if (isV2) rawIv.substring(3) else rawIv
+            
+            val cleanIv = if (isV3) {
+                if (rawIv.startsWith("v3:")) rawIv.substring(3) else rawIv.substring(9)
+            } else if (isV2) {
+                rawIv.substring(3)
+            } else {
+                rawIv
+            }
+            
             val ivs = cleanIv.split(":")
-            val isLocked = note.isLocked && cleanIv.contains(":") 
+            val isLocked = if (isV3) rawIv.startsWith("v3:") else (note.isLocked && cleanIv.contains(":"))
 
-            val (decryptedTitle, decryptedContent) = if (ivs.size == 2) {
+            val (decryptedTitle, decryptedContent) = if (isV3) {
+                // v3 format: title is already unencrypted
+                val ivContent = Base64.decode(cleanIv, Base64.DEFAULT)
+                val content = if (authenticatedCipherContent != null) {
+                    String(authenticatedCipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                } else {
+                    val cipherContent = getDecryptionCipher(ivContent, isLocked, useV1 = false)
+                    String(cipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                }
+                Pair(note.title, content)
+            } else if (ivs.size == 2) {
+                // v2 or v1 format with two IVs
                 val ivTitle = Base64.decode(ivs[0], Base64.DEFAULT)
                 val ivContent = Base64.decode(ivs[1], Base64.DEFAULT)
                 
@@ -125,6 +143,7 @@ object CryptoUtils {
                 
                 Pair(title, content)
             } else {
+                // Legacy format with single IV for both
                 val iv = Base64.decode(cleanIv, Base64.DEFAULT)
                 val cipher = getDecryptionCipher(iv, isLocked, useV1 = !isV2)
                 val title = String(cipher.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
@@ -144,7 +163,7 @@ object CryptoUtils {
         } catch (e: Exception) {
             e.printStackTrace()
             note.copy(
-                title = if (note.title.length > 20) "⚠ Decryption Failed" else note.title,
+                title = note.title, // Don't mask the title if decryption fails, as it might be unencrypted now
                 content = "Unable to decrypt this note. It may require biometric authentication or the key was lost.",
                 isEncrypted = true
             )
