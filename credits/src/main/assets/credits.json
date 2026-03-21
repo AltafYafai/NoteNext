@@ -1,6 +1,12 @@
 {
   "contributors": [
     {
+      "name": "Suvojeet Sengupta",
+      "role": "Lead Developer & Maintainer",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/108503673",
+      "githubUrl": "https://github.com/suvojeet-sengupta"
+    },
+    {
       "name": "Jendermine",
       "role": "Feedback & Testing",
       "avatarUrl": "https://avatars.githubusercontent.com/u/92355621",
@@ -35,16 +41,52 @@
       "description": "Seamless asynchronous programming"
     },
     {
+      "name": "Retrofit & OkHttp",
+      "description": "Type-safe HTTP client for network communication"
+    },
+    {
+      "name": "WorkManager",
+      "description": "Schedule deferrable, asynchronous tasks for auto-backups"
+    },
+    {
+      "name": "Paging 3",
+      "description": "Efficient data loading and buttery-smooth scrolling"
+    },
+    {
+      "name": "DataStore",
+      "description": "Modern data storage solution for user preferences"
+    },
+    {
+      "name": "Biometric API",
+      "description": "Secure hardware-backed authentication"
+    },
+    {
       "name": "Coil",
       "description": "Fast and lightweight image loading for Android"
     },
     {
+      "name": "Groq AI",
+      "description": "High-speed AI processing for note analysis"
+    },
+    {
       "name": "Google Drive API",
-      "description": "Secure cloud synchronization"
+      "description": "Secure cloud synchronization and backup"
+    },
+    {
+      "name": "Play Review & Billing",
+      "description": "In-app reviews and secure donation processing"
+    },
+    {
+      "name": "Security-Crypto",
+      "description": "Hardware-backed data encryption and security"
     },
     {
       "name": "ACRA",
       "description": "Application Crash Reports for Android"
+    },
+    {
+      "name": "Jsoup",
+      "description": "Powerful library for working with real-world HTML"
     }
   ],
   "resources": [
@@ -55,6 +97,10 @@
     {
       "name": "Google Fonts",
       "description": "Expressive typography for everyone"
+    },
+    {
+      "name": "LottieFiles",
+      "description": "Rich and lightweight motion animations"
     }
   ]
 }
