@@ -178,9 +178,9 @@ class GoogleDriveManager @Inject constructor() {
              }
         }
 
-        val outputStream = FileOutputStream(targetFile)
-        driveService.files().get(targetFileId).executeMediaAndDownloadTo(outputStream)
-        outputStream.close()
+        FileOutputStream(targetFile).use { outputStream ->
+            driveService.files().get(targetFileId).executeMediaAndDownloadTo(outputStream)
+        }
     }
 
     data class DriveBackupMetadata(

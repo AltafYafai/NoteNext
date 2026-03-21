@@ -32,7 +32,7 @@ class BackupWorker @AssistedInject constructor(
         val sdCardFolderUri = sharedPrefs.getString("sd_card_folder_uri", null)
         val includeAttachments = sharedPrefs.getBoolean("include_backup_attachments", true)
         val isIncrementalEnabled = sharedPrefs.getBoolean("incremental_backup_enabled", false)
-        val lastBackupTime = if (isIncrementalEnabled) sharedPrefs.getLong("last_successful_backup_time", 0L) else 0L
+        val lastBackupTime = if (isIncrementalEnabled) sharedPrefs.getLong("last_backup_time", 0L) else 0L
         
         val isEncryptionEnabled = sharedPrefs.getBoolean("backup_encryption_enabled", false) || sharedPrefs.getBoolean("auto_backup_encryption_enabled", false)
         val encryptionPassword = SecurityUtils.getBackupPassword(applicationContext)
@@ -88,7 +88,7 @@ class BackupWorker @AssistedInject constructor(
             
             if (success) {
                 sharedPrefs.edit()
-                    .putLong("last_successful_backup_time", startTime)
+                    .putLong("last_backup_time", startTime)
                     .putInt("edit_counter", 0) // Reset edit counter on success
                     .apply()
             }

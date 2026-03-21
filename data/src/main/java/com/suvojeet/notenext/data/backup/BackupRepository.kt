@@ -178,7 +178,7 @@ class BackupRepository @Inject constructor(
         since: Long = 0,
         onProgress: ((Long, Long) -> Unit)? = null
     ): String {
-        val dbFile = File(context.cacheDir, "temp_backup.zip") // Google Drive SDK uses this file to upload
+        val dbFile = File(context.cacheDir, "temp_backup_${System.currentTimeMillis()}.zip") // Unique filename (Fix 6)
         try {
             if (password.isNullOrBlank()) {
                 createBackupZip(dbFile, includeAttachments, since)
@@ -195,6 +195,7 @@ class BackupRepository @Inject constructor(
 
     private suspend fun writeBackupToZip(zos: ZipOutputStream, includeAttachments: Boolean, since: Long = 0) {
         val manifest = mutableMapOf<String, String>()
+        val attachmentUriMap = mutableMapOf<String, String>() // Fix 1: Map originalUri to zipEntryName
         val md = MessageDigest.getInstance("SHA-256")
         var missingAttachmentsCount = 0
 
@@ -208,11 +209,11 @@ class BackupRepository @Inject constructor(
             manifest[name] = hashString
         }
 
-        // Backup core data - if since > 0, filter only modified notes
+        // Backup core data - Use methods that include archived/binned notes (Fix 9)
         val notes = if (since > 0) {
-            repository.getNotesModifiedSince(since).first()
+            repository.getAllNotesModifiedSince(since).first()
         } else {
-            repository.getNotes().first()
+            repository.getAllNotes().first()
         }
         val labels = repository.getLabels().first()
         val projects = repository.getProjects().first()
@@ -233,13 +234,15 @@ class BackupRepository @Inject constructor(
                         val bytes = inputStream.readBytes()
                         val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
                         
+                        val documentFile = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, attachmentUri)
+                        val fileName = documentFile?.name ?: File(attachmentUri.path ?: "attachment").name
+                        val ext = fileName.substringAfterLast('.', "")
+                        val entryName = if (ext.isNotEmpty()) "attachments/$hash.$ext" else "attachments/$hash"
+                        
+                        // Map original URI to the ZIP entry name for later restoration (Fix 1)
+                        attachmentUriMap[attachment.uri] = entryName
+
                         if (hash !in processedHashes) {
-                            val documentFile = androidx.documentfile.provider.DocumentFile.fromSingleUri(context, attachmentUri)
-                            val fileName = documentFile?.name ?: File(attachmentUri.path ?: "attachment").name
-                            // Store by hash to deduplicate, keeping original extension if possible
-                            val ext = fileName.substringAfterLast('.', "")
-                            val entryName = if (ext.isNotEmpty()) "attachments/$hash.$ext" else "attachments/$hash"
-                            
                             zos.putNextEntry(ZipEntry(entryName))
                             zos.write(bytes)
                             zos.closeEntry()
@@ -260,6 +263,7 @@ class BackupRepository @Inject constructor(
         manifest["missing_attachments"] = missingAttachmentsCount.toString()
         manifest["is_incremental"] = (since > 0).toString()
         manifest["since_timestamp"] = since.toString()
+        manifest["attachment_uri_map"] = json.encodeToString(attachmentUriMap) // Fix 1
         
         val manifestJson = json.encodeToString(manifest)
         zos.putNextEntry(ZipEntry("manifest.json"))
@@ -317,21 +321,26 @@ class BackupRepository @Inject constructor(
         var notesJson: String? = null
         var projectsJson: String? = null
         var labelsJson: String? = null 
+        var manifestJson: String? = null
 
         // Pass 1: Read JSON Data
         context.contentResolver.openInputStream(uri)?.use { inputStream ->
             ZipInputStream(inputStream).use { zis ->
                 var zipEntry = zis.nextEntry
                 while (zipEntry != null) {
-                   when {
-                        zipEntry.name == "notes.json" -> notesJson = InputStreamReader(zis).readText()
-                        zipEntry.name == "labels.json" -> labelsJson = InputStreamReader(zis).readText()
-                        zipEntry.name == "projects.json" -> projectsJson = InputStreamReader(zis).readText()
+                   when (zipEntry.name) {
+                        "notes.json" -> notesJson = InputStreamReader(zis).readText()
+                        "labels.json" -> labelsJson = InputStreamReader(zis).readText()
+                        "projects.json" -> projectsJson = InputStreamReader(zis).readText()
+                        "manifest.json" -> manifestJson = InputStreamReader(zis).readText()
                     }
                     zipEntry = zis.nextEntry
                 }
             }
         }
+
+        val manifest: Map<String, String> = manifestJson?.let { json.decodeFromString(it) } ?: emptyMap()
+        val attachmentUriMap: Map<String, String> = manifest["attachment_uri_map"]?.let { json.decodeFromString(it) } ?: emptyMap()
 
         val attachmentsToExtract = mutableListOf<Pair<String, File>>() // ZipEntryName -> TargetFile
 
@@ -370,10 +379,14 @@ class BackupRepository @Inject constructor(
                         noteWithAttachments.attachments.forEach { attachment ->
                             try {
                                 val originalUri = Uri.parse(attachment.uri)
-                                // We assume the filename in the zip matches the original filename
-                                val fileName = File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
-                                val zipEntryName = "attachments/$fileName"
+                                // Use the map from manifest to find the correct ZIP entry name (Fix 1)
+                                val zipEntryName = attachmentUriMap[attachment.uri] ?: run {
+                                    // Fallback to old behavior for backward compatibility with old backups (though they were broken)
+                                    val fileName = File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
+                                    "attachments/$fileName"
+                                }
                                 
+                                val fileName = File(originalUri.path ?: "attachment").name
                                 // Create target file in internal storage
                                 val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
                                 val attachmentsDir = File(context.filesDir, "attachments")
@@ -398,29 +411,33 @@ class BackupRepository @Inject constructor(
 
         // Pass 2: Extract Attachment Files
         if (attachmentsToExtract.isNotEmpty()) {
-            context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                ZipInputStream(inputStream).use { zis ->
-                    var zipEntry = zis.nextEntry
-                    while (zipEntry != null) {
-                        val entryName = zipEntry.name
-                        // Find all targets that need this entry
-                        val targets = attachmentsToExtract.filter { it.first == entryName }
-                        targets.forEach { (_, targetFile) ->
-                            try {
-                                FileOutputStream(targetFile).use { fos ->
-                                    // Copy without closing the ZIS
-                                    val buffer = ByteArray(8192)
-                                    var length: Int
-                                    while (zis.read(buffer).also { length = it } > 0) {
-                                        fos.write(buffer, 0, length)
-                                    }
+            extractAttachmentsFromZip(uri, attachmentsToExtract)
+        }
+    }
+
+    suspend fun extractAttachmentsFromZip(uri: Uri, attachmentsToExtract: List<Pair<String, File>>) {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            ZipInputStream(inputStream).use { zis ->
+                var zipEntry = zis.nextEntry
+                while (zipEntry != null) {
+                    val entryName = zipEntry.name
+                    // Find all targets that need this entry
+                    val targets = attachmentsToExtract.filter { it.first == entryName }
+                    targets.forEach { (_, targetFile) ->
+                        try {
+                            FileOutputStream(targetFile).use { fos ->
+                                // Copy without closing the ZIS
+                                val buffer = ByteArray(8192)
+                                var length: Int
+                                while (zis.read(buffer).also { length = it } > 0) {
+                                    fos.write(buffer, 0, length)
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
                             }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                        zipEntry = zis.nextEntry
                     }
+                    zipEntry = zis.nextEntry
                 }
             }
         }

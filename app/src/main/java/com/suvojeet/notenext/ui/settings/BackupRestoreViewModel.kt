@@ -340,7 +340,7 @@ class BackupRestoreViewModel @Inject constructor(
                 try {
                     application.contentResolver.openInputStream(uri)?.use { inputStream ->
                         ZipInputStream(inputStream).use { zis ->
-                            readBackupFromZip(zis, merge)
+                            readBackupFromZip(zis, merge, uri)
                         }
                     }
                     _state.value = _state.value.copy(isRestoring = false, restoreResult = if (merge) "Merge successful" else "Local Restore successful")
@@ -365,7 +365,7 @@ class BackupRestoreViewModel @Inject constructor(
                     try {
                         java.io.FileInputStream(tempZipFile).use { inputStream ->
                             ZipInputStream(inputStream).use { zis ->
-                                readBackupFromZip(zis, merge)
+                                readBackupFromZip(zis, merge, Uri.fromFile(tempZipFile))
                             }
                         }
                         _state.value = _state.value.copy(isRestoring = false, restoreResult = if (merge) "Encrypted Merge successful" else "Encrypted Restore successful", pendingRestoreUri = null, pendingMerge = false)
@@ -384,10 +384,18 @@ class BackupRestoreViewModel @Inject constructor(
     }
 
     fun cancelPasswordEntry() {
+        val uriString = _state.value.pendingRestoreUri
+        if (uriString != null) {
+            val uri = Uri.parse(uriString)
+            if (uri.scheme == "file") {
+                val file = File(uri.path ?: "")
+                if (file.exists()) file.delete()
+            }
+        }
         _state.value = _state.value.copy(isPasswordRequired = false, pendingRestoreUri = null)
     }
     
-    private suspend fun readBackupFromZip(zis: ZipInputStream, merge: Boolean = false) {
+    private suspend fun readBackupFromZip(zis: ZipInputStream, merge: Boolean = false, zipUri: Uri) {
         val oldToNewProjectIds = mutableMapOf<Int, Int>()
         var notesJson: String? = null
         var labelsJson: String? = null
@@ -448,6 +456,9 @@ class BackupRestoreViewModel @Inject constructor(
         val manifest = manifestJson?.let { json.decodeFromString<Map<String, String>>(it) }
         val isIncremental = manifest?.get("is_incremental")?.toBoolean() ?: false
         val effectiveMerge = merge || isIncremental
+        val attachmentUriMap: Map<String, String> = manifest?.get("attachment_uri_map")?.let { json.decodeFromString(it) } ?: emptyMap()
+
+        val attachmentsToExtract = mutableListOf<Pair<String, File>>() // ZipEntryName -> TargetFile
 
         repository.runInTransaction {
             if (!effectiveMerge) {
@@ -478,9 +489,12 @@ class BackupRestoreViewModel @Inject constructor(
                 val oldProjectId = noteWithAttachments.note.projectId
                 val newProjectId = if (oldProjectId != null) oldToNewProjectIds[oldProjectId] else null
                 
-                // If merging/incremental, check if note with same title exists
+                // If merging/incremental, check if note with same title + createdAt exists (Fix 5)
                 val existingNoteId = if (effectiveMerge) {
-                    repository.getNoteIdByTitle(noteWithAttachments.note.title)
+                    repository.getNoteByTitleAndCreatedAt(
+                        noteWithAttachments.note.title,
+                        noteWithAttachments.note.createdAt
+                    )?.id
                 } else null
 
                 val newNoteId = if (existingNoteId != null) {
@@ -494,9 +508,8 @@ class BackupRestoreViewModel @Inject constructor(
                     id
                 }
                 
+                // Handle checklist items
                 if (noteWithAttachments.checklistItems.isNotEmpty()) {
-                    // If we updated, we might want to clear old checklist items or just add new ones
-                    // For simplicity, we clear and re-insert if it's a checklist note
                     if (existingNoteId != null) {
                         repository.deleteChecklistForNote(existingNoteId)
                     }
@@ -509,7 +522,38 @@ class BackupRestoreViewModel @Inject constructor(
                     }
                     repository.insertChecklistItems(newChecklistItems)
                 }
+
+                // Handle Attachments (Fix 2)
+                noteWithAttachments.attachments.forEach { attachment ->
+                    try {
+                        val originalUri = Uri.parse(attachment.uri)
+                        val zipEntryName = attachmentUriMap[attachment.uri] ?: run {
+                            val fileName = File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
+                            "attachments/$fileName"
+                        }
+                        
+                        val fileName = File(originalUri.path ?: "attachment").name
+                        val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
+                        val attachmentsDir = File(application.filesDir, "attachments")
+                        if (!attachmentsDir.exists()) attachmentsDir.mkdirs()
+                        
+                        val targetFile = File(attachmentsDir, uniqueFileName)
+                        val newUri = Uri.fromFile(targetFile).toString()
+                        
+                        val newAttachment = attachment.copy(id = 0, noteId = newNoteId.toInt(), uri = newUri)
+                        repository.insertAttachment(newAttachment)
+                        
+                        attachmentsToExtract.add(zipEntryName to targetFile)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
+        }
+
+        // Pass 4: Extract Attachment Files (Fix 2)
+        if (attachmentsToExtract.isNotEmpty()) {
+            backupRepository.extractAttachmentsFromZip(zipUri, attachmentsToExtract)
         }
     }
 
@@ -862,6 +906,11 @@ class BackupRestoreViewModel @Inject constructor(
         val constraints = androidx.work.Constraints.Builder()
             .setRequiresBatteryNotLow(true)
             .setRequiresCharging(state.value.isChargingConstraintEnabled)
+            .apply {
+                if (email != null) {
+                    setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                }
+            }
             .build()
             
         val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.suvojeet.notenext.data.backup.BackupWorker>(repeatInterval, timeUnit)

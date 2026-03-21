@@ -254,4 +254,12 @@ class NoteRepositoryImpl @Inject constructor(
     override suspend fun limitNoteVersions(noteId: Int, limit: Int) = noteDao.limitNoteVersions(noteId, limit)
 
     override suspend fun getNoteIdByTitle(title: String): Int? = noteDao.getNoteIdByTitle(title)
+
+    override suspend fun getNoteByTitleAndCreatedAt(title: String, createdAt: Long): Note? =
+        noteDao.getNoteByTitleAndCreatedAt(title, createdAt)
+
+    override fun getAllNotes(): Flow<List<NoteWithAttachments>> = noteDao.getAllNotes()
+
+    override fun getAllNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>> =
+        noteDao.getAllNotesModifiedSince(timestamp)
 }

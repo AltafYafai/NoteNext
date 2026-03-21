@@ -57,6 +57,9 @@ interface NoteRepository {
     fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>>
     suspend fun limitNoteVersions(noteId: Int, limit: Int)
     suspend fun getNoteIdByTitle(title: String): Int?
+    suspend fun getNoteByTitleAndCreatedAt(title: String, createdAt: Long): Note?
+    fun getAllNotes(): Flow<List<NoteWithAttachments>>
+    fun getAllNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>>
 
     // Database transaction
     suspend fun <T> runInTransaction(block: suspend () -> T): T

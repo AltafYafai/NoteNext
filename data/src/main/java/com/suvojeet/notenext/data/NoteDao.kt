@@ -247,6 +247,17 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE isBinned = 0 AND lastEdited > :timestamp ORDER BY lastEdited DESC")
     fun getNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>>
 
+    @Transaction
+    @Query("SELECT * FROM notes ORDER BY lastEdited DESC")
+    fun getAllNotes(): Flow<List<NoteWithAttachments>>
+
+    @Transaction
+    @Query("SELECT * FROM notes WHERE lastEdited > :timestamp ORDER BY lastEdited DESC")
+    fun getAllNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>>
+
     @Query("SELECT id FROM notes WHERE title = :title AND isBinned = 0 LIMIT 1")
     suspend fun getNoteIdByTitle(title: String): Int?
+
+    @Query("SELECT * FROM notes WHERE title = :title AND createdAt = :createdAt LIMIT 1")
+    suspend fun getNoteByTitleAndCreatedAt(title: String, createdAt: Long): Note?
 }
