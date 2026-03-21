@@ -18,7 +18,7 @@ import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.TodoItem
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 23, exportSchema = true)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 24, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -29,6 +29,14 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
+        val MIGRATION_23_24 = object : Migration(23, 24) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE checklist_items ADD COLUMN level INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE checklist_items ADD COLUMN iv TEXT")
+                db.execSQL("ALTER TABLE checklist_items ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         val MIGRATION_22_23 = object : Migration(22, 23) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Drop the old FTS4 table
