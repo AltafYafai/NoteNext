@@ -674,7 +674,12 @@ class NotesViewModel @Inject constructor(
                 viewModelScope.launch {
                     if (event.noteId != -1) {
                         noteUseCases.getNote(event.noteId)?.let { noteWithAttachments ->
-                            val note = if (noteWithAttachments.note.isLocked && event.authenticatedCipherTitle != null) {
+                            val note = if (noteWithAttachments.note.isLocked) {
+                                // Since we just authenticated (or are within the 60s window), 
+                                // we can decrypt the note now. 
+                                // We pass the authenticated ciphers if available for the very first decryption,
+                                // but if they are missing, CryptoUtils will try to get a new cipher 
+                                // which will succeed due to the AUTH window.
                                 com.suvojeet.notenext.util.CryptoUtils.decryptNote(
                                     noteWithAttachments.note,
                                     event.authenticatedCipherTitle,
@@ -691,14 +696,10 @@ class NotesViewModel @Inject constructor(
                             }
                             
                             val checklist = if (note.noteType == "CHECKLIST") {
-                                // Decrypt checklist items if the note is locked and we have ciphers, 
-                                // or if it's already decrypted (via Repo for unlocked notes)
+                                // Decrypt checklist items if the note is locked, 
+                                // they will succeed due to the 60s window.
                                 noteWithAttachments.checklistItems.sortedBy { it.position }.map { item ->
                                     if (note.isLocked && item.isEncrypted) {
-                                        // For locked notes being expanded with auth, we use CryptoUtils
-                                        // Note: decryptChecklistItem doesn't take authenticated cipher yet, 
-                                        // but since we just authenticated, getDecryptionCipher will work 
-                                        // within the 60s window.
                                         com.suvojeet.notenext.util.CryptoUtils.decryptChecklistItem(item, isLocked = true)
                                     } else {
                                         item
