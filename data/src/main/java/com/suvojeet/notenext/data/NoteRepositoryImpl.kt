@@ -2,6 +2,7 @@ package com.suvojeet.notenext.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.withLock
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -116,7 +117,7 @@ class NoteRepositoryImpl @Inject constructor(
         editCounterMutex.withLock {
             val sharedPrefs = context.getSharedPreferences("backup_prefs", Context.MODE_PRIVATE)
             val smartBackupEnabled = sharedPrefs.getBoolean("smart_backup_enabled", false)
-            if (!smartBackupEnabled) return
+            if (!smartBackupEnabled) return@withLock
 
             val currentCount = sharedPrefs.getInt("edit_counter", 0) + 1
             val threshold = sharedPrefs.getInt("edits_before_backup", 10)
