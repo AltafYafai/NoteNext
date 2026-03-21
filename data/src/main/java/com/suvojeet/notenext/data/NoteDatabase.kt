@@ -31,9 +31,22 @@ abstract class NoteDatabase : RoomDatabase() {
     companion object {
         val MIGRATION_23_24 = object : Migration(23, 24) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE checklist_items ADD COLUMN level INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE checklist_items ADD COLUMN iv TEXT")
-                db.execSQL("ALTER TABLE checklist_items ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+                val cursor = db.query("PRAGMA table_info(checklist_items)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("level" !in columns) {
+                    db.execSQL("ALTER TABLE checklist_items ADD COLUMN level INTEGER NOT NULL DEFAULT 0")
+                }
+                if ("iv" !in columns) {
+                    db.execSQL("ALTER TABLE checklist_items ADD COLUMN iv TEXT")
+                }
+                if ("isEncrypted" !in columns) {
+                    db.execSQL("ALTER TABLE checklist_items ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
 
@@ -51,15 +64,37 @@ abstract class NoteDatabase : RoomDatabase() {
 
         val MIGRATION_21_22 = object : Migration(21, 22) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE note_versions ADD COLUMN iv TEXT")
-                db.execSQL("ALTER TABLE note_versions ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+                val cursor = db.query("PRAGMA table_info(note_versions)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("iv" !in columns) {
+                    db.execSQL("ALTER TABLE note_versions ADD COLUMN iv TEXT")
+                }
+                if ("isEncrypted" !in columns) {
+                    db.execSQL("ALTER TABLE note_versions ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
 
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN iv TEXT")
-                db.execSQL("ALTER TABLE notes ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("iv" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN iv TEXT")
+                }
+                if ("isEncrypted" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN isEncrypted INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
 
@@ -82,7 +117,16 @@ abstract class NoteDatabase : RoomDatabase() {
 
         val MIGRATION_18_19 = object : Migration(18, 19) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN aiSummary TEXT")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("aiSummary" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN aiSummary TEXT")
+                }
             }
         }
 
@@ -99,14 +143,42 @@ abstract class NoteDatabase : RoomDatabase() {
 
         val MIGRATION_16_17 = object : Migration(16, 17) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE projects ADD COLUMN description TEXT")
+                val cursor = db.query("PRAGMA table_info(projects)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("description" !in columns) {
+                    db.execSQL("ALTER TABLE projects ADD COLUMN description TEXT")
+                }
             }
         }
 
         val MIGRATION_14_15 = object : Migration(14, 15) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE labels ADD COLUMN parentName TEXT")
-                db.execSQL("ALTER TABLE notes ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
+                val labelCursor = db.query("PRAGMA table_info(labels)")
+                val labelColumns = mutableSetOf<String>()
+                while (labelCursor.moveToNext()) {
+                    labelColumns.add(labelCursor.getString(labelCursor.getColumnIndexOrThrow("name")))
+                }
+                labelCursor.close()
+
+                if ("parentName" !in labelColumns) {
+                    db.execSQL("ALTER TABLE labels ADD COLUMN parentName TEXT")
+                }
+
+                val noteCursor = db.query("PRAGMA table_info(notes)")
+                val noteColumns = mutableSetOf<String>()
+                while (noteCursor.moveToNext()) {
+                    noteColumns.add(noteCursor.getString(noteCursor.getColumnIndexOrThrow("name")))
+                }
+                noteCursor.close()
+
+                if ("position" !in noteColumns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
 
@@ -140,7 +212,16 @@ abstract class NoteDatabase : RoomDatabase() {
 
         val MIGRATION_12_13 = object : Migration(12, 13) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN isLocked INTEGER NOT NULL DEFAULT 0")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("isLocked" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN isLocked INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
 
@@ -200,30 +281,76 @@ abstract class NoteDatabase : RoomDatabase() {
 
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN projectId INTEGER")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("projectId" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN projectId INTEGER")
+                }
             }
         }
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes RENAME COLUMN timestamp TO createdAt")
-                db.execSQL("ALTER TABLE notes ADD COLUMN lastEdited INTEGER NOT NULL DEFAULT 0")
-                db.execSQL("ALTER TABLE notes ADD COLUMN color INTEGER NOT NULL DEFAULT 0")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("timestamp" in columns && "createdAt" !in columns) {
+                    db.execSQL("ALTER TABLE notes RENAME COLUMN timestamp TO createdAt")
+                }
+                if ("lastEdited" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN lastEdited INTEGER NOT NULL DEFAULT 0")
+                }
+                if ("color" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN color INTEGER NOT NULL DEFAULT 0")
+                }
             }
         }
 
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN isPinned BOOLEAN NOT NULL DEFAULT false")
-                db.execSQL("ALTER TABLE notes ADD COLUMN isArchived BOOLEAN NOT NULL DEFAULT false")
-                db.execSQL("ALTER TABLE notes ADD COLUMN reminder INTEGER")
-                db.execSQL("ALTER TABLE notes ADD COLUMN isImportant BOOLEAN NOT NULL DEFAULT false")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("isPinned" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN isPinned BOOLEAN NOT NULL DEFAULT false")
+                }
+                if ("isArchived" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN isArchived BOOLEAN NOT NULL DEFAULT false")
+                }
+                if ("reminder" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN reminder INTEGER")
+                }
+                if ("isImportant" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN isImportant BOOLEAN NOT NULL DEFAULT false")
+                }
             }
         }
 
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN label TEXT")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("label" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN label TEXT")
+                }
             }
         }
 
@@ -235,19 +362,46 @@ abstract class NoteDatabase : RoomDatabase() {
 
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN isBinned BOOLEAN NOT NULL DEFAULT false")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("isBinned" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN isBinned BOOLEAN NOT NULL DEFAULT false")
+                }
             }
         }
 
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN linkPreviews TEXT NOT NULL DEFAULT '[]'")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("linkPreviews" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN linkPreviews TEXT NOT NULL DEFAULT '[]'")
+                }
             }
         }
 
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE notes ADD COLUMN noteType TEXT NOT NULL DEFAULT 'TEXT'")
+                val cursor = db.query("PRAGMA table_info(notes)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("noteType" !in columns) {
+                    db.execSQL("ALTER TABLE notes ADD COLUMN noteType TEXT NOT NULL DEFAULT 'TEXT'")
+                }
             }
         }
 
