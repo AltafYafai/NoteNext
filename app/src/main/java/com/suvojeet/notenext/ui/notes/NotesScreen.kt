@@ -434,40 +434,18 @@ fun NotesScreen(
                                             viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                         } else {
                                             if (note.note.isLocked) {
-                                                try {
-                                                    val rawIv = note.note.iv
-                                                    val isV2 = rawIv?.startsWith("v2:") == true
-                                                    val cleanIv = if (isV2) rawIv?.substring(3) else rawIv
-                                                    val ivs = cleanIv?.split(":")
-                                                    if (ivs != null && ivs.size == 2) {
-                                                        val ivTitle = android.util.Base64.decode(ivs[0].trim(), android.util.Base64.DEFAULT)
-                                                        val ivContent = android.util.Base64.decode(ivs[1].trim(), android.util.Base64.DEFAULT)
-                                                        val useV1 = !isV2
-
-                                                        val cipherTitle = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivTitle, true, useV1)
-                                                        val cipherContent = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivContent, true, useV1)
-
-                                                        biometricAuthManager?.showBiometricPrompt(
-                                                            cryptoObject = androidx.biometric.BiometricPrompt.CryptoObject(cipherTitle),
-                                                            onAuthSuccess = { result ->
-                                                                viewModel.onEvent(NotesEvent.ExpandNote(
-                                                                    noteId = note.note.id,
-                                                                    authenticatedCipherTitle = result.cryptoObject?.cipher,
-                                                                    authenticatedCipherContent = cipherContent
-                                                                ))
-                                                            },
-                                                            onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
-                                                        ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        // Legacy or corrupted IV, try without CryptoObject (might fail if key requires it)
-                                                        biometricAuthManager?.showBiometricPrompt(
-                                                            onAuthSuccess = { viewModel.onEvent(NotesEvent.ExpandNote(note.note.id)) },
-                                                            onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
-                                                        )
-                                                    }                                                } catch (e: Exception) {
-                                                    e.printStackTrace()
-                                                    Toast.makeText(context, "Error initializing security: ${e.message}", Toast.LENGTH_SHORT).show()
-                                                }
+                                                // The NoteNext key uses TIME-BASED auth (validity = 60s via
+                                                // setUserAuthenticationParameters). For time-based keys, cipher.init()
+                                                // throws UserNotAuthenticatedException BEFORE auth — so we must NOT
+                                                // pre-init a cipher or wrap it in a CryptoObject here.
+                                                // The correct flow: authenticate → key unlocked for 60s →
+                                                // ExpandNote calls decryptNote → cipher.init() succeeds in that window.
+                                                biometricAuthManager?.showBiometricPrompt(
+                                                    onAuthSuccess = {
+                                                        viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
+                                                    },
+                                                    onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                                                ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
                                             } else {
                                                 viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
                                             }

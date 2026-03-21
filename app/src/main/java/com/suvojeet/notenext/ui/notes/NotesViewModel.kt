@@ -683,18 +683,17 @@ class NotesViewModel @Inject constructor(
                     if (event.noteId != -1) {
                         noteUseCases.getNote(event.noteId)?.let { noteWithAttachments ->
                             val note = if (noteWithAttachments.note.isLocked) {
-                                // Since we just authenticated (or are within the 60s window), 
-                                // we can decrypt the note now. 
-                                // We pass the authenticated ciphers if available for the very first decryption,
-                                // but if they are missing, CryptoUtils will try to get a new cipher 
-                                // which will succeed due to the AUTH window.
+                                // Time-based auth key (validity = 60s). Biometric auth in NotesScreen
+                                // unlocks the AndroidKeyStore key for 60 seconds. We call decryptNote
+                                // immediately after auth — cipher.init() succeeds within that window.
+                                // authenticatedCipherTitle/Content are always null now (CryptoObject
+                                // flow removed — it's incompatible with time-based keys).
                                 com.suvojeet.notenext.util.CryptoUtils.decryptNote(
                                     noteWithAttachments.note,
                                     event.authenticatedCipherTitle,
                                     event.authenticatedCipherContent
                                 )
-                            } else {
-                                noteWithAttachments.note
+                            } else {                                noteWithAttachments.note
                             }
 
                             val content = if (note.noteType == "TEXT") {
