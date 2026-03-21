@@ -689,7 +689,7 @@ class BackupRestoreViewModel @Inject constructor(
 
                      java.io.FileInputStream(tempFile).use { inputStream ->
                          ZipInputStream(inputStream).use { zis ->
-                             readBackupFromZip(zis, merge)
+                             readBackupFromZip(zis, merge, Uri.fromFile(tempFile))
                          }
                      }
                     _state.value = _state.value.copy(isRestoring = false, restoreResult = if (merge) "Drive Merge successful" else "Drive Restore ($backupName) successful")
