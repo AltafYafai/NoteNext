@@ -435,24 +435,26 @@ fun NotesScreen(
                                         } else {
                                             if (note.note.isLocked) {
                                                 try {
-                                                    val ivs = note.note.iv?.split(":")
+                                                    val rawIv = note.note.iv
+                                                    val isV2 = rawIv?.startsWith("v2:") == true
+                                                    val cleanIv = if (isV2) rawIv?.substring(3) else rawIv
+                                                    val ivs = cleanIv?.split(":")
                                                     if (ivs != null && ivs.size == 2) {
-                                                        val ivTitle = android.util.Base64.decode(ivs[0], android.util.Base64.DEFAULT)
-                                                        val ivContent = android.util.Base64.decode(ivs[1], android.util.Base64.DEFAULT)
-                                                        
-                                                        val cipherTitle = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivTitle, true)
-                                                        val cipherContent = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivContent, true)
-                                                        
+                                                        val ivTitle = android.util.Base64.decode(ivs[0].trim(), android.util.Base64.DEFAULT)
+                                                        val ivContent = android.util.Base64.decode(ivs[1].trim(), android.util.Base64.DEFAULT)
+                                                        val useV1 = !isV2
+
+                                                        val cipherTitle = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivTitle, true, useV1)
+                                                        val cipherContent = com.suvojeet.notenext.util.CryptoUtils.getDecryptionCipher(ivContent, true, useV1)
+
                                                         biometricAuthManager?.showBiometricPrompt(
                                                             cryptoObject = androidx.biometric.BiometricPrompt.CryptoObject(cipherTitle),
-                                                            onAuthSuccess = { result -> 
+                                                            onAuthSuccess = { result ->
                                                                 viewModel.onEvent(NotesEvent.ExpandNote(
                                                                     noteId = note.note.id,
                                                                     authenticatedCipherTitle = result.cryptoObject?.cipher,
-                                                                    authenticatedCipherContent = cipherContent // We can't bind two ciphers to one prompt, but unlocking one key unlocks all for a duration or we just use the first one. 
-                                                                    // Actually, since they use the same key, once the key is unlocked in the KeyStore for this process/duration, the second cipher might work too, 
-                                                                    // OR we just decrypt the title with the first one and then use the same key for content.
-                                                                )) 
+                                                                    authenticatedCipherContent = cipherContent
+                                                                ))
                                                             },
                                                             onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                                                         ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
@@ -462,8 +464,7 @@ fun NotesScreen(
                                                             onAuthSuccess = { viewModel.onEvent(NotesEvent.ExpandNote(note.note.id)) },
                                                             onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                                                         )
-                                                    }
-                                                } catch (e: Exception) {
+                                                    }                                                } catch (e: Exception) {
                                                     e.printStackTrace()
                                                     Toast.makeText(context, "Error initializing security: ${e.message}", Toast.LENGTH_SHORT).show()
                                                 }

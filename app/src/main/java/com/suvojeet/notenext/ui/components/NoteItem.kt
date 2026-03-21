@@ -63,14 +63,18 @@ fun NoteItem(
 
     val decryptedNote = remember(note.note.title, note.note.content, note.note.isEncrypted) {
         if (note.note.isEncrypted) {
-            // Decrypt the note using available session auth. 
-            // Titles are generally safe to show in the list.
-            com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note)
+            if (note.note.isLocked) {
+                // Never attempt to decrypt locked notes without auth.
+                // Tap-to-unlock is handled by the click handler in NotesScreen.
+                note.note
+            } else {
+                // Non-locked encrypted notes use the non-auth key — safe to decrypt here.
+                com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note)
+            }
         } else {
             note.note
         }
     }
-
     val motionScheme = MaterialTheme.motionScheme
     val elevation by animateDpAsState(
         targetValue = if (isSelected) 4.dp else (if (isDefaultColor) 1.dp else 0.dp),
@@ -127,37 +131,41 @@ fun NoteItem(
                 }
 
                 if (decryptedNote.title.isNotEmpty()) {
-                    val titleText = if (searchQuery.isNotEmpty()) {
-                        buildAnnotatedString {
-                            val text = decryptedNote.title
-                            append(text)
-                            val lowerText = text.lowercase()
-                            val lowerQuery = searchQuery.lowercase()
-                            var index = lowerText.indexOf(lowerQuery)
-                            while (index >= 0) {
-                                addStyle(
-                                    style = SpanStyle(
-                                        background = MaterialTheme.colorScheme.primaryContainer,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    ),
-                                    start = index,
-                                    end = index + searchQuery.length
-                                )
-                                index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
+                    // Don't render raw base64 as title for encrypted locked notes
+                    val displayTitle = if (note.note.isLocked && note.note.isEncrypted) "" else decryptedNote.title
+                    if (displayTitle.isNotEmpty()) {
+                        val titleText = if (searchQuery.isNotEmpty()) {
+                            buildAnnotatedString {
+                                val text = displayTitle
+                                append(text)
+                                val lowerText = text.lowercase()
+                                val lowerQuery = searchQuery.lowercase()
+                                var index = lowerText.indexOf(lowerQuery)
+                                while (index >= 0) {
+                                    addStyle(
+                                        style = SpanStyle(
+                                            background = MaterialTheme.colorScheme.primaryContainer,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        ),
+                                        start = index,
+                                        end = index + searchQuery.length
+                                    )
+                                    index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
+                                }
                             }
+                        } else {
+                            androidx.compose.ui.text.AnnotatedString(displayTitle)
                         }
-                    } else {
-                        androidx.compose.ui.text.AnnotatedString(decryptedNote.title)
-                    }
 
-                    Text(
-                        text = titleText,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = contentColor,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = titleText,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = contentColor,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
 
                 if (decryptedNote.isLocked) {
