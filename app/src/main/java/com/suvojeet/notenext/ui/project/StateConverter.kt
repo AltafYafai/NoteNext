@@ -1,15 +1,9 @@
-
 package com.suvojeet.notenext.ui.project
 
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 
-fun ProjectNotesState.toNotesState(): NotesState {
-    return NotesState(
-        notes = this.notes,
-        projects = this.projects,
-        sortType = this.sortType,
-        layoutType = this.layoutType,
-        selectedNoteIds = this.selectedNoteIds,
+fun ProjectNotesState.toNotesEditState(): NotesEditState {
+    return NotesEditState(
         expandedNoteId = this.expandedNoteId,
         editingTitle = this.editingTitle,
         editingContent = this.editingContent,
@@ -21,9 +15,7 @@ fun ProjectNotesState.toNotesState(): NotesState {
         isPinned = this.isPinned,
         isArchived = this.isArchived,
         editingLabel = this.editingLabel,
-        labels = this.labels,
         showLabelDialog = this.showLabelDialog,
-        filteredLabel = this.filteredLabel,
         isBoldActive = this.isBoldActive,
         isItalicActive = this.isItalicActive,
         isUnderlineActive = this.isUnderlineActive,

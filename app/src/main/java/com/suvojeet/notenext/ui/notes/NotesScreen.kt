@@ -112,7 +112,7 @@ fun NotesScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
+        events.collect { event ->
             when (event) {
                 is NotesUiEvent.SendNotes -> {
                     val intent = Intent(Intent.ACTION_SEND).apply {
@@ -134,7 +134,7 @@ fun NotesScreen(
                     Toast.makeText(context, context.getString(R.string.project_created, event.projectName), Toast.LENGTH_SHORT).show()
                 }
                 is NotesUiEvent.NavigateToNoteByTitle -> {
-                    val noteId = viewModel.getNoteIdByTitle(event.title)
+                    val noteId = editViewModel.getNoteIdByTitle(event.title)
                     if (noteId != null) {
                         editViewModel.onEvent(NotesEditEvent.ExpandNote(noteId as Int))
                     } else {
@@ -620,6 +620,7 @@ fun NotesScreen(
             } else {
                  AddEditNoteScreen(
                     state = editState,
+                    labels = listState.labels,
                     onEvent = editViewModel::onEvent,
                     onDismiss = { editViewModel.onEvent(NotesEditEvent.CollapseNote) },
                     themeMode = themeMode,

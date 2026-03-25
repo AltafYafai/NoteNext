@@ -30,13 +30,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 
 @Composable
 fun AddEditNoteTopAppBar(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     onDismiss: () -> Unit,
     showDeleteDialog: (Boolean) -> Unit,
     editingNoteType: String,
@@ -88,7 +88,7 @@ fun AddEditNoteTopAppBar(
 
                 if (editingNoteType == "TEXT" && !state.editingIsNewNote) {
                     IconButton(
-                        onClick = { onEvent(NotesEvent.SummarizeNote) },
+                        onClick = { onEvent(NotesEditEvent.SummarizeNote) },
                         modifier = Modifier.springPress()
                     ) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Note", tint = contentColor)
@@ -116,7 +116,7 @@ fun AddEditNoteTopAppBar(
                     )
 
                     FilledTonalIconButton(
-                        onClick = { onEvent(NotesEvent.OnTogglePinClick) },
+                        onClick = { onEvent(NotesEditEvent.OnTogglePinClick) },
                         modifier = Modifier.springPress(),
                         shape = MaterialTheme.shapes.medium,
                         colors = IconButtonDefaults.filledTonalIconButtonColors(
@@ -140,7 +140,7 @@ fun AddEditNoteTopAppBar(
                         }
                     }
                     
-                    IconButton(onClick = { onEvent(NotesEvent.OnToggleArchiveClick) }, modifier = Modifier.springPress()) {
+                    IconButton(onClick = { onEvent(NotesEditEvent.OnToggleArchiveClick) }, modifier = Modifier.springPress()) {
                         Icon(
                             imageVector = Icons.Filled.Archive,
                             contentDescription = if (state.isArchived) stringResource(id = R.string.unarchive_note) else stringResource(id = R.string.archive_note),

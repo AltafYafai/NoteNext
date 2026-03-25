@@ -33,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
 import androidx.compose.material.icons.filled.Delete
-import com.suvojeet.notenext.ui.notes.NotesEvent
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
 
 /**
  * A full-screen image viewer that supports zoom, pan, and rotation gestures.
@@ -43,14 +43,14 @@ import com.suvojeet.notenext.ui.notes.NotesEvent
  * @param imageUri The [Uri] of the image to display.
  * @param attachmentTempId The temporary ID of the attachment, used for deletion.
  * @param onDismiss Lambda to be invoked when the viewer is dismissed (e.g., back button clicked).
- * @param onEvent Lambda to dispatch [NotesEvent]s, specifically for [NotesEvent.RemoveAttachment].
+ * @param onEvent Lambda to dispatch [NotesEditEvent]s, specifically for [NotesEditEvent.RemoveAttachment].
  */
 @Composable
 fun ImageViewerScreen(
     imageUri: Uri,
     attachmentTempId: String,
     onDismiss: () -> Unit,
-    onEvent: (NotesEvent) -> Unit
+    onEvent: (NotesEditEvent) -> Unit
 ) {
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -118,7 +118,7 @@ fun ImageViewerScreen(
                 actions = {
                     // Delete image action.
                     IconButton(onClick = {
-                        onEvent(NotesEvent.RemoveAttachment(attachmentTempId))
+                        onEvent(NotesEditEvent.RemoveAttachment(attachmentTempId))
                         onDismiss() // Dismiss viewer after deletion.
                     }) {
                         Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.remove_image), tint = Color.White)

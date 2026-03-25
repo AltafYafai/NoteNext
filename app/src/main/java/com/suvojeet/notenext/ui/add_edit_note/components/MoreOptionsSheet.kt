@@ -21,15 +21,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun MoreOptionsSheet(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     onDismiss: () -> Unit,
     showDeleteDialog: (Boolean) -> Unit,
     showSaveAsDialog: (Boolean) -> Unit,
@@ -72,9 +72,9 @@ fun MoreOptionsSheet(
             val options = mutableListOf<OptionItem>()
             
             options.add(OptionItem(lockLabel, lockIcon) { onToggleLock() })
-            options.add(OptionItem(convertLabel, convertIcon) { onEvent(NotesEvent.OnToggleNoteType) })
+            options.add(OptionItem(convertLabel, convertIcon) { onEvent(NotesEditEvent.OnToggleNoteType) })
             options.add(OptionItem(stringResource(id = R.string.delete), Icons.Default.Delete) { showDeleteDialog(true) })
-            options.add(OptionItem(stringResource(id = R.string.make_a_copy), Icons.Default.ContentCopy) { onEvent(NotesEvent.OnCopyCurrentNoteClick) })
+            options.add(OptionItem(stringResource(id = R.string.make_a_copy), Icons.Default.ContentCopy) { onEvent(NotesEditEvent.OnCopyCurrentNoteClick) })
             options.add(OptionItem(stringResource(id = R.string.share), Icons.Default.Share) {
                  val sendIntent: Intent = Intent().apply {
                     action = Intent.ACTION_SEND
@@ -85,7 +85,7 @@ fun MoreOptionsSheet(
                 val shareIntent = Intent.createChooser(sendIntent, null)
                 context.startActivity(shareIntent)
             })
-            options.add(OptionItem(stringResource(id = R.string.labels), Icons.AutoMirrored.Filled.Label) { onEvent(NotesEvent.OnAddLabelsToCurrentNoteClick) })
+            options.add(OptionItem(stringResource(id = R.string.labels), Icons.AutoMirrored.Filled.Label) { onEvent(NotesEditEvent.OnAddLabelsToCurrentNoteClick) })
             options.add(OptionItem("Print", Icons.Default.Print) { onPrint() })
             options.add(OptionItem(stringResource(id = R.string.save_as), Icons.Default.FileDownload) { showSaveAsDialog(true) })
             

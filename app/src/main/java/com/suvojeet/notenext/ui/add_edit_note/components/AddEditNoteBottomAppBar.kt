@@ -28,15 +28,15 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import kotlin.math.roundToInt
 
 @Composable
 fun AddEditNoteBottomAppBar(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     showColorPicker: (Boolean) -> Unit,
     showFormatBar: (Boolean) -> Unit,
     showReminderDialog: (Boolean) -> Unit,
@@ -139,7 +139,7 @@ fun AddEditNoteBottomAppBar(
             ) {
                 if (state.canUndo || state.canRedo) {
                     FloatingActionButton(
-                        onClick = { onEvent(NotesEvent.OnUndoClick) },
+                        onClick = { onEvent(NotesEditEvent.OnUndoClick) },
                         shape = MaterialTheme.shapes.extraLarge,
                         modifier = Modifier.size(40.dp).springPress(),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -149,7 +149,7 @@ fun AddEditNoteBottomAppBar(
                     }
 
                     FloatingActionButton(
-                        onClick = { onEvent(NotesEvent.OnRedoClick) },
+                        onClick = { onEvent(NotesEditEvent.OnRedoClick) },
                         shape = MaterialTheme.shapes.extraLarge,
                         modifier = Modifier.size(40.dp).springPress(),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,

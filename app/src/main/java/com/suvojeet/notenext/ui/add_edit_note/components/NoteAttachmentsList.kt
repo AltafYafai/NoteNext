@@ -20,12 +20,12 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.ui.add_edit_note.ImageViewerData
-import com.suvojeet.notenext.ui.notes.NotesEvent
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
 
 @Composable
 fun NoteAttachmentsList(
     attachments: List<Attachment>,
-    onEvent: (NotesEvent) -> Unit,
+    onEvent: (NotesEditEvent) -> Unit,
     onImageClick: (ImageViewerData) -> Unit
 ) {
     val imageAttachments = attachments.filter { it.type == "IMAGE" }
@@ -50,7 +50,7 @@ fun NoteAttachmentsList(
                     contentScale = ContentScale.Fit
                 )
                 IconButton(
-                    onClick = { onEvent(NotesEvent.RemoveAttachment(attachment.tempId)) },
+                    onClick = { onEvent(NotesEditEvent.RemoveAttachment(attachment.tempId)) },
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
                     Icon(
@@ -82,7 +82,7 @@ fun NoteAttachmentsList(
                             contentScale = ContentScale.Crop
                         )
                         IconButton(
-                            onClick = { onEvent(NotesEvent.RemoveAttachment(attachment.tempId)) },
+                            onClick = { onEvent(NotesEditEvent.RemoveAttachment(attachment.tempId)) },
                             modifier = Modifier.align(Alignment.TopEnd)
                         ) {
                             Icon(

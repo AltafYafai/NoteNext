@@ -68,6 +68,7 @@ data class ImageViewerData(val uri: Uri, val tempId: String)
 @Composable
 fun AddEditNoteScreen(
     state: NotesEditState,
+    labels: List<String>,
     onEvent: (NotesEditEvent) -> Unit,
     onDismiss: () -> Unit,
     themeMode: ThemeMode,
@@ -539,6 +540,7 @@ fun AddEditNoteScreen(
 
     AddEditNoteDialogs(
         state = state,
+        labels = labels,
         onEvent = onEvent,
         showDeleteDialog = showDeleteDialog,
         onShowDeleteDialogChange = { showDeleteDialog = it },

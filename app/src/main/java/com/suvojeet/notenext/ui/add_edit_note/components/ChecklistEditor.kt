@@ -42,13 +42,13 @@ import androidx.compose.ui.zIndex
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.ui.components.springPress
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import kotlin.math.roundToInt
 
 fun LazyListScope.ChecklistEditor(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     isCheckedItemsExpanded: Boolean,
     onToggleCheckedItems: () -> Unit,
     backgroundColor: Color = Color.Transparent
@@ -78,12 +78,12 @@ fun LazyListScope.ChecklistEditor(
 
                         if (dragOffset.value > threshold) {
                             if (i < items.lastIndex) {
-                                onEvent(NotesEvent.SwapChecklistItems(item.id, items[i + 1].id))
+                                onEvent(NotesEditEvent.SwapChecklistItems(item.id, items[i + 1].id))
                                 dragOffset.value -= threshold 
                             }
                         } else if (dragOffset.value < -threshold) {
                             if (i > 0) {
-                                onEvent(NotesEvent.SwapChecklistItems(item.id, items[i - 1].id))
+                                onEvent(NotesEditEvent.SwapChecklistItems(item.id, items[i - 1].id))
                                 dragOffset.value += threshold
                             }
                         }
@@ -117,7 +117,7 @@ fun LazyListScope.ChecklistEditor(
 
     item {
         TextButton(
-            onClick = { onEvent(NotesEvent.AddChecklistItem) },
+            onClick = { onEvent(NotesEditEvent.AddChecklistItem) },
             modifier = Modifier
                 .padding(vertical = 8.dp, horizontal = 16.dp)
                 .springPress(),
@@ -165,7 +165,7 @@ fun LazyListScope.ChecklistEditor(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                     
-                TextButton(onClick = { onEvent(NotesEvent.DeleteAllCheckedItems) }, modifier = Modifier.springPress()) {
+                TextButton(onClick = { onEvent(NotesEditEvent.DeleteAllCheckedItems) }, modifier = Modifier.springPress()) {
                     Text("Delete all", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
                 }
             }
@@ -194,7 +194,7 @@ fun LazyListScope.ChecklistEditor(
 fun ChecklistItemRow(
     item: ChecklistItem,
     inputValue: TextFieldValue?,
-    onEvent: (NotesEvent) -> Unit,
+    onEvent: (NotesEditEvent) -> Unit,
     isChecked: Boolean,
     isNewlyAdded: Boolean = false,
     backgroundColor: Color = Color.Transparent,
@@ -205,7 +205,7 @@ fun ChecklistItemRow(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             if (it == SwipeToDismissBoxValue.EndToStart) {
-                onEvent(NotesEvent.DeleteChecklistItem(item.id))
+                onEvent(NotesEditEvent.DeleteChecklistItem(item.id))
                 true
             } else {
                 false
@@ -231,7 +231,7 @@ fun ChecklistItemRow(
     LaunchedEffect(isNewlyAdded) {
         if (isNewlyAdded) {
             focusRequester.requestFocus()
-            onEvent(NotesEvent.ClearNewlyAddedChecklistItemId)
+            onEvent(NotesEditEvent.ClearNewlyAddedChecklistItemId)
         }
     }
 
@@ -278,7 +278,7 @@ fun ChecklistItemRow(
                 Checkbox(
                     checked = item.isChecked,
                     onCheckedChange = { checked ->
-                        onEvent(NotesEvent.OnChecklistItemCheckedChange(item.id, checked))
+                        onEvent(NotesEditEvent.OnChecklistItemCheckedChange(item.id, checked))
                     },
                     colors = CheckboxDefaults.colors(
                         checkedColor = MaterialTheme.colorScheme.primary,
@@ -290,7 +290,7 @@ fun ChecklistItemRow(
             BasicTextField(
                 value = inputValue ?: TextFieldValue(item.text),
                 onValueChange = { textFieldValue: TextFieldValue ->
-                     onEvent(NotesEvent.OnChecklistItemValueChange(item.id, textFieldValue))
+                     onEvent(NotesEditEvent.OnChecklistItemValueChange(item.id, textFieldValue))
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -298,7 +298,7 @@ fun ChecklistItemRow(
                     .padding(start = 12.dp)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
-                            onEvent(NotesEvent.OnChecklistItemFocus(item.id))
+                            onEvent(NotesEditEvent.OnChecklistItemFocus(item.id))
                         }
                     },
                 textStyle = TextStyle(
@@ -312,7 +312,7 @@ fun ChecklistItemRow(
             )
             
             IconButton(
-                onClick = { onEvent(NotesEvent.DeleteChecklistItem(item.id)) },
+                onClick = { onEvent(NotesEditEvent.DeleteChecklistItem(item.id)) },
                 modifier = Modifier.alpha(0.6f).springPress()
             ) {
                 Icon(

@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
-import com.suvojeet.notenext.ui.notes.NotesEvent
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
 import kotlinx.coroutines.delay
 
 /**
@@ -44,7 +44,7 @@ import kotlinx.coroutines.delay
 fun ColorPicker(
     colors: List<Int>,
     editingColor: Int,
-    onEvent: (NotesEvent) -> Unit
+    onEvent: (NotesEditEvent) -> Unit
 ) {
 
     androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
@@ -67,7 +67,7 @@ fun ColorPicker(
                 ColorCircle(
                     color = null,
                     isSelected = editingColor == 0,
-                    onClick = { onEvent(NotesEvent.OnColorChange(0)) }
+                    onClick = { onEvent(NotesEditEvent.OnColorChange(0)) }
                 )
             }
         }
@@ -87,7 +87,7 @@ fun ColorPicker(
                 ColorCircle(
                     color = color,
                     isSelected = editingColor == color,
-                    onClick = { onEvent(NotesEvent.OnColorChange(color)) }
+                    onClick = { onEvent(NotesEditEvent.OnColorChange(color)) }
                 )
             }
         }

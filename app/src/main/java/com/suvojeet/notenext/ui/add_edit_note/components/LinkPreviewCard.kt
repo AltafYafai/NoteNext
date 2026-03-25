@@ -55,7 +55,7 @@ import coil3.request.CachePolicy
 import coil3.request.crossfade
 import androidx.compose.ui.layout.ContentScale
 import com.suvojeet.notenext.data.LinkPreview
-import com.suvojeet.notenext.ui.notes.NotesEvent
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
@@ -64,10 +64,10 @@ import com.suvojeet.notenext.R
  * Supports swiping to dismiss and a dropdown menu for more actions (remove preview, copy URL).
  *
  * @param linkPreview The [LinkPreview] data to display.
- * @param onEvent Lambda to dispatch [NotesEvent]s, specifically for [NotesEvent.OnRemoveLinkPreview].
+ * @param onEvent Lambda to dispatch [NotesEditEvent]s, specifically for [NotesEditEvent.OnRemoveLinkPreview].
  */
 @Composable
-fun LinkPreviewCard(linkPreview: LinkPreview, onEvent: (NotesEvent) -> Unit) {
+fun LinkPreviewCard(linkPreview: LinkPreview, onEvent: (NotesEditEvent) -> Unit) {
     val uriHandler = LocalUriHandler.current
     val clipboardManager = LocalClipboardManager.current
     var showMenu by remember { mutableStateOf(false) }
@@ -76,7 +76,7 @@ fun LinkPreviewCard(linkPreview: LinkPreview, onEvent: (NotesEvent) -> Unit) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             if (it == SwipeToDismissBoxValue.EndToStart) {
-                onEvent(NotesEvent.OnRemoveLinkPreview(linkPreview.url))
+                onEvent(NotesEditEvent.OnRemoveLinkPreview(linkPreview.url))
                 true // Confirm dismissal.
             } else {
                 false // Do not dismiss for other swipe directions.
@@ -146,7 +146,7 @@ fun LinkPreviewCard(linkPreview: LinkPreview, onEvent: (NotesEvent) -> Unit) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(id = R.string.remove_preview)) },
                                     onClick = {
-                                        onEvent(NotesEvent.OnRemoveLinkPreview(linkPreview.url))
+                                        onEvent(NotesEditEvent.OnRemoveLinkPreview(linkPreview.url))
                                         showMenu = false
                                     },
                                     leadingIcon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.remove_preview)) }

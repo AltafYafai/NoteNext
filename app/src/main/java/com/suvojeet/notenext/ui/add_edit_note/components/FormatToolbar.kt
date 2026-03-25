@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.DpOffset
 
 @Composable
 fun FormatToolbar(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     onInsertLinkClick: () -> Unit,
     onGrammarFixClick: () -> Unit,
     isFixingGrammar: Boolean,
@@ -61,7 +61,7 @@ fun FormatToolbar(
             if (state.editingNoteType == "CHECKLIST") {
                 item {
                     FormatToggleButton(
-                        onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.OutdentChecklistItem(it)) } },
+                        onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEditEvent.OutdentChecklistItem(it)) } },
                         icon = Icons.AutoMirrored.Filled.FormatIndentDecrease,
                         description = "Outdent",
                         isActive = false
@@ -69,7 +69,7 @@ fun FormatToolbar(
                 }
                 item {
                     FormatToggleButton(
-                        onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.IndentChecklistItem(it)) } },
+                        onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEditEvent.IndentChecklistItem(it)) } },
                         icon = Icons.AutoMirrored.Filled.FormatIndentIncrease,
                         description = "Indent",
                         isActive = false
@@ -82,7 +82,7 @@ fun FormatToolbar(
 
             item {
                 FormatToggleButton(
-                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(fontWeight = FontWeight.Bold))) },
+                    onCheckedChange = { _ -> onEvent(NotesEditEvent.ApplyStyleToContent(SpanStyle(fontWeight = FontWeight.Bold))) },
                     icon = Icons.Default.FormatBold,
                     description = stringResource(id = R.string.bold_description),
                     isActive = state.isBoldActive
@@ -90,7 +90,7 @@ fun FormatToolbar(
             }
             item {
                 FormatToggleButton(
-                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(fontStyle = FontStyle.Italic))) },
+                    onCheckedChange = { _ -> onEvent(NotesEditEvent.ApplyStyleToContent(SpanStyle(fontStyle = FontStyle.Italic))) },
                     icon = Icons.Default.FormatItalic,
                     description = stringResource(id = R.string.italic_description),
                     isActive = state.isItalicActive
@@ -98,7 +98,7 @@ fun FormatToolbar(
             }
             item {
                 FormatToggleButton(
-                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyStyleToContent(SpanStyle(textDecoration = TextDecoration.Underline))) },
+                    onCheckedChange = { _ -> onEvent(NotesEditEvent.ApplyStyleToContent(SpanStyle(textDecoration = TextDecoration.Underline))) },
                     icon = Icons.Default.FormatUnderlined,
                     description = stringResource(id = R.string.underline_description),
                     isActive = state.isUnderlineActive

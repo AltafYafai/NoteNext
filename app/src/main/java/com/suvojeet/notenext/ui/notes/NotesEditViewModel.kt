@@ -166,11 +166,14 @@ class NotesEditViewModel @Inject constructor(
             } else ""
 
             if (state.editingIsNewNote) {
+                val currentTime = System.currentTimeMillis()
                 val newNote = com.suvojeet.notenext.data.Note(
                     title = state.editingTitle,
                     content = contentHtml,
                     color = state.editingColor,
-                    noteType = state.editingNoteType
+                    noteType = state.editingNoteType,
+                    createdAt = currentTime,
+                    lastEdited = currentTime
                 )
                 val id = repository.insertNote(newNote)
                 _editState.value = _editState.value.copy(expandedNoteId = id.toInt(), editingIsNewNote = false)
@@ -179,7 +182,8 @@ class NotesEditViewModel @Inject constructor(
                     val updatedNote = existingNote.note.copy(
                         title = state.editingTitle,
                         content = contentHtml,
-                        color = state.editingColor
+                        color = state.editingColor,
+                        lastEdited = System.currentTimeMillis()
                     )
                     repository.updateNote(updatedNote)
                 }

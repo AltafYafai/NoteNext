@@ -53,8 +53,18 @@ import com.suvojeet.notenext.ui.archive.ArchiveScreen
 import com.suvojeet.notenext.ui.bin.BinScreen
 import com.suvojeet.notenext.ui.bin.BinViewModel
 import com.suvojeet.notenext.ui.labels.EditLabelsScreen
-import com.suvojeet.notenext.ui.notes.NotesEvent
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesListEvent
+import com.suvojeet.notenext.ui.notes.NotesListViewModel
+import com.suvojeet.notenext.ui.notes.NotesEditViewModel
 import com.suvojeet.notenext.ui.notes.NotesScreen
+import com.suvojeet.notenext.ui.notes.NotesUiEvent
+import com.suvojeet.notenext.ui.notes.NotesListState
+import com.suvojeet.notenext.ui.notes.NotesEditState
+import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 
 import com.suvojeet.notenext.ui.settings.SettingsScreen
 import com.suvojeet.notenext.ui.reminder.ReminderScreen
@@ -68,7 +78,7 @@ import com.suvojeet.notenext.ui.project.ProjectScreen
 import com.suvojeet.notenext.ui.project.ProjectViewModel
 import com.suvojeet.notenext.ui.project.ProjectNotesScreen
 import com.suvojeet.notenext.ui.project.ProjectNotesViewModel
-import com.suvojeet.notenext.ui.project.toNotesState
+import com.suvojeet.notenext.ui.project.toNotesEditState
 import com.suvojeet.notenext.ui.project.toProjectNotesEvent
 import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.theme.ThemeMode
@@ -81,9 +91,8 @@ import com.suvojeet.notenext.ui.drawing.DrawingScreen
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import com.suvojeet.notenext.R
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.shareIn
 import com.suvojeet.notenext.util.BiometricAuthManager
 import com.suvojeet.notenext.util.findActivity
 import androidx.fragment.app.FragmentActivity
@@ -92,7 +101,6 @@ import androidx.navigation.toRoute
 import com.suvojeet.notenext.ui.components.springPress
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
-import com.suvojeet.notenext.ui.notes.NotesState
 
 @Composable
 fun NavGraph(
@@ -109,13 +117,14 @@ fun NavGraph(
     val context = LocalContext.current
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val listViewModel: com.suvojeet.notenext.ui.notes.NotesListViewModel = hiltViewModel()
-    val editViewModel: com.suvojeet.notenext.ui.notes.NotesEditViewModel = hiltViewModel()
+    val listViewModel: NotesListViewModel = hiltViewModel()
+    val editViewModel: NotesEditViewModel = hiltViewModel()
     val listState by listViewModel.listState.collectAsState()
     val editState by editViewModel.editState.collectAsState()
 
-    val combinedEvents = remember(listViewModel, editViewModel) {
-        kotlinx.coroutines.flow.merge(listViewModel.events, editViewModel.events)
+    val combinedEvents = remember(listViewModel, editViewModel, scope) {
+        merge(listViewModel.events, editViewModel.events)
+            .shareIn(scope, SharingStarted.WhileSubscribed(5000))
     }
 
     val activity = context.findActivity() as? FragmentActivity
@@ -229,7 +238,9 @@ fun NavGraph(
                     DrawerContent(
                         navController = navController,
                         listState = listState,
+                        editState = editState,
                         listViewModel = listViewModel,
+                        editViewModel = editViewModel,
                         onCloseDrawer = { scope.launch { drawerState.close() } }
                     )
                 }
@@ -243,7 +254,7 @@ fun NavGraph(
                 windowSizeClass = windowSizeClass,
                 settingsRepository = settingsRepository,
                 onMenuClick = { scope.launch { drawerState.open() } },
-                isCompact = false,
+                isCompact = true,
                 combinedEvents = combinedEvents
             )
 
@@ -256,10 +267,10 @@ fun NavGraph(
 @Composable
 private fun DrawerContent(
     navController: NavHostController,
-    listState: com.suvojeet.notenext.ui.notes.NotesListState,
-    editState: com.suvojeet.notenext.ui.notes.NotesEditState,
-    listViewModel: com.suvojeet.notenext.ui.notes.NotesListViewModel,
-    editViewModel: com.suvojeet.notenext.ui.notes.NotesEditViewModel,
+    listState: NotesListState,
+    editState: NotesEditState,
+    listViewModel: NotesListViewModel,
+    editViewModel: NotesEditViewModel,
     onCloseDrawer: () -> Unit
 ) {
 
@@ -469,14 +480,14 @@ private fun DrawerContent(
 @Composable
 private fun AppNavHost(
     navController: NavHostController,
-    listViewModel: com.suvojeet.notenext.ui.notes.NotesListViewModel,
-    editViewModel: com.suvojeet.notenext.ui.notes.NotesEditViewModel,
+    listViewModel: NotesListViewModel,
+    editViewModel: NotesEditViewModel,
     themeMode: ThemeMode,
     windowSizeClass: WindowSizeClass,
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit,
     isCompact: Boolean,
-    combinedEvents: kotlinx.coroutines.flow.SharedFlow<com.suvojeet.notenext.ui.notes.NotesUiEvent>
+    combinedEvents: SharedFlow<NotesUiEvent>
 ) {
     NavHost(
         navController = navController,
@@ -490,13 +501,13 @@ private fun AppNavHost(
 
 private fun NavGraphBuilder.notesRoute(
     navController: NavHostController,
-    listViewModel: com.suvojeet.notenext.ui.notes.NotesListViewModel,
-    editViewModel: com.suvojeet.notenext.ui.notes.NotesEditViewModel,
+    listViewModel: NotesListViewModel,
+    editViewModel: NotesEditViewModel,
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
     onMenuClick: () -> Unit,
     isCompact: Boolean,
-    combinedEvents: kotlinx.coroutines.flow.SharedFlow<com.suvojeet.notenext.ui.notes.NotesUiEvent>
+    combinedEvents: SharedFlow<NotesUiEvent>
 ) {
     composable<Destination.Notes>(
         enterTransition = { fadeIn(animationSpec = spring()) },
@@ -530,8 +541,8 @@ private fun NavGraphBuilder.notesRoute(
 
 private fun NavGraphBuilder.sharedRoutes(
     navController: NavHostController,
-    listViewModel: com.suvojeet.notenext.ui.notes.NotesListViewModel,
-    editViewModel: com.suvojeet.notenext.ui.notes.NotesEditViewModel,
+    listViewModel: NotesListViewModel,
+    editViewModel: NotesEditViewModel,
     themeMode: ThemeMode,
     windowSizeClass: WindowSizeClass,
     settingsRepository: SettingsRepository,
@@ -686,21 +697,10 @@ private fun NavGraphBuilder.sharedRoutes(
     ) {
         val viewModel: ProjectNotesViewModel = hiltViewModel()
         AddEditNoteScreen(
-            state = viewModel.state.collectAsState().value.toNotesState().let {
-                com.suvojeet.notenext.ui.notes.NotesEditState(
-                    expandedNoteId = it.expandedNoteId,
-                    editingTitle = it.editingTitle,
-                    editingContent = it.editingContent,
-                    editingColor = it.editingColor,
-                    editingIsNewNote = it.editingIsNewNote,
-                    editingNoteType = it.editingNoteType,
-                    editingChecklist = it.editingChecklist,
-                    checklistInputValues = it.checklistInputValues
-                )
-            },
-            onEvent = { 
-                // Need a bridge for ProjectNotesEvent
-                // For now, this remains partially broken or needs more mapping
+            state = viewModel.state.collectAsState().value.toNotesEditState(),
+            labels = viewModel.state.collectAsState().value.labels,
+            onEvent = { event ->
+                viewModel.onEvent(event.toProjectNotesEvent())
             },
             onDismiss = { navController.popBackStack() },
             themeMode = themeMode,
@@ -716,8 +716,8 @@ private fun NavGraphBuilder.sharedRoutes(
         DrawingScreen(
             windowSizeClass = windowSizeClass,
             onSave = { uri ->
-                editViewModel.onEvent(com.suvojeet.notenext.ui.notes.NotesEditEvent.ExpandNote(-1))
-                editViewModel.onEvent(com.suvojeet.notenext.ui.notes.NotesEditEvent.ImportImage(uri))
+                editViewModel.onEvent(NotesEditEvent.ExpandNote(-1))
+                editViewModel.onEvent(NotesEditEvent.ImportImage(uri))
                 navController.popBackStack()
             },
             onDismiss = { navController.popBackStack() }

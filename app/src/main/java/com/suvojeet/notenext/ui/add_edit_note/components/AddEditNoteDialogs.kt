@@ -23,8 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.components.springPress
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.util.BiometricAuthManager
 import com.suvojeet.notenext.util.NoteHtmlGenerator
 import com.suvojeet.notenext.util.printNote
@@ -34,8 +34,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AddEditNoteDialogs(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    labels: List<String>,
+    onEvent: (NotesEditEvent) -> Unit,
     showDeleteDialog: Boolean,
     onShowDeleteDialogChange: (Boolean) -> Unit,
     showMoreOptions: Boolean,
@@ -70,7 +71,7 @@ fun AddEditNoteDialogs(
             confirmButton = {
                 Button(
                     onClick = {
-                        onEvent(NotesEvent.OnDeleteNoteClick)
+                        onEvent(NotesEditEvent.OnDeleteNoteClick)
                         onShowDeleteDialogChange(false)
                     },
                     modifier = Modifier.springPress(),
@@ -91,7 +92,7 @@ fun AddEditNoteDialogs(
         MoreOptionsSheet(
             state = state,
             onEvent = { event ->
-                if (event is NotesEvent.OnAddLabelsToCurrentNoteClick) {
+                if (event is NotesEditEvent.OnAddLabelsToCurrentNoteClick) {
                     onShowLabelDialogChange(true)
                 } else {
                     onEvent(event)
@@ -117,7 +118,7 @@ fun AddEditNoteDialogs(
                 if (activity != null) {
                     val biometricAuthManager = BiometricAuthManager(context, activity)
                     biometricAuthManager.showBiometricPrompt(
-                        onAuthSuccess = { onEvent(NotesEvent.OnToggleLockClick) },
+                        onAuthSuccess = { onEvent(NotesEditEvent.OnToggleLockClick) },
                         onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                     )
                 } else {
@@ -131,10 +132,10 @@ fun AddEditNoteDialogs(
         com.suvojeet.notenext.ui.components.LabelDialog(
             onDismiss = { onShowLabelDialogChange(false) },
             onConfirm = { label ->
-                onEvent(NotesEvent.OnLabelChange(label))
+                onEvent(NotesEditEvent.OnLabelChange(label))
                 onShowLabelDialogChange(false)
             },
-            labels = state.labels
+            labels = labels
         )
     }
 
@@ -161,7 +162,7 @@ fun AddEditNoteDialogs(
             versions = state.editingNoteVersions,
             isLocked = state.editingIsLocked,
             onVersionClick = { version ->
-                onEvent(NotesEvent.OnRestoreVersion(version))
+                onEvent(NotesEditEvent.OnRestoreVersion(version))
                 onShowHistoryDialogChange(false)
             },
             onDismiss = { onShowHistoryDialogChange(false) }
@@ -172,9 +173,9 @@ fun AddEditNoteDialogs(
         InsertLinkDialog(
             onDismiss = { onShowInsertLinkDialogChange(false) },
             onInsertLink = { text, url ->
-                // Note: NotesEvent.OnInsertLink only takes url. 
+                // Note: NotesEditEvent.OnInsertLink only takes url. 
                 // Display text handling might need refinement if intended to be different.
-                onEvent(NotesEvent.OnInsertLink(url))
+                onEvent(NotesEditEvent.OnInsertLink(url))
                 onShowInsertLinkDialogChange(false)
             }
         )

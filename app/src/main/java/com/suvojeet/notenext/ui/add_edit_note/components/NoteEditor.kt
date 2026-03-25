@@ -15,8 +15,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 import androidx.compose.ui.text.TextLayoutResult
@@ -35,8 +35,8 @@ import com.suvojeet.notenext.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NoteTitleEditor(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     onReminderClick: () -> Unit,
     scrollOffset: Float = 0f
 ) {
@@ -53,7 +53,7 @@ fun NoteTitleEditor(
 
         TextField(
             value = state.editingTitle,
-            onValueChange = { newTitle: String -> onEvent(NotesEvent.OnTitleChange(newTitle)) },
+            onValueChange = { newTitle: String -> onEvent(NotesEditEvent.OnTitleChange(newTitle)) },
             placeholder = { 
                 Text(
                     stringResource(id = R.string.title), 
@@ -93,8 +93,8 @@ fun NoteTitleEditor(
 
 @Composable
 fun NoteContentEditor(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     onUrlClick: (String) -> Unit,
     onSlashCommand: () -> Unit
 ) {
@@ -144,7 +144,7 @@ fun NoteContentEditor(
         BasicTextField(
             value = state.editingContent,
             onValueChange = { newContent -> 
-                onEvent(NotesEvent.OnContentChange(newContent))
+                onEvent(NotesEditEvent.OnContentChange(newContent))
                 val cursor = newContent.selection.start
                 val text = newContent.text
                 if (cursor > 0 && text.isNotEmpty() && cursor <= text.length) {
@@ -164,18 +164,18 @@ fun NoteContentEditor(
                         if (isStartOrSpace) {
                             val query = textBeforeCursor.substring(lastAtSymbol + 1)
                             if (!query.contains(Regex("\\s"))) {
-                                onEvent(NotesEvent.OnMentionSearchQueryChange(query))
+                                onEvent(NotesEditEvent.OnMentionSearchQueryChange(query))
                             } else {
-                                onEvent(NotesEvent.CloseMentionPopup)
+                                onEvent(NotesEditEvent.CloseMentionPopup)
                             }
                         } else {
-                            onEvent(NotesEvent.CloseMentionPopup)
+                            onEvent(NotesEditEvent.CloseMentionPopup)
                         }
                     } else {
-                        onEvent(NotesEvent.CloseMentionPopup)
+                        onEvent(NotesEditEvent.CloseMentionPopup)
                     }
                 } else {
-                    onEvent(NotesEvent.CloseMentionPopup)
+                    onEvent(NotesEditEvent.CloseMentionPopup)
                 }
             },
             modifier = Modifier
@@ -210,7 +210,7 @@ fun NoteContentEditor(
                                 } else {
                                     content.annotatedString.getStringAnnotations("NOTE_LINK", position, position)
                                         .firstOrNull()?.let { annotation ->
-                                            currentOnEvent(NotesEvent.NavigateToNoteByTitle(annotation.item))
+                                            currentOnEvent(NotesEditEvent.NavigateToNoteByTitle(annotation.item))
                                         }
                                 }
                             }
