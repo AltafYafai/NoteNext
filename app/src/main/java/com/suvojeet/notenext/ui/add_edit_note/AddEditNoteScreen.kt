@@ -50,6 +50,7 @@ import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
@@ -327,7 +328,7 @@ fun AddEditNoteScreen(
                         .padding(padding)
                         .imePadding()
                 ) {
-                    if (state.editingNoteType == "TEXT") {
+                    if (state.editingNoteType == NoteType.TEXT) {
                         Column(
                             modifier = Modifier
                                 .weight(1f)
@@ -399,7 +400,7 @@ fun AddEditNoteScreen(
                                 )
                             }
 
-                            if (state.editingNoteType == "CHECKLIST") {
+                            if (state.editingNoteType == NoteType.CHECKLIST) {
                                 ChecklistEditor(
                                     state = state,
                                     onEvent = onEvent,
@@ -440,7 +441,7 @@ fun AddEditNoteScreen(
         }
         
         AnimatedVisibility(
-            visible = showFormatBar && (state.editingNoteType == "TEXT" || state.editingNoteType == "CHECKLIST"),
+            visible = showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.CHECKLIST),
             enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = spring()),
             exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = spring()),
             modifier = Modifier
@@ -467,8 +468,8 @@ fun AddEditNoteScreen(
         }
         
         var showAiChecklistSheet by remember { mutableStateOf(false) }
-        val showAiButton = (state.editingNoteType == "TEXT" && state.editingContent.text.isEmpty()) || 
-                           (state.editingNoteType == "CHECKLIST" && state.editingChecklist.isEmpty())
+        val showAiButton = (state.editingNoteType == NoteType.TEXT && state.editingContent.text.isEmpty()) || 
+                           (state.editingNoteType == NoteType.CHECKLIST && state.editingChecklist.isEmpty())
                            
         AnimatedVisibility(
             visible = showAiButton && !isFocusMode && !isAiButtonDismissed,
@@ -640,7 +641,7 @@ fun AddEditNoteScreen(
                     showSlashCommandSheet = false
                     when (command.title) {
                         "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
-                        "Checklist" -> if (state.editingNoteType == "TEXT") onEvent(NotesEvent.OnToggleNoteType)
+                        "Checklist" -> if (state.editingNoteType == NoteType.TEXT) onEvent(NotesEvent.OnToggleNoteType)
                         "Image" -> getContent.launch("image/*")
                         "Bulleted List" -> { /* TODO: Implement Bullet list logic */ }
                     }

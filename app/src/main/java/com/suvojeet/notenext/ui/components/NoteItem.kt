@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.util.HtmlConverter
 
@@ -187,8 +188,8 @@ fun NoteItem(
                         )
                     }
                 } else {
-                    if ((decryptedNote.noteType == "TEXT" && decryptedNote.content.isNotEmpty()) || (decryptedNote.noteType == "CHECKLIST" && note.checklistItems.isNotEmpty())) {
-                        if (decryptedNote.noteType == "TEXT") {
+                    if ((decryptedNote.noteType == NoteType.TEXT && decryptedNote.content.isNotEmpty()) || (decryptedNote.noteType == NoteType.CHECKLIST && note.checklistItems.isNotEmpty())) {
+                        if (decryptedNote.noteType == NoteType.TEXT) {
                             val rawContentLength = decryptedNote.content.length
                             
                             val (textStyle, maxLines) = when {

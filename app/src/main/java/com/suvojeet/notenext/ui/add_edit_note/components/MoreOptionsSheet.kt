@@ -23,6 +23,7 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.core.model.NoteType
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -65,7 +66,7 @@ fun MoreOptionsSheet(
 
             val lockLabel = if (state.editingIsLocked) "Unlock" else "Lock"
             val lockIcon = if (state.editingIsLocked) Icons.Default.LockOpen else Icons.Default.Lock
-            val convertLabel = if (state.editingNoteType == "TEXT") "Convert to List" else "Convert to Text"
+            val convertLabel = if (state.editingNoteType == NoteType.TEXT) "Convert to List" else "Convert to Text"
             val convertIcon = Icons.Default.Check
 
             data class OptionItem(val label: String, val icon: ImageVector, val action: () -> Unit)

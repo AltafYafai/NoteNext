@@ -9,6 +9,7 @@ import com.suvojeet.notenext.data.backup.GoogleDriveManager
 import com.suvojeet.notenext.data.backup.KeepNote
 import com.suvojeet.notenext.data.backup.KeepLabel
 import com.suvojeet.notenext.data.backup.SecurityUtils
+import com.suvojeet.notenext.core.model.NoteType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -611,7 +612,7 @@ class BackupRestoreViewModel @Inject constructor(
 
     private suspend fun saveKeepNote(keepNote: KeepNote) {
         val color = mapKeepColor(keepNote.color)
-        val noteType = if (!keepNote.listContent.isNullOrEmpty()) "CHECKLIST" else "TEXT"
+        val noteType = if (!keepNote.listContent.isNullOrEmpty()) NoteType.CHECKLIST else NoteType.TEXT
         val content = keepNote.textContent ?: ""
         
         val newNote = Note(

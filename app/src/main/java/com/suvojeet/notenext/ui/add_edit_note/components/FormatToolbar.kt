@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.ui.theme.ThemeMode
@@ -58,7 +59,7 @@ fun FormatToolbar(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (state.editingNoteType == "CHECKLIST") {
+            if (state.editingNoteType == NoteType.CHECKLIST) {
                 item {
                     FormatToggleButton(
                         onCheckedChange = { state.focusedChecklistItemId?.let { onEvent(NotesEvent.OutdentChecklistItem(it)) } },

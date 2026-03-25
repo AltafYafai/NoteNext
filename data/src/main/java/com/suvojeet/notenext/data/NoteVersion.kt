@@ -4,6 +4,7 @@ package com.suvojeet.notenext.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
+import com.suvojeet.notenext.core.model.NoteType
 
 @Entity(
     tableName = "note_versions",
@@ -24,7 +25,7 @@ data class NoteVersion(
     val title: String,
     val content: String,
     val timestamp: Long,
-    val noteType: String = "TEXT",
+    val noteType: NoteType = NoteType.TEXT,
     val iv: String? = null,
     val isEncrypted: Boolean = false
 )

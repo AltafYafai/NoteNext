@@ -2,6 +2,8 @@ package com.suvojeet.notenext.navigation
 
 import kotlinx.serialization.Serializable
 
+import com.suvojeet.notenext.core.model.NoteType
+
 @Serializable
 sealed interface Destination {
     @Serializable
@@ -55,7 +57,7 @@ sealed interface Destination {
     data object Todo : Destination
     
     @Serializable
-    data class AddEditNote(val projectId: Int = -1, val noteType: String = "TEXT") : Destination
+    data class AddEditNote(val projectId: Int = -1, val noteType: NoteType = NoteType.TEXT) : Destination
     
     @Serializable
     data object Drawing : Destination

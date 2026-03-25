@@ -9,6 +9,8 @@ import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.data.SortType
 
+import com.suvojeet.notenext.core.model.NoteType
+
 data class NotesState(
     val notes: List<NoteWithAttachments> = emptyList(),
     val layoutType: LayoutType = LayoutType.GRID,
@@ -38,7 +40,7 @@ data class NotesState(
     val activeHeadingStyle: Int = 0,
     val activeStyles: Set<androidx.compose.ui.text.SpanStyle> = emptySet(),
     val linkPreviews: List<LinkPreview> = emptyList(),
-    val editingNoteType: String = "TEXT",
+    val editingNoteType: NoteType = NoteType.TEXT,
     val editingChecklist: List<ChecklistItem> = emptyList(),
     val checklistInputValues: Map<String, TextFieldValue> = emptyMap(),
     val focusedChecklistItemId: String? = null,
@@ -99,7 +101,7 @@ data class NotesEditState(
     val activeHeadingStyle: Int = 0,
     val activeStyles: Set<androidx.compose.ui.text.SpanStyle> = emptySet(),
     val linkPreviews: List<LinkPreview> = emptyList(),
-    val editingNoteType: String = "TEXT",
+    val editingNoteType: NoteType = NoteType.TEXT,
     val editingChecklist: List<ChecklistItem> = emptyList(),
     val checklistInputValues: Map<String, TextFieldValue> = emptyMap(),
     val focusedChecklistItemId: String? = null,

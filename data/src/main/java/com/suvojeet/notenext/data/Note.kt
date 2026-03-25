@@ -3,6 +3,7 @@ package com.suvojeet.notenext.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.suvojeet.notenext.core.model.NoteType
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,7 +25,7 @@ data class Note(
     val isBinned: Boolean = false,
     val binnedOn: Long? = null,
     val linkPreviews: List<LinkPreview> = emptyList(),
-    val noteType: String = "TEXT",
+    val noteType: NoteType = NoteType.TEXT,
     val projectId: Int? = null,
     val isLocked: Boolean = false,
     val position: Int = 0,

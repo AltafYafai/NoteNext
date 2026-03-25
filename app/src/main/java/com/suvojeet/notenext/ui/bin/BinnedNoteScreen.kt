@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notenext.core.model.AttachmentType
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 
@@ -97,7 +99,7 @@ fun BinnedNoteScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        if (note.noteType == "CHECKLIST") {
+                        if (note.noteType == NoteType.CHECKLIST) {
                              noteWithAttachments.checklistItems.forEach { item ->
                                 androidx.compose.foundation.layout.Row(
                                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -128,7 +130,7 @@ fun BinnedNoteScreen(
                         if (noteWithAttachments.attachments.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(24.dp))
                             noteWithAttachments.attachments.forEach { attachment ->
-                                if (attachment.type == "IMAGE") {
+                                if (attachment.type == AttachmentType.IMAGE) {
                                     androidx.compose.material3.Card(
                                         shape = MaterialTheme.shapes.large,
                                         modifier = Modifier.padding(vertical = 8.dp)

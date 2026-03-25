@@ -3,6 +3,7 @@ package com.suvojeet.notenext.data
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import com.suvojeet.notenext.core.model.AttachmentType
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,6 +25,6 @@ data class Attachment(
     val tempId: String = java.util.UUID.randomUUID().toString(),
     val noteId: Int,
     val uri: String,
-    val type: String, // "IMAGE", "VIDEO", "AUDIO"
+    val type: AttachmentType,
     val mimeType: String
 )

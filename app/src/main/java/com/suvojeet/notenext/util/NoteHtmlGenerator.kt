@@ -7,6 +7,7 @@ import android.net.Uri
 import android.util.Base64
 import androidx.compose.ui.text.AnnotatedString
 import com.suvojeet.notenext.data.Attachment
+import com.suvojeet.notenext.core.model.AttachmentType
 import com.suvojeet.notenext.util.HtmlConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +23,7 @@ object NoteHtmlGenerator {
     ): String = withContext(Dispatchers.IO) {
         val contentHtml = HtmlConverter.annotatedStringToHtml(content)
         val attachmentsHtml = attachments
-            .filter { it.type == "IMAGE" }
+            .filter { it.type == AttachmentType.IMAGE }
             .joinToString("<br>") { attachment ->
                 try {
                     val uri = Uri.parse(attachment.uri)

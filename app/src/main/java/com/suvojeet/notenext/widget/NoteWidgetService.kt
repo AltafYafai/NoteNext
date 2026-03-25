@@ -8,6 +8,7 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteRepository
 import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.core.model.NoteType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -47,7 +48,7 @@ class NoteWidgetRemoteViewsFactory(
                 // Pre-compute plain text content for all notes in parallel to avoid long runBlocking
                 val contentPairs = awaitAll(*notes.map { note ->
                     async {
-                        val content = if (note.noteType == "CHECKLIST") {
+                        val content = if (note.noteType == NoteType.CHECKLIST) {
                             "Checklist..."
                         } else {
                             HtmlConverter.htmlToPlainText(note.content)

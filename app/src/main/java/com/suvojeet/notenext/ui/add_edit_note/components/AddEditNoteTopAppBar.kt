@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 
@@ -39,7 +40,7 @@ fun AddEditNoteTopAppBar(
     onEvent: (NotesEvent) -> Unit,
     onDismiss: () -> Unit,
     showDeleteDialog: (Boolean) -> Unit,
-    editingNoteType: String,
+    editingNoteType: NoteType,
     onToggleFocusMode: () -> Unit,
     isFocusMode: Boolean,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
@@ -50,7 +51,7 @@ fun AddEditNoteTopAppBar(
         title = {
             if (state.editingIsNewNote) {
                 Text(
-                    text = if (editingNoteType == "CHECKLIST") stringResource(id = R.string.add_checklist) else stringResource(id = R.string.add_note),
+                    text = if (editingNoteType == NoteType.CHECKLIST) stringResource(id = R.string.add_checklist) else stringResource(id = R.string.add_note),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold
                 )
@@ -86,7 +87,7 @@ fun AddEditNoteTopAppBar(
             ) {
                 SavedStatusIndicator(status = state.saveStatus, contentColor = contentColor)
 
-                if (editingNoteType == "TEXT" && !state.editingIsNewNote) {
+                if (editingNoteType == NoteType.TEXT && !state.editingIsNewNote) {
                     IconButton(
                         onClick = { onEvent(NotesEvent.SummarizeNote) },
                         modifier = Modifier.springPress()

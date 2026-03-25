@@ -6,6 +6,7 @@ import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.data.RepeatOption
 import com.suvojeet.notenext.data.NoteVersion
+import com.suvojeet.notenext.core.model.NoteType
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -25,7 +26,7 @@ sealed class ProjectNotesEvent {
     data class SetReminderForSelectedNotes(val date: LocalDate, val time: LocalTime, val repeatOption: RepeatOption) : ProjectNotesEvent()
     object ToggleImportantForSelectedNotes : ProjectNotesEvent()
     data class SetLabelForSelectedNotes(val label: String) : ProjectNotesEvent()
-    data class ExpandNote(val noteId: Int, val noteType: String = "TEXT") : ProjectNotesEvent()
+    data class ExpandNote(val noteId: Int, val noteType: NoteType = NoteType.TEXT) : ProjectNotesEvent()
     object CollapseNote : ProjectNotesEvent()
 
     // Checklist Events

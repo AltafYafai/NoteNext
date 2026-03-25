@@ -46,6 +46,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
+import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.data.repository.GroqRepository
@@ -284,7 +286,7 @@ class NotesViewModel @Inject constructor(
                     }
 
                     _editState.value = editState.value.copy(
-                        editingNoteType = "CHECKLIST",
+                        editingNoteType = NoteType.CHECKLIST,
                         editingChecklist = editState.value.editingChecklist + checklistItems,
                         checklistInputValues = editState.value.checklistInputValues + newInputValues,
                         generatedChecklistPreview = emptyList()
@@ -696,13 +698,13 @@ class NotesViewModel @Inject constructor(
                             } else {                                noteWithAttachments.note
                             }
 
-                            val content = if (note.noteType == "TEXT") {
+                            val content = if (note.noteType == NoteType.TEXT) {
                                 HtmlConverter.htmlToAnnotatedString(note.content)
                             } else {
                                 AnnotatedString("")
                             }
                             
-                            val checklist = if (note.noteType == "CHECKLIST") {
+                            val checklist = if (note.noteType == NoteType.CHECKLIST) {
                                 // Decrypt checklist items if the note is locked, 
                                 // they will succeed due to the 60s window.
                                 noteWithAttachments.checklistItems.sortedBy { it.position }.map { item ->
@@ -864,7 +866,7 @@ class NotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is NotesEvent.OnContentChange -> {
-                if (editState.value.editingNoteType == "TEXT") {
+                if (editState.value.editingNoteType == NoteType.TEXT) {
                     val newContent = event.content
                     val oldContent = editState.value.editingContent
 
@@ -988,7 +990,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ApplyStyleToContent -> {
-                if (editState.value.editingNoteType == "CHECKLIST") {
+                if (editState.value.editingNoteType == NoteType.CHECKLIST) {
                     val focusedId = editState.value.focusedChecklistItemId
                     if (focusedId != null) {
                         val currentValue = editState.value.checklistInputValues[focusedId]
@@ -1202,10 +1204,10 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.AddAttachment -> {
                 val type = when {
-                    event.mimeType.startsWith("image") -> "IMAGE"
-                    event.mimeType.startsWith("video") -> "VIDEO"
-                    event.mimeType.startsWith("audio") -> "AUDIO"
-                    else -> "FILE"
+                    event.mimeType.startsWith("image") -> AttachmentType.IMAGE
+                    event.mimeType.startsWith("video") -> AttachmentType.VIDEO
+                    event.mimeType.startsWith("audio") -> AttachmentType.AUDIO
+                    else -> AttachmentType.FILE
                 }
                 val attachment = Attachment(
                     noteId = editState.value.expandedNoteId ?: -1,
@@ -1251,7 +1253,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnToggleNoteType -> {
                 val currentType = editState.value.editingNoteType
-                if (currentType == "TEXT") {
+                if (currentType == NoteType.TEXT) {
                     // Convert TEXT to CHECKLIST
                     val lines = editState.value.editingContent.text.split("\n")
                     val checklistItems = lines.filter { it.isNotBlank() }.mapIndexed { index, text ->
@@ -1261,7 +1263,7 @@ class NotesViewModel @Inject constructor(
                     val finalItems = if (checklistItems.isEmpty()) listOf(ChecklistItem(text = "", isChecked = false, position = 0)) else checklistItems
                     
                     _editState.value = editState.value.copy(
-                        editingNoteType = "CHECKLIST",
+                        editingNoteType = NoteType.CHECKLIST,
                         editingChecklist = finalItems,
                         editingContent = TextFieldValue("") // Clear text content
                     )
@@ -1269,7 +1271,7 @@ class NotesViewModel @Inject constructor(
                     // Convert CHECKLIST to TEXT
                     val textContent = editState.value.editingChecklist.joinToString("\n") { it.text }
                     _editState.value = editState.value.copy(
-                        editingNoteType = "TEXT",
+                        editingNoteType = NoteType.TEXT,
                         editingContent = TextFieldValue(textContent),
                         editingChecklist = emptyList()
                     )
@@ -1281,7 +1283,7 @@ class NotesViewModel @Inject constructor(
                 )
             }
             is NotesEvent.SummarizeNote -> {
-                val content = if (editState.value.editingNoteType == "CHECKLIST") {
+                val content = if (editState.value.editingNoteType == NoteType.CHECKLIST) {
                     editState.value.editingChecklist.joinToString("\n") { it.text }
                 } else {
                     editState.value.editingContent.text
@@ -1336,7 +1338,7 @@ class NotesViewModel @Inject constructor(
                     canRedo = undoRedoManager.canRedo.value,
                     editingLabel = null,
                     linkPreviews = emptyList(),
-                    editingNoteType = "TEXT",
+                    editingNoteType = NoteType.TEXT,
                     editingChecklist = emptyList(),
                     editingAttachments = emptyList()
                 )
@@ -1357,7 +1359,7 @@ class NotesViewModel @Inject constructor(
                 viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                     try {
                         val contentToExport = if (event.format == "MD") {
-                            if (editState.value.editingNoteType == "CHECKLIST") {
+                            if (editState.value.editingNoteType == NoteType.CHECKLIST) {
                                 editState.value.editingChecklist.joinToString("\n") { 
                                     (if (it.isChecked) "- [x] " else "- [ ] ") + it.text 
                                 }
@@ -1368,7 +1370,7 @@ class NotesViewModel @Inject constructor(
                             }
                         } else {
                             // TXT (Plain Text)
-                            if (editState.value.editingNoteType == "CHECKLIST") {
+                            if (editState.value.editingNoteType == NoteType.CHECKLIST) {
                                 editState.value.editingChecklist.joinToString("\n") { 
                                     (if (it.isChecked) "[x] " else "[ ] ") + it.text 
                                 }
@@ -1424,13 +1426,13 @@ class NotesViewModel @Inject constructor(
         val noteId = if (expandedId == -1 && lastCreatedNoteId != null) lastCreatedNoteId!! else expandedId
 
         val title = editState.value.editingTitle
-        val content = if (editState.value.editingNoteType == "TEXT") {
+        val content = if (editState.value.editingNoteType == NoteType.TEXT) {
             HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
         } else {
             ""
         }
 
-        if (title.isBlank() && (editState.value.editingNoteType == "TEXT" && content.isBlank() || editState.value.editingNoteType == "CHECKLIST" && editState.value.editingChecklist.all { it.text.isBlank() })) {
+        if (title.isBlank() && (editState.value.editingNoteType == NoteType.TEXT && content.isBlank() || editState.value.editingNoteType == NoteType.CHECKLIST && editState.value.editingChecklist.all { it.text.isBlank() })) {
             if (noteId != -1) { // It's an existing note, so delete it
                 repository.getNoteById(noteId)?.let { repository.updateNote(it.note.copy(isBinned = true, binnedOn = System.currentTimeMillis())) }
             }
@@ -1507,7 +1509,7 @@ class NotesViewModel @Inject constructor(
                 }
 
                 // Handle Checklist Items
-                if (editState.value.editingNoteType == "CHECKLIST") {
+                if (editState.value.editingNoteType == NoteType.CHECKLIST) {
                     val checklistItems = editState.value.editingChecklist.mapIndexed { index, item ->
                         item.copy(noteId = currentNoteId.toInt(), position = index)
                     }

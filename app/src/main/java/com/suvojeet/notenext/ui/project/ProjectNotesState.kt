@@ -11,6 +11,8 @@ import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.ui.notes.SaveStatus
 
+import com.suvojeet.notenext.core.model.NoteType
+
 data class ProjectNotesState(
     val notes: List<NoteWithAttachments> = emptyList(),
     val projects: List<Project> = emptyList(),
@@ -37,7 +39,7 @@ data class ProjectNotesState(
     val activeHeadingStyle: Int = 0,
     val activeStyles: Set<SpanStyle> = emptySet(),
     val linkPreviews: List<LinkPreview> = emptyList(),
-    val editingNoteType: String = "TEXT",
+    val editingNoteType: NoteType = NoteType.TEXT,
     val editingChecklist: List<ChecklistItem> = emptyList(),
     val isCheckedItemsExpanded: Boolean = true,
     val newlyAddedChecklistItemId: String? = null,

@@ -14,6 +14,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.core.app.NotificationCompat
 import com.suvojeet.notenext.data.ChecklistItem
+import com.suvojeet.notenext.core.model.AttachmentType
 import java.io.IOException
 
 import com.suvojeet.notenext.util.HtmlConverter
@@ -193,7 +194,7 @@ fun saveAsPdf(
     yPos += titleLayout.height + 20f
 
     // Draw Attachments (Images)
-    attachments.filter { it.type == "IMAGE" }.forEach { attachment ->
+    attachments.filter { it.type == AttachmentType.IMAGE }.forEach { attachment ->
         try {
             val imageUri = android.net.Uri.parse(attachment.uri)
             val inputStream = context.contentResolver.openInputStream(imageUri)

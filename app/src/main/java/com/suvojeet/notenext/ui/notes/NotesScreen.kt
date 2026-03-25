@@ -55,6 +55,7 @@ import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.repository.SettingsRepository
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
 import androidx.compose.ui.res.stringResource
@@ -266,7 +267,7 @@ fun NotesScreen(
                                     isFabExpanded = false
                                 },
                                 onChecklistClick = {
-                                    viewModel.onEvent(NotesEvent.ExpandNote(-1, "CHECKLIST"))
+                                    viewModel.onEvent(NotesEvent.ExpandNote(-1, NoteType.CHECKLIST))
                                     isFabExpanded = false
                                 },
                                 onProjectClick = {
