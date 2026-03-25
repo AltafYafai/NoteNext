@@ -1,4 +1,4 @@
-package com.suvojeet.notenext.ui.notes
+// This file is being refactored. Please use NotesListViewModel and NotesEditViewModel for new features.
 
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle

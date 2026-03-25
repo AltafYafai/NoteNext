@@ -66,7 +66,8 @@ import kotlinx.coroutines.flow.SharedFlow
 
 @Composable
 fun NotesScreen(
-    viewModel: NotesViewModel,
+    listViewModel: NotesListViewModel,
+    editViewModel: NotesEditViewModel,
     onSettingsClick: () -> Unit,
     onArchiveClick: () -> Unit,
     onEditLabelsClick: () -> Unit,
@@ -78,8 +79,8 @@ fun NotesScreen(
     onTodoClick: () -> Unit = {},
     events: SharedFlow<NotesUiEvent>
 ) {
-    val listState by viewModel.listState.collectAsState()
-    val editState by viewModel.editState.collectAsState()
+    val listState by listViewModel.listState.collectAsState()
+    val editState by editViewModel.editState.collectAsState()
     var isFabExpanded by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     
@@ -135,7 +136,7 @@ fun NotesScreen(
                 is NotesUiEvent.NavigateToNoteByTitle -> {
                     val noteId = viewModel.getNoteIdByTitle(event.title)
                     if (noteId != null) {
-                        viewModel.onEvent(NotesEvent.ExpandNote(noteId as Int))
+                        editViewModel.onEvent(NotesEditEvent.ExpandNote(noteId as Int))
                     } else {
                         Toast.makeText(context, "Note \"${event.title}\" not found", Toast.LENGTH_SHORT).show()
                     }
@@ -153,8 +154,8 @@ fun NotesScreen(
                 isSearchActive = false
                 focusManager.clearFocus()
             }
-            isSelectionModeActive -> viewModel.onEvent(NotesEvent.ClearSelection)
-            editState.expandedNoteId != null -> viewModel.onEvent(NotesEvent.CollapseNote)
+            isSelectionModeActive -> listViewModel.onEvent(NotesListEvent.ClearSelection)
+            editState.expandedNoteId != null -> editViewModel.onEvent(NotesEditEvent.CollapseNote)
         }
     }
 
@@ -196,33 +197,33 @@ fun NotesScreen(
                                     ContextualTopAppBar(
                                         selectedItemCount = listState.selectedNoteIds.size,
                                         isPinned = isAllPinned,
-                                        onClearSelection = { viewModel.onEvent(NotesEvent.ClearSelection) },
-                                        onTogglePinClick = { viewModel.onEvent(NotesEvent.TogglePinForSelectedNotes) },
+                                        onClearSelection = { listViewModel.onEvent(NotesListEvent.ClearSelection) },
+                                        onTogglePinClick = { listViewModel.onEvent(NotesListEvent.TogglePinForSelectedNotes) },
                                         onReminderClick = { showReminderSetDialog = true },
                                         onColorClick = { showColorPickerDialog = true },
-                                        onArchiveClick = { viewModel.onEvent(NotesEvent.ArchiveSelectedNotes) },
+                                        onArchiveClick = { listViewModel.onEvent(NotesListEvent.ArchiveSelectedNotes) },
                                         onDeleteClick = { showDeleteDialog = true },
-                                        onCopyClick = { viewModel.onEvent(NotesEvent.CopySelectedNotes) },
+                                        onCopyClick = { listViewModel.onEvent(NotesListEvent.CopySelectedNotes) },
                                         onSendClick = { showShareOptionsDialog = true },
                                         onLabelClick = { showLabelDialog = true },
                                         onMoveToProjectClick = { showMoveToProjectDialog = true },
                                         onLockClick = { 
                                             biometricAuthManager?.showBiometricPrompt(
-                                                onAuthSuccess = { viewModel.onEvent(NotesEvent.ToggleLockForSelectedNotes) },
+                                                onAuthSuccess = { listViewModel.onEvent(NotesListEvent.ToggleLockForSelectedNotes) },
                                                 onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                                             )
                                         },
-                                        onSelectAllClick = { viewModel.onEvent(NotesEvent.SelectAllNotes) }
+                                        onSelectAllClick = { listViewModel.onEvent(NotesListEvent.SelectAllNotes) }
                                     )
                                 } else {
                                     TopAppBar(
                                         title = {
                                             SearchBar(
                                                 searchQuery = listState.searchQuery,
-                                                onSearchQueryChange = { viewModel.onEvent(NotesEvent.OnSearchQueryChange(it)) },
+                                                onSearchQueryChange = { listViewModel.onEvent(NotesListEvent.OnSearchQueryChange(it)) },
                                                 isSearchActive = isSearchActive,
                                                 onSearchActiveChange = { isSearchActive = it },
-                                                onLayoutToggleClick = { viewModel.onEvent(NotesEvent.ToggleLayout) },
+                                                onLayoutToggleClick = { listViewModel.onEvent(NotesListEvent.ToggleLayout) },
                                                 onSortClick = { showSortMenu = true },
                                                 layoutType = listState.layoutType,
                                                 sortMenuExpanded = showSortMenu,
@@ -233,7 +234,7 @@ fun NotesScreen(
                                                     } else {
                                                         sortType
                                                     }
-                                                    viewModel.onEvent(NotesEvent.SortNotes(newSortType))
+                                                    listViewModel.onEvent(NotesListEvent.SortNotes(newSortType))
                                                 },
                                                 currentSortType = listState.sortType
                                             )
@@ -262,11 +263,11 @@ fun NotesScreen(
                                 isExpanded = isFabExpanded,
                                 onExpandedChange = { isFabExpanded = it },
                                 onNoteClick = {
-                                    viewModel.onEvent(NotesEvent.ExpandNote(-1))
+                                    editViewModel.onEvent(NotesEditEvent.ExpandNote(-1))
                                     isFabExpanded = false
                                 },
                                 onChecklistClick = {
-                                    viewModel.onEvent(NotesEvent.ExpandNote(-1, "CHECKLIST"))
+                                    editViewModel.onEvent(NotesEditEvent.ExpandNote(-1, "CHECKLIST"))
                                     isFabExpanded = false
                                 },
                                 onProjectClick = {
@@ -296,7 +297,7 @@ fun NotesScreen(
                                 confirmButton = {
                                     TextButton(
                                         onClick = {
-                                            viewModel.onEvent(NotesEvent.DeleteSelectedNotes)
+                                            listViewModel.onEvent(NotesListEvent.DeleteSelectedNotes)
                                             showDeleteDialog = false
                                         },
                                         modifier = Modifier.springPress()
@@ -316,7 +317,7 @@ fun NotesScreen(
                                 labels = listState.labels,
                                 onDismiss = { showLabelDialog = false },
                                 onConfirm = { label ->
-                                    viewModel.onEvent(NotesEvent.SetLabelForSelectedNotes(label))
+                                    listViewModel.onEvent(NotesListEvent.SetLabelForSelectedNotes(label))
                                     showLabelDialog = false
                                 }
                             )
@@ -325,7 +326,7 @@ fun NotesScreen(
                             ReminderSetDialog(
                                 onDismissRequest = { showReminderSetDialog = false },
                                 onConfirm = { date, time, repeatOption ->
-                                    viewModel.onEvent(NotesEvent.SetReminderForSelectedNotes(date, time, repeatOption))
+                                    listViewModel.onEvent(NotesListEvent.SetReminderForSelectedNotes(date, time, repeatOption))
                                     showReminderSetDialog = false
                                 }
                             )
@@ -335,7 +336,7 @@ fun NotesScreen(
                             ColorSelectionDialog(
                                 onDismiss = { showColorPickerDialog = false },
                                 onColorSelected = { color ->
-                                    viewModel.onEvent(NotesEvent.ChangeColorForSelectedNotes(color))
+                                    listViewModel.onEvent(NotesListEvent.ChangeColorForSelectedNotes(color))
                                     showColorPickerDialog = false
                                 },
                                 themeMode = themeMode
@@ -346,7 +347,7 @@ fun NotesScreen(
                             CreateProjectDialog(
                                 onDismiss = { showCreateProjectDialog = false },
                                 onConfirm = { projectName ->
-                                    viewModel.onEvent(NotesEvent.CreateProject(projectName))
+                                    listViewModel.onEvent(NotesListEvent.CreateProject(projectName))
                                     showCreateProjectDialog = false
                                 }
                             )
@@ -357,7 +358,7 @@ fun NotesScreen(
                                 projects = listState.projects,
                                 onDismiss = { showMoveToProjectDialog = false },
                                 onConfirm = { projectId ->
-                                    viewModel.onEvent(NotesEvent.MoveSelectedNotesToProject(projectId))
+                                    listViewModel.onEvent(NotesListEvent.MoveSelectedNotesToProject(projectId))
                                     showMoveToProjectDialog = false
                                 }
                             )
@@ -369,7 +370,7 @@ fun NotesScreen(
                                     showShareOptionsDialog = false 
                                 },
                                 onShareAsText = {
-                                    viewModel.onEvent(NotesEvent.SendSelectedNotes)
+                                    listViewModel.onEvent(NotesListEvent.SendSelectedNotes)
                                     showShareOptionsDialog = false
                                 }
                             )
@@ -410,7 +411,7 @@ fun NotesScreen(
                                 } else {
                                     val onNoteClickAction: (com.suvojeet.notenext.data.NoteWithAttachments) -> Unit = { note ->
                                         if (isSelectionModeActive) {
-                                            viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                            listViewModel.onEvent(NotesListEvent.ToggleNoteSelection(note.note.id))
                                         } else {
                                             if (note.note.isLocked) {
                                                 // The NoteNext key uses TIME-BASED auth (validity = 60s via
@@ -421,12 +422,12 @@ fun NotesScreen(
                                                 // ExpandNote calls decryptNote → cipher.init() succeeds in that window.
                                                 biometricAuthManager?.showBiometricPrompt(
                                                     onAuthSuccess = {
-                                                        viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
+                                                        editViewModel.onEvent(NotesEditEvent.ExpandNote(note.note.id))
                                                     },
                                                     onAuthError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                                                 ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
                                             } else {
-                                                viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
+                                                editViewModel.onEvent(NotesEditEvent.ExpandNote(note.note.id))
                                             }
                                         }
                                     }
@@ -468,7 +469,7 @@ fun NotesScreen(
                                                             searchQuery = listState.searchQuery,
                                                             onNoteClick = { onNoteClickAction(note) },
                                                             onNoteLongClick = {
-                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                                listViewModel.onEvent(NotesListEvent.ToggleNoteSelection(note.note.id))
                                                             },
                                                             isDarkTheme = isDarkTheme
                                                         )
@@ -507,7 +508,7 @@ fun NotesScreen(
                                                                 searchQuery = listState.searchQuery,
                                                                 onNoteClick = { onNoteClickAction(note) },
                                                                 onNoteLongClick = {
-                                                                    viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                                    listViewModel.onEvent(NotesListEvent.ToggleNoteSelection(note.note.id))
                                                                 },
                                                                 isDarkTheme = isDarkTheme
                                                             )
@@ -550,7 +551,7 @@ fun NotesScreen(
                                                             searchQuery = listState.searchQuery,
                                                             onNoteClick = { onNoteClickAction(note) },
                                                             onNoteLongClick = {
-                                                                viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                                listViewModel.onEvent(NotesListEvent.ToggleNoteSelection(note.note.id))
                                                             },
                                                             isDarkTheme = isDarkTheme
                                                         )
@@ -589,7 +590,7 @@ fun NotesScreen(
                                                                 searchQuery = listState.searchQuery,
                                                                 onNoteClick = { onNoteClickAction(note) },
                                                                 onNoteLongClick = {
-                                                                    viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
+                                                                    listViewModel.onEvent(NotesListEvent.ToggleNoteSelection(note.note.id))
                                                                 },
                                                                 isDarkTheme = isDarkTheme
                                                             )
@@ -618,12 +619,12 @@ fun NotesScreen(
                 }
             } else {
                  AddEditNoteScreen(
-                    state = viewModel.state.collectAsState().value,
-                    onEvent = viewModel::onEvent,
-                    onDismiss = { viewModel.onEvent(NotesEvent.CollapseNote) },
+                    state = editState,
+                    onEvent = editViewModel::onEvent,
+                    onDismiss = { editViewModel.onEvent(NotesEditEvent.CollapseNote) },
                     themeMode = themeMode,
                     settingsRepository = settingsRepository,
-                    events = viewModel.events,
+                    events = editViewModel.events,
                     modifier = Modifier.sharedElement(
                         rememberSharedContentState(key = "note-${expandedId}"),
                         animatedVisibilityScope = this@AnimatedContent

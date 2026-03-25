@@ -48,8 +48,8 @@ import com.suvojeet.notenext.ui.add_edit_note.components.MentionPopup
 import com.suvojeet.notenext.ui.add_edit_note.components.*
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import com.suvojeet.notenext.ui.components.springPress
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditEvent
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
@@ -67,8 +67,8 @@ data class ImageViewerData(val uri: Uri, val tempId: String)
 
 @Composable
 fun AddEditNoteScreen(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
+    state: NotesEditState,
+    onEvent: (NotesEditEvent) -> Unit,
     onDismiss: () -> Unit,
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
@@ -113,7 +113,7 @@ fun AddEditNoteScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
-                onEvent(NotesEvent.AutoSaveNote)
+                onEvent(NotesEditEvent.AutoSaveNote)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -176,7 +176,7 @@ fun AddEditNoteScreen(
     // Image/Photo Pickers
     val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
         uris.forEach { uri ->
-            onEvent(NotesEvent.ImportImage(uri))
+            onEvent(NotesEditEvent.ImportImage(uri))
         }
     }
 
@@ -184,7 +184,7 @@ fun AddEditNoteScreen(
     val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
             photoUri?.let { uri ->
-                onEvent(NotesEvent.ImportImage(uri))
+                onEvent(NotesEditEvent.ImportImage(uri))
             }
         }
     }
@@ -220,7 +220,7 @@ fun AddEditNoteScreen(
             } else if (isFocusMode) {
                 isFocusMode = false
             } else if (state.isMentionPopupVisible) {
-                onEvent(NotesEvent.CloseMentionPopup)
+                onEvent(NotesEditEvent.CloseMentionPopup)
             } else {
                 onDismiss()
             }
@@ -360,8 +360,8 @@ fun AddEditNoteScreen(
                                 MentionPopup(
                                     isVisible = state.isMentionPopupVisible,
                                     notes = state.mentionableNotes,
-                                    onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
-                                    onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
+                                    onNoteClick = { id, title -> onEvent(NotesEditEvent.InsertMention(id, title)) },
+                                    onDismiss = { onEvent(NotesEditEvent.CloseMentionPopup) }
                                 )
                             }
 
@@ -404,7 +404,7 @@ fun AddEditNoteScreen(
                                     state = state,
                                     onEvent = onEvent,
                                     isCheckedItemsExpanded = state.isCheckedItemsExpanded,
-                                    onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) },
+                                    onToggleCheckedItems = { onEvent(NotesEditEvent.ToggleCheckedItemsExpanded) },
                                     backgroundColor = backgroundColor
                                 )
                             } else {
@@ -420,8 +420,8 @@ fun AddEditNoteScreen(
                                         MentionPopup(
                                             isVisible = state.isMentionPopupVisible,
                                             notes = state.mentionableNotes,
-                                            onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
-                                            onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
+                                            onNoteClick = { id, title -> onEvent(NotesEditEvent.InsertMention(id, title)) },
+                                            onDismiss = { onEvent(NotesEditEvent.CloseMentionPopup) }
                                         )
                                     }
                                 }                            }
@@ -458,7 +458,7 @@ fun AddEditNoteScreen(
                     state = state, 
                     onEvent = onEvent, 
                     onInsertLinkClick = { showInsertLinkDialog = true }, 
-                    onGrammarFixClick = { onEvent(NotesEvent.FixGrammar) },
+                    onGrammarFixClick = { onEvent(NotesEditEvent.FixGrammar) },
                     isFixingGrammar = state.isFixingGrammar,
                     themeMode = themeMode,
                     modifier = Modifier.padding(12.dp)
@@ -506,10 +506,10 @@ fun AddEditNoteScreen(
                 tonalElevation = 6.dp
             ) {
                 Row(modifier = Modifier.padding(4.dp)) {
-                    IconButton(onClick = { onEvent(NotesEvent.ApplyGrammarFix) }, modifier = Modifier.springPress()) {
+                    IconButton(onClick = { onEvent(NotesEditEvent.ApplyGrammarFix) }, modifier = Modifier.springPress()) {
                         Icon(Icons.Filled.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
                     }
-                    IconButton(onClick = { onEvent(NotesEvent.ClearGrammarFix) }, modifier = Modifier.springPress()) {
+                    IconButton(onClick = { onEvent(NotesEditEvent.ClearGrammarFix) }, modifier = Modifier.springPress()) {
                         Icon(Icons.Filled.Close, contentDescription = "Discard", tint = Color(0xFFE57373))
                     }
                 }
@@ -522,19 +522,19 @@ fun AddEditNoteScreen(
             generatedItems = state.generatedChecklistPreview,
             onDismiss = { 
                 showAiChecklistSheet = false
-                onEvent(NotesEvent.ClearGeneratedChecklist)
+                onEvent(NotesEditEvent.ClearGeneratedChecklist)
             },
-            onGenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) },
-            onInsert = { editedItems -> onEvent(NotesEvent.InsertGeneratedChecklist(editedItems)) },
-            onRegenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) }
+            onGenerate = { topic -> onEvent(NotesEditEvent.GenerateChecklist(topic)) },
+            onInsert = { editedItems -> onEvent(NotesEditEvent.InsertGeneratedChecklist(editedItems)) },
+            onRegenerate = { topic -> onEvent(NotesEditEvent.GenerateChecklist(topic)) }
         )
     }
 
     val createTxtLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
-        uri?.let { onEvent(NotesEvent.ExportNote(it, "TXT")) }
+        uri?.let { onEvent(NotesEditEvent.ExportNote(it, "TXT")) }
     }
     val createMdLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
-        uri?.let { onEvent(NotesEvent.ExportNote(it, "MD")) }
+        uri?.let { onEvent(NotesEditEvent.ExportNote(it, "MD")) }
     }
 
     AddEditNoteDialogs(
@@ -591,8 +591,8 @@ fun AddEditNoteScreen(
         AiSummarySheet(
             summary = state.summaryResult,
             isSummarizing = state.isSummarizing,
-            onDismiss = { onEvent(NotesEvent.ClearSummary) },
-            onClearSummary = { onEvent(NotesEvent.ClearSummary) }
+            onDismiss = { onEvent(NotesEditEvent.ClearSummary) },
+            onClearSummary = { onEvent(NotesEditEvent.ClearSummary) }
         )
     }
     
@@ -619,7 +619,7 @@ fun AddEditNoteScreen(
                         .atZone(ZoneId.systemDefault())
                         .toInstant()
                         .toEpochMilli()
-                    onEvent(NotesEvent.OnReminderChange(reminderMillis, repeat.name))
+                    onEvent(NotesEditEvent.OnReminderChange(reminderMillis, repeat.name))
                     showReminderDialog = false
                 }
             )
@@ -639,8 +639,8 @@ fun AddEditNoteScreen(
                 onCommandSelected = { command ->
                     showSlashCommandSheet = false
                     when (command.title) {
-                        "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
-                        "Checklist" -> if (state.editingNoteType == "TEXT") onEvent(NotesEvent.OnToggleNoteType)
+                        "Heading 1" -> onEvent(NotesEditEvent.ApplyHeadingStyle(1))
+                        "Checklist" -> if (state.editingNoteType == "TEXT") onEvent(NotesEditEvent.OnToggleNoteType)
                         "Image" -> getContent.launch("image/*")
                         "Bulleted List" -> { /* TODO: Implement Bullet list logic */ }
                     }
