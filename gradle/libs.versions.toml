@@ -22,6 +22,7 @@ animation      = "1.1.0"
 # ── AndroidX ────────────────────────────────────────────────────
 appcompat               = "1.7.1"
 core-ktx                = "1.17.0"
+annotation              = "1.9.1"
 lifecycle               = "2.9.1"
 activity-compose        = "1.10.1"
 room                    = "2.8.4"
@@ -103,6 +104,7 @@ acra-core = { group = "ch.acra", name = "acra-core", version.ref = "acra" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "core-splashscreen" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
+androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }

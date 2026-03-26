@@ -54,6 +54,7 @@ dependencies {
     implementation(project(":core"))
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.annotation)
     implementation(platform(libs.compose.bom))
     implementation(libs.androidx.compose.runtime)
 

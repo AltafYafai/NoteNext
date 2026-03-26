@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -39,6 +40,8 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.annotation)
+    implementation(libs.kotlinx.serialization.json)
     
     val bom = platform(libs.compose.bom)
     implementation(bom)
