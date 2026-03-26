@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
@@ -101,6 +102,11 @@ fun NoteContentEditor(
 ) {
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     val interactionSource = remember { MutableInteractionSource() }
+    val density = LocalDensity.current
+
+    // Limit height to prevent Constraints overflow crash for extremely long notes (approx > 262143 pixels)
+    // We use a safe value of 200,000 pixels converted to Dp
+    val maxSafeHeight = remember(density) { with(density) { 200000.toDp() } }
 
     // Hold latest references for use inside pointerInput(Unit) coroutine
     val currentOnUrlClick by rememberUpdatedState(onUrlClick)
@@ -181,6 +187,7 @@ fun NoteContentEditor(
             },
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(max = maxSafeHeight)
                 .drawBehind {
                     textLayoutResult?.let { layout ->
                         val cursorPosition = state.editingContent.selection.start

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -47,6 +48,7 @@ import com.suvojeet.notenext.ui.notes.NotesState
 import kotlin.math.roundToInt
 
 fun LazyListScope.ChecklistEditor(
+
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     isCheckedItemsExpanded: Boolean,
@@ -212,6 +214,8 @@ fun ChecklistItemRow(
             }
         }
     )
+    val density = LocalDensity.current
+    val maxSafeHeight = remember(density) { with(density) { 200000.toDp() } }
     
     val checkScale by animateFloatAsState(
         targetValue = if (isChecked) 0.9f else 1f,
@@ -296,6 +300,7 @@ fun ChecklistItemRow(
                     .weight(1f)
                     .focusRequester(focusRequester)
                     .padding(start = 12.dp)
+                    .heightIn(max = maxSafeHeight)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
                             onEvent(NotesEvent.OnChecklistItemFocus(item.id))
