@@ -176,6 +176,7 @@ class NotesViewModel @Inject constructor(
 
     private var autoSaveJob: Job? = null
     private var selectionActionsJob: Job? = null
+    private var linkDetectionJob: Job? = null
 
     private var lastCreatedNoteId: Int? = null
 
@@ -1019,21 +1020,26 @@ class NotesViewModel @Inject constructor(
                     if (textChanged) {
                         scheduleAutoSave()
                     }
-                    // Link detection
-                    val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
-                    val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet() // Use Set for efficient lookup
 
-                    val existingLinkPreviews = editState.value.linkPreviews.filter { detectedUrls.contains(it.url) }
-                    val newUrlsToFetch = detectedUrls.filter { url -> existingLinkPreviews.none { it.url == url } }
+                    // Debounced Link detection
+                    linkDetectionJob?.cancel()
+                    linkDetectionJob = viewModelScope.launch {
+                        delay(1000L) // 1s delay - only detect links when user stops typing
+                        
+                        val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
+                        val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet()
 
-                    viewModelScope.launch {
-                        val fetchedNewLinkPreviews = newUrlsToFetch.map { url ->
-                            async { linkPreviewRepository.getLinkPreview(url) }
-                        }.awaitAll()
+                        val existingLinkPreviews = editState.value.linkPreviews.filter { detectedUrls.contains(it.url) }
+                        val newUrlsToFetch = detectedUrls.filter { url -> existingLinkPreviews.none { it.url == url } }
 
-                        val combinedLinkPreviews = (existingLinkPreviews + fetchedNewLinkPreviews).distinctBy { it.url }
+                        if (newUrlsToFetch.isNotEmpty()) {
+                            val fetchedNewLinkPreviews = newUrlsToFetch.map { url ->
+                                async { linkPreviewRepository.getLinkPreview(url) }
+                            }.awaitAll()
 
-                        _editState.value = editState.value.copy(linkPreviews = combinedLinkPreviews)
+                            val combinedLinkPreviews = (existingLinkPreviews + fetchedNewLinkPreviews).distinctBy { it.url }
+                            _editState.value = editState.value.copy(linkPreviews = combinedLinkPreviews)
+                        }
                     }
                 }
             }
