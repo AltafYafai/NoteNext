@@ -230,11 +230,21 @@ fun AddEditNoteScreen(
         }
     }
 
+    var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+
     LaunchedEffect(Unit) {
         events.collect { event ->
             when (event) {
                 is NotesUiEvent.LinkPreviewRemoved -> {
                     Toast.makeText(context, "Link preview removed", Toast.LENGTH_SHORT).show()
+                }
+                is NotesUiEvent.ScrollToSearchResult -> {
+                    textLayoutResult?.let { layout ->
+                        val cursorRect = layout.getCursorRect(event.index.coerceIn(0, layout.layoutInput.text.length))
+                        scope.launch {
+                            scrollState.animateScrollTo(cursorRect.top.roundToInt())
+                        }
+                    }
                 }
                 else -> {}
             }
@@ -328,6 +338,20 @@ fun AddEditNoteScreen(
                         .padding(padding)
                         .imePadding()
                 ) {
+                    AnimatedVisibility(visible = state.isSearchingInNote) {
+                        NoteSearchBar(
+                            query = state.noteSearchQuery,
+                            onQueryChange = { onEvent(NotesEvent.OnNoteSearchQueryChange(it)) },
+                            onNext = { onEvent(NotesEvent.NextSearchResult) },
+                            onPrevious = { onEvent(NotesEvent.PreviousSearchResult) },
+                            onClose = { onEvent(NotesEvent.ToggleNoteSearch) },
+                            currentResult = state.currentSearchResultIndex + 1,
+                            totalResults = state.searchResultIndices.size,
+                            backgroundColor = backgroundColor,
+                            contentColor = contentColor
+                        )
+                    }
+
                     if (state.editingNoteType == NoteType.TEXT) {
                         Column(
                             modifier = Modifier
@@ -355,7 +379,8 @@ fun AddEditNoteScreen(
                                     state = state,
                                     onEvent = onEvent,
                                     onUrlClick = { url -> clickedUrl = url },
-                                    onSlashCommand = { showSlashCommandSheet = true }
+                                    onSlashCommand = { showSlashCommandSheet = true },
+                                    onTextLayout = { textLayoutResult = it }
                                 )
 
                                 MentionPopup(
@@ -415,7 +440,8 @@ fun AddEditNoteScreen(
                                             state = state,
                                             onEvent = onEvent,
                                             onUrlClick = { url -> clickedUrl = url },
-                                            onSlashCommand = { showSlashCommandSheet = true }
+                                            onSlashCommand = { showSlashCommandSheet = true },
+                                            onTextLayout = { textLayoutResult = it }
                                         )
 
                                         MentionPopup(

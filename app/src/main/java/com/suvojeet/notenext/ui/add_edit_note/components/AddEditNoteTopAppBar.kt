@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
@@ -101,6 +102,17 @@ fun AddEditNoteTopAppBar(
                         imageVector = if (isFocusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = "Toggle Focus Mode",
                         tint = contentColor
+                    )
+                }
+
+                IconButton(
+                    onClick = { onEvent(NotesEvent.ToggleNoteSearch) },
+                    modifier = Modifier.springPress()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search in Note",
+                        tint = if (state.isSearchingInNote) MaterialTheme.colorScheme.primary else contentColor
                     )
                 }
 

@@ -59,5 +59,11 @@ data class ProjectNotesState(
     val generatedChecklistPreview: List<String> = emptyList(),
     val isFixingGrammar: Boolean = false,
     val fixedContentPreview: String? = null,
-    val originalContentBackup: TextFieldValue? = null
+    val originalContentBackup: TextFieldValue? = null,
+
+    // Search in Note
+    val isSearchingInNote: Boolean = false,
+    val noteSearchQuery: String = "",
+    val searchResultIndices: List<Int> = emptyList(),
+    val currentSearchResultIndex: Int = -1
 )

@@ -460,6 +460,110 @@ class NotesViewModel @Inject constructor(
                      _editState.value = editState.value.copy(fixedContentPreview = null, isFixingGrammar = false)
                 }
             }
+            is NotesEvent.LoadExternalFile -> {
+                viewModelScope.launch {
+                    try {
+                        val uri = event.uri
+                        val content = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                        val fileName = com.suvojeet.notenext.util.ContextUtils.getFileName(context, uri) ?: "External Note"
+                        
+                        undoRedoManager.reset(fileName to TextFieldValue(content))
+                        
+                        _editState.value = editState.value.copy(
+                            expandedNoteId = -1, // Treat as new note but with external URI
+                            externalUri = uri,
+                            editingTitle = fileName,
+                            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(content)),
+                            editingNoteType = NoteType.TEXT,
+                            editingIsNewNote = true,
+                            canUndo = false,
+                            canRedo = false
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        _events.emit(NotesUiEvent.ShowToast("Failed to load file: ${e.message}"))
+                    }
+                }
+            }
+            is NotesEvent.SaveExternalAsNote -> {
+                viewModelScope.launch {
+                    val currentTime = System.currentTimeMillis()
+                    val note = Note(
+                        title = editState.value.editingTitle,
+                        content = if (editState.value.editingNoteType == NoteType.TEXT) {
+                            HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
+                        } else "",
+                        createdAt = currentTime,
+                        lastEdited = currentTime,
+                        color = editState.value.editingColor,
+                        noteType = editState.value.editingNoteType
+                    )
+                    val newId = repository.insertNote(note)
+                    require(newId <= Int.MAX_VALUE) { "Note ID overflow" }
+                    
+                    _editState.value = editState.value.copy(
+                        expandedNoteId = newId.toInt(),
+                        externalUri = null,
+                        editingIsNewNote = false
+                    )
+                    _events.emit(NotesUiEvent.ShowToast("Saved as internal note"))
+                    updateWidgets()
+                }
+            }
+            is NotesEvent.ToggleNoteSearch -> {
+                val isSearching = !editState.value.isSearchingInNote
+                _editState.value = editState.value.copy(
+                    isSearchingInNote = isSearching,
+                    noteSearchQuery = if (!isSearching) "" else editState.value.noteSearchQuery,
+                    searchResultIndices = if (!isSearching) emptyList() else editState.value.searchResultIndices,
+                    currentSearchResultIndex = if (!isSearching) -1 else editState.value.currentSearchResultIndex
+                )
+            }
+            is NotesEvent.OnNoteSearchQueryChange -> {
+                val query = event.query
+                val content = editState.value.editingContent.text
+                val indices = if (query.isNotBlank()) {
+                    val foundIndices = mutableListOf<Int>()
+                    var index = content.indexOf(query, ignoreCase = true)
+                    while (index >= 0) {
+                        foundIndices.add(index)
+                        index = content.indexOf(query, index + 1, ignoreCase = true)
+                    }
+                    foundIndices
+                } else emptyList()
+
+                _editState.value = editState.value.copy(
+                    noteSearchQuery = query,
+                    searchResultIndices = indices,
+                    currentSearchResultIndex = if (indices.isNotEmpty()) 0 else -1
+                )
+                
+                if (indices.isNotEmpty()) {
+                    viewModelScope.launch {
+                        _events.emit(NotesUiEvent.ScrollToSearchResult(indices[0]))
+                    }
+                }
+            }
+            is NotesEvent.NextSearchResult -> {
+                val indices = editState.value.searchResultIndices
+                if (indices.isNotEmpty()) {
+                    val nextIndex = (editState.value.currentSearchResultIndex + 1) % indices.size
+                    _editState.value = editState.value.copy(currentSearchResultIndex = nextIndex)
+                    viewModelScope.launch {
+                        _events.emit(NotesUiEvent.ScrollToSearchResult(indices[nextIndex]))
+                    }
+                }
+            }
+            is NotesEvent.PreviousSearchResult -> {
+                val indices = editState.value.searchResultIndices
+                if (indices.isNotEmpty()) {
+                    val prevIndex = if (editState.value.currentSearchResultIndex <= 0) indices.size - 1 else editState.value.currentSearchResultIndex - 1
+                    _editState.value = editState.value.copy(currentSearchResultIndex = prevIndex)
+                    viewModelScope.launch {
+                        _events.emit(NotesUiEvent.ScrollToSearchResult(indices[prevIndex]))
+                    }
+                }
+            }
             is NotesEvent.OnSearchQueryChange -> {
                 _searchQuery.value = event.query
             }
@@ -1420,8 +1524,38 @@ class NotesViewModel @Inject constructor(
 
     private suspend fun saveNote(shouldCollapse: Boolean) {
         val expandedId = editState.value.expandedNoteId
+        val externalUri = editState.value.externalUri
+        
         if (expandedId == null) return
         
+        // Handle external files separately
+        if (externalUri != null) {
+            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val content = if (editState.value.editingNoteType == NoteType.TEXT) {
+                         editState.value.editingContent.text
+                    } else {
+                        editState.value.editingChecklist.joinToString("\n") { (if (it.isChecked) "[x] " else "[ ] ") + it.text }
+                    }
+                    context.contentResolver.openOutputStream(externalUri, "rwt")?.use { outputStream ->
+                        outputStream.write(content.toByteArray())
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    _events.emit(NotesUiEvent.ShowToast("Failed to save external file: ${e.message}"))
+                }
+            }
+            if (shouldCollapse) {
+                 _editState.value = editState.value.copy(
+                    expandedNoteId = null,
+                    externalUri = null,
+                    editingTitle = "",
+                    editingContent = TextFieldValue()
+                )
+            }
+            return
+        }
+
         // If it's a new note (-1), check if we already have a real ID from a previous auto-save
         val noteId = if (expandedId == -1 && lastCreatedNoteId != null) lastCreatedNoteId!! else expandedId
 

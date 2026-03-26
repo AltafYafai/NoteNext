@@ -26,7 +26,8 @@ fun SaveAsDialog(
     onDismiss: () -> Unit,
     onSaveAsPdf: () -> Unit,
     onSaveAsTxt: () -> Unit,
-    onSaveAsMd: () -> Unit
+    onSaveAsMd: () -> Unit,
+    onSaveAsNote: (() -> Unit)? = null
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -34,6 +35,14 @@ fun SaveAsDialog(
         title = { Text(stringResource(id = R.string.save_as)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (onSaveAsNote != null) {
+                    SaveAsOption(
+                        icon = Icons.Rounded.Description,
+                        text = stringResource(id = R.string.save_as_note),
+                        onClick = onSaveAsNote
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                }
                 SaveAsOption(
                     icon = Icons.Rounded.PictureAsPdf,
                     text = "PDF Document",

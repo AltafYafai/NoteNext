@@ -152,7 +152,13 @@ fun AddEditNoteDialogs(
             onSaveAsMd = {
                 onSaveAsMd()
                 onShowSaveAsDialogChange(false)
-            }
+            },
+            onSaveAsNote = if (state.externalUri != null) {
+                {
+                    onEvent(NotesEvent.SaveExternalAsNote)
+                    onShowSaveAsDialogChange(false)
+                }
+            } else null
         )
     }
 

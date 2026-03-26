@@ -23,4 +23,5 @@
     <string name="drawing">Drawing</string>
     <string name="widget_description">Interactive list of your pinned notes and checklists.</string>
     <string name="glance_widget_name">NoteNext Interactive Widget</string>
+    <string name="save_as_note">Save as internal note</string>
     </resources>

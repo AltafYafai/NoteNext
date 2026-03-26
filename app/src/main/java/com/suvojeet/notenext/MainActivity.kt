@@ -59,6 +59,7 @@ class MainActivity : FragmentActivity() {
     private val _sharedTextFlow = MutableStateFlow<String?>(null)
     private val _initialTitleFlow = MutableStateFlow<String?>(null)
     private val _searchQueryFlow = MutableStateFlow<String?>(null)
+    private val _externalUriFlow = MutableStateFlow<android.net.Uri?>(null)
 
     private val _isSetupCompleteLoaded = MutableStateFlow<Boolean?>(null)
     private val _enableAppLockLoaded = MutableStateFlow<Boolean?>(null)
@@ -240,6 +241,7 @@ class MainActivity : FragmentActivity() {
                                 val sharedText by _sharedTextFlow.collectAsState()
                                 val initialTitle by _initialTitleFlow.collectAsState()
                                 val searchQuery by _searchQueryFlow.collectAsState()
+                                val externalUri by _externalUriFlow.collectAsState()
 
                                 NavGraph(
                                     themeMode = themeMode,
@@ -249,7 +251,8 @@ class MainActivity : FragmentActivity() {
                                     startAddNote = startAddNote,
                                     sharedText = sharedText,
                                     initialTitle = initialTitle,
-                                    searchQuery = searchQuery
+                                    searchQuery = searchQuery,
+                                    externalUri = externalUri
                                 )
                             }
                         }
@@ -269,6 +272,12 @@ class MainActivity : FragmentActivity() {
         
         _initialTitleFlow.value = intent.getStringExtra("TITLE") ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)
         _searchQueryFlow.value = intent.getStringExtra("QUERY")
+        
+        if (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_EDIT) {
+            _externalUriFlow.value = intent.data
+        } else {
+            _externalUriFlow.value = null
+        }
 
         val sharedText = when {
             intent.action == Intent.ACTION_SEND && "text/plain" == intent.type -> {

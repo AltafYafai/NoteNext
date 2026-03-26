@@ -85,6 +85,13 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.OnMentionSearchQueryChange -> throw IllegalArgumentException("OnMentionSearchQueryChange event cannot be converted")
         is NotesEvent.InsertMention -> throw IllegalArgumentException("InsertMention event cannot be converted")
         is NotesEvent.CloseMentionPopup -> throw IllegalArgumentException("CloseMentionPopup event cannot be converted")
+
+        is NotesEvent.ToggleNoteSearch -> ProjectNotesEvent.ToggleNoteSearch
+        is NotesEvent.OnNoteSearchQueryChange -> ProjectNotesEvent.OnNoteSearchQueryChange(this.query)
+        is NotesEvent.NextSearchResult -> ProjectNotesEvent.NextSearchResult
+        is NotesEvent.PreviousSearchResult -> ProjectNotesEvent.PreviousSearchResult
+        is NotesEvent.LoadExternalFile -> ProjectNotesEvent.LoadExternalFile(this.uri)
+        is NotesEvent.SaveExternalAsNote -> ProjectNotesEvent.SaveExternalAsNote
     }
 }
 
@@ -94,5 +101,6 @@ fun ProjectNotesUiEvent.toNotesUiEvent(): NotesUiEvent {
         is ProjectNotesUiEvent.ShowToast -> NotesUiEvent.ShowToast(this.message)
         is ProjectNotesUiEvent.LinkPreviewRemoved -> NotesUiEvent.LinkPreviewRemoved
         is ProjectNotesUiEvent.NavigateToNoteByTitle -> NotesUiEvent.NavigateToNoteByTitle(this.title)
+        is ProjectNotesUiEvent.ScrollToSearchResult -> NotesUiEvent.ScrollToSearchResult(this.index)
     }
 }

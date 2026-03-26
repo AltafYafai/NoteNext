@@ -65,7 +65,14 @@ data class NotesState(
     // Mention state
     val isMentionPopupVisible: Boolean = false,
     val mentionSearchQuery: String = "",
-    val mentionableNotes: List<NoteWithAttachments> = emptyList()
+    val mentionableNotes: List<NoteWithAttachments> = emptyList(),
+
+    // External file & Search in note
+    val externalUri: android.net.Uri? = null,
+    val isSearchingInNote: Boolean = false,
+    val noteSearchQuery: String = "",
+    val searchResultIndices: List<Int> = emptyList(),
+    val currentSearchResultIndex: Int = -1
 )
 
 data class NotesListState(
@@ -126,7 +133,14 @@ data class NotesEditState(
     // Mention state
     val isMentionPopupVisible: Boolean = false,
     val mentionSearchQuery: String = "",
-    val mentionableNotes: List<NoteWithAttachments> = emptyList()
+    val mentionableNotes: List<NoteWithAttachments> = emptyList(),
+
+    // External file & Search in note
+    val externalUri: android.net.Uri? = null,
+    val isSearchingInNote: Boolean = false,
+    val noteSearchQuery: String = "",
+    val searchResultIndices: List<Int> = emptyList(),
+    val currentSearchResultIndex: Int = -1
 )
 
 enum class SaveStatus {

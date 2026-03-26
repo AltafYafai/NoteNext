@@ -141,6 +141,7 @@ fun NotesScreen(
                         Toast.makeText(context, "Note \"${event.title}\" not found", Toast.LENGTH_SHORT).show()
                     }
                 }
+                is NotesUiEvent.ScrollToSearchResult -> {}
             }
         }
     }

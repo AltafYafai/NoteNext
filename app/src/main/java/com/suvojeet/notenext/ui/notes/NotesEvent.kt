@@ -99,10 +99,18 @@ sealed class NotesEvent {
     object ClearGrammarFix : NotesEvent()
     data class ImportImage(val uri: Uri) : NotesEvent()
     data class ExportNote(val uri: Uri, val format: String) : NotesEvent()
+    data class LoadExternalFile(val uri: Uri) : NotesEvent()
+    object SaveExternalAsNote : NotesEvent()
     object AutoSaveNote : NotesEvent()
 
     // Mention events
     data class OnMentionSearchQueryChange(val query: String) : NotesEvent()
     data class InsertMention(val noteId: Int, val noteTitle: String) : NotesEvent()
     object CloseMentionPopup : NotesEvent()
+
+    // Search in Note
+    object ToggleNoteSearch : NotesEvent()
+    data class OnNoteSearchQueryChange(val query: String) : NotesEvent()
+    object NextSearchResult : NotesEvent()
+    object PreviousSearchResult : NotesEvent()
 }

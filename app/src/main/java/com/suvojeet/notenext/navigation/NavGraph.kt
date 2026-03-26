@@ -104,7 +104,8 @@ fun NavGraph(
     startAddNote: Boolean = false,
     sharedText: String? = null,
     initialTitle: String? = null,
-    searchQuery: String? = null
+    searchQuery: String? = null,
+    externalUri: android.net.Uri? = null
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
@@ -173,6 +174,12 @@ fun NavGraph(
     LaunchedEffect(searchQuery) {
         if (searchQuery != null) {
             notesViewModel.onEvent(NotesEvent.OnSearchQueryChange(searchQuery))
+        }
+    }
+
+    LaunchedEffect(externalUri) {
+        if (externalUri != null) {
+            notesViewModel.onEvent(NotesEvent.LoadExternalFile(externalUri))
         }
     }
 

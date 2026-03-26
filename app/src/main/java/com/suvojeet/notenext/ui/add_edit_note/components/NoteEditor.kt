@@ -96,7 +96,8 @@ fun NoteContentEditor(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
-    onSlashCommand: () -> Unit
+    onSlashCommand: () -> Unit,
+    onTextLayout: (TextLayoutResult) -> Unit = {}
 ) {
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     val interactionSource = remember { MutableInteractionSource() }
@@ -216,7 +217,10 @@ fun NoteContentEditor(
                             }
                     }
                 },
-            onTextLayout = { textLayoutResult = it },
+            onTextLayout = { 
+                textLayoutResult = it 
+                onTextLayout(it)
+            },
             textStyle = contentTextStyle,
             cursorBrush = SolidColor(cursorColor),
             decorationBox = { innerTextField ->
