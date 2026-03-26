@@ -29,9 +29,9 @@ import com.suvojeet.notenext.MainActivity
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteWithAttachments
-import com.suvojeet.notenext.util.HtmlConverter
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.map
+import androidx.core.text.HtmlCompat
 
 class NoteGlanceWidget : GlanceAppWidget() {
 
@@ -39,11 +39,12 @@ class NoteGlanceWidget : GlanceAppWidget() {
         val entryPoint = EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
         val repository = entryPoint.repository()
 
-        provideContent {
-            val notes by repository.getPinnedNotes().map { allPinned ->
-                allPinned.filter { !it.note.isArchived && !it.note.isBinned && !it.note.isLocked }
-            }.collectAsState(initial = emptyList())
+        val notesFlow = repository.getPinnedNotes().map { allPinned ->
+            allPinned.filter { !it.note.isArchived && !it.note.isBinned && !it.note.isLocked }
+        }
 
+        provideContent {
+            val notes by notesFlow.collectAsState(initial = emptyList())
             WidgetContent(context, notes)
         }
     }
@@ -53,15 +54,18 @@ class NoteGlanceWidget : GlanceAppWidget() {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(ColorProvider(androidx.glance.material3.ColorProviders.backgroundColor))
+                .background(ColorProvider(androidx.compose.ui.graphics.Color.White))
                 .padding(8.dp)
         ) {
             Header(context)
             if (notes.isEmpty()) {
-                Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = GlanceModifier.fillMaxSize(),
+                    contentAlignment = androidx.glance.layout.Alignment.Center
+                ) {
                     Text(
-                        text = "No pinned notes", 
-                        style = TextStyle(color = ColorProvider(androidx.glance.material3.ColorProviders.onBackgroundColor))
+                        text = "No pinned notes",
+                        style = TextStyle(color = ColorProvider(androidx.compose.ui.graphics.Color.Black))
                     )
                 }
             } else {
@@ -78,17 +82,17 @@ class NoteGlanceWidget : GlanceAppWidget() {
     private fun Header(context: Context) {
         Row(
             modifier = GlanceModifier.fillMaxWidth().padding(bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalAlignment = Alignment.SpaceBetween
+            verticalAlignment = androidx.glance.layout.Alignment.CenterVertically
         ) {
             Text(
                 text = "Pinned Notes",
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = ColorProvider(androidx.glance.material3.ColorProviders.onBackgroundColor)
+                    color = ColorProvider(androidx.compose.ui.graphics.Color.Black)
                 )
             )
+            Spacer(modifier = GlanceModifier.defaultWeight())
             val addIntent = Intent(context, MainActivity::class.java).apply {
                 putExtra("START_ADD_NOTE", true)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -99,7 +103,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
                     fontSize = 24.sp,
-                    color = ColorProvider(androidx.glance.material3.ColorProviders.primaryColor)
+                    color = ColorProvider(androidx.compose.ui.graphics.Color.Blue)
                 )
             )
         }
@@ -117,7 +121,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxWidth()
                 .padding(vertical = 4.dp)
-                .background(ColorProvider(androidx.glance.material3.ColorProviders.surfaceColor))
+                .background(ColorProvider(androidx.compose.ui.graphics.Color(0xFFF5F5F5)))
                 .padding(8.dp)
                 .clickable(actionStartActivity(intent))
         ) {
@@ -126,20 +130,20 @@ class NoteGlanceWidget : GlanceAppWidget() {
                 style = TextStyle(
                     fontWeight = FontWeight.Medium,
                     fontSize = 16.sp,
-                    color = ColorProvider(androidx.glance.material3.ColorProviders.onSurfaceColor)
+                    color = ColorProvider(androidx.compose.ui.graphics.Color.Black)
                 )
             )
             
             if (note.noteType == NoteType.CHECKLIST) {
                 ChecklistPreview(noteWithAttachments.checklistItems)
             } else {
-                val plainContent = HtmlConverter.htmlToPlainText(note.content)
+                val plainText = HtmlCompat.fromHtml(note.content, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
                 Text(
-                    text = plainContent,
+                    text = plainText,
                     maxLines = 3,
                     style = TextStyle(
                         fontSize = 14.sp,
-                        color = ColorProvider(androidx.glance.material3.ColorProviders.onSurfaceVariantColor)
+                        color = ColorProvider(androidx.compose.ui.graphics.Color.Gray)
                     )
                 )
             }
@@ -152,7 +156,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
             items.sortedBy { it.position }.take(3).forEach { item ->
                 Row(
                     modifier = GlanceModifier.fillMaxWidth().padding(vertical = 1.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = androidx.glance.layout.Alignment.CenterVertically
                 ) {
                     androidx.glance.appwidget.CheckBox(
                         checked = item.isChecked,
@@ -168,7 +172,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
                         maxLines = 1,
                         style = TextStyle(
                             fontSize = 14.sp,
-                            color = ColorProvider(androidx.glance.material3.ColorProviders.onSurfaceVariantColor)
+                            color = ColorProvider(androidx.compose.ui.graphics.Color.Gray)
                         ),
                         modifier = GlanceModifier.padding(start = 4.dp)
                     )
@@ -179,7 +183,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
                     text = "... and ${items.size - 3} more",
                     style = TextStyle(
                         fontSize = 12.sp,
-                        color = ColorProvider(androidx.glance.material3.ColorProviders.onSurfaceVariantColor)
+                        color = ColorProvider(androidx.compose.ui.graphics.Color.Gray)
                     ),
                     modifier = GlanceModifier.padding(start = 28.dp)
                 )
