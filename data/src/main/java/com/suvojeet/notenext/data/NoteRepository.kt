@@ -48,6 +48,7 @@ interface NoteRepository {
     // Checklist operations
     suspend fun insertChecklistItems(items: List<ChecklistItem>)
     suspend fun updateChecklistItem(item: ChecklistItem)
+    suspend fun updateChecklistItemStatus(id: String, isChecked: Boolean)
     suspend fun updateChecklistItems(items: List<ChecklistItem>)
     suspend fun deleteChecklistItem(item: ChecklistItem)
     suspend fun deleteChecklistForNote(noteId: Int)

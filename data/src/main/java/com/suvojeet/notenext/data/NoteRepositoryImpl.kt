@@ -221,6 +221,10 @@ class NoteRepositoryImpl @Inject constructor(
         checklistItemDao.updateChecklistItem(itemToUpdate)
     }
 
+    override suspend fun updateChecklistItemStatus(id: String, isChecked: Boolean) {
+        checklistItemDao.updateChecklistItemStatus(id, isChecked)
+    }
+
     override suspend fun updateChecklistItems(items: List<ChecklistItem>) {
         if (items.isEmpty()) return
         val noteId = items.first().noteId

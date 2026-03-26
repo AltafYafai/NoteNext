@@ -21,4 +21,6 @@
     <string name="biometric_setup_required">Biometric setup is required to enable app lock.</string>
     <string name="crash_toast_text">NoteNext crashed. A report has been sent to the developer.</string>
     <string name="drawing">Drawing</string>
+    <string name="widget_description">Interactive list of your pinned notes and checklists.</string>
+    <string name="glance_widget_name">NoteNext Interactive Widget</string>
     </resources>
