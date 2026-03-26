@@ -2,12 +2,23 @@
 package com.suvojeet.notenext.data
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.suvojeet.notenext.core.model.NoteType
 import kotlinx.serialization.Serializable
 
 @Serializable
-@Entity(tableName = "notes")
+@Entity(
+    tableName = "notes",
+    indices = [
+        Index(value = ["lastEdited"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["isPinned"]),
+        Index(value = ["isArchived"]),
+        Index(value = ["isBinned"]),
+        Index(value = ["projectId"])
+    ]
+)
 data class Note(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,

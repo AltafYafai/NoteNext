@@ -18,7 +18,7 @@ import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.TodoItem
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 24, exportSchema = true)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 25, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -29,6 +29,17 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_lastEdited` ON `notes` (`lastEdited`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_createdAt` ON `notes` (`createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_isPinned` ON `notes` (`isPinned`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_isArchived` ON `notes` (`isArchived`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_isBinned` ON `notes` (`isBinned`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_projectId` ON `notes` (`projectId`)")
+            }
+        }
+
         val MIGRATION_23_24 = object : Migration(23, 24) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 val cursor = db.query("PRAGMA table_info(checklist_items)")
