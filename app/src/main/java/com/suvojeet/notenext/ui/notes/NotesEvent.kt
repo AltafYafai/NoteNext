@@ -23,6 +23,7 @@ sealed class NotesEvent {
     object ToggleLockForSelectedNotes : NotesEvent()
     object DeleteSelectedNotes : NotesEvent()
     object ArchiveSelectedNotes : NotesEvent()
+    object ToggleImportantForSelectedNotes : NotesEvent()
     data class ChangeColorForSelectedNotes(val color: Int) : NotesEvent()
     object CopySelectedNotes : NotesEvent()
     object SendSelectedNotes : NotesEvent()
