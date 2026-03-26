@@ -44,6 +44,7 @@ import com.suvojeet.notenext.data.repository.GroqRepository
 import com.suvojeet.notenext.data.repository.GroqResult
 import com.suvojeet.notenext.data.repository.onFailure
 import com.suvojeet.notenext.data.repository.onSuccess
+import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.core.model.AttachmentType
 import javax.inject.Inject
@@ -1136,6 +1137,78 @@ class ProjectNotesViewModel @Inject constructor(
                 _state.value = state.value.copy(
                     isCheckedItemsExpanded = !state.value.isCheckedItemsExpanded
                 )
+            }
+            is ProjectNotesEvent.ToggleNoteSearch -> {
+                _state.value = state.value.copy(isSearchingInNote = !state.value.isSearchingInNote)
+                if (!state.value.isSearchingInNote) {
+                    _state.value = state.value.copy(noteSearchQuery = "", searchResultIndices = emptyList(), currentSearchResultIndex = -1)
+                }
+            }
+            is ProjectNotesEvent.OnNoteSearchQueryChange -> {
+                val query = event.query
+                val content = state.value.editingContent.text
+                val indices = mutableListOf<Int>()
+                if (query.isNotBlank()) {
+                    var index = content.indexOf(query, ignoreCase = true)
+                    while (index != -1) {
+                        indices.add(index)
+                        index = content.indexOf(query, index + 1, ignoreCase = true)
+                    }
+                }
+                _state.value = state.value.copy(
+                    noteSearchQuery = query,
+                    searchResultIndices = indices,
+                    currentSearchResultIndex = if (indices.isNotEmpty()) 0 else -1
+                )
+                if (indices.isNotEmpty()) {
+                    viewModelScope.launch {
+                        _events.emit(ProjectNotesUiEvent.ScrollToSearchResult(indices[0]))
+                    }
+                }
+            }
+            is ProjectNotesEvent.NextSearchResult -> {
+                val indices = state.value.searchResultIndices
+                if (indices.isNotEmpty()) {
+                    val nextIndex = (state.value.currentSearchResultIndex + 1) % indices.size
+                    _state.value = state.value.copy(currentSearchResultIndex = nextIndex)
+                    viewModelScope.launch {
+                        _events.emit(ProjectNotesUiEvent.ScrollToSearchResult(indices[nextIndex]))
+                    }
+                }
+            }
+            is ProjectNotesEvent.PreviousSearchResult -> {
+                val indices = state.value.searchResultIndices
+                if (indices.isNotEmpty()) {
+                    val prevIndex = if (state.value.currentSearchResultIndex <= 0) indices.size - 1 else state.value.currentSearchResultIndex - 1
+                    _state.value = state.value.copy(currentSearchResultIndex = prevIndex)
+                    viewModelScope.launch {
+                        _events.emit(ProjectNotesUiEvent.ScrollToSearchResult(indices[prevIndex]))
+                    }
+                }
+            }
+            is ProjectNotesEvent.LoadExternalFile -> {
+                viewModelScope.launch {
+                    try {
+                        val uri = event.uri
+                        val content = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                        // For ProjectNotesViewModel, we might need to handle this differently, but for now we follow NotesViewModel pattern
+                        _state.value = state.value.copy(
+                            expandedNoteId = -1,
+                            editingTitle = "External Note", // Or get filename if ContextUtils available
+                            editingContent = TextFieldValue(content),
+                            editingNoteType = NoteType.TEXT,
+                            editingIsNewNote = true
+                        )
+                    } catch (e: Exception) {
+                        _events.emit(ProjectNotesUiEvent.ShowToast("Failed to load file: ${e.message}"))
+                    }
+                }
+            }
+            is ProjectNotesEvent.SaveExternalAsNote -> {
+                viewModelScope.launch {
+                    onEvent(ProjectNotesEvent.OnSaveNoteClick(shouldCollapse = false))
+                    _events.emit(ProjectNotesUiEvent.ShowToast("Saved as internal note"))
+                }
             }
         }
     }

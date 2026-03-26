@@ -6,4 +6,5 @@ sealed class ProjectNotesUiEvent {
     data class ShowToast(val message: String) : ProjectNotesUiEvent()
     object LinkPreviewRemoved : ProjectNotesUiEvent()
     data class NavigateToNoteByTitle(val title: String) : ProjectNotesUiEvent()
+    data class ScrollToSearchResult(val index: Int) : ProjectNotesUiEvent()
 }

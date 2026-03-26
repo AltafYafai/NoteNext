@@ -90,4 +90,14 @@ sealed class ProjectNotesEvent {
     object OnToggleNoteType : ProjectNotesEvent()
     object DeleteAllCheckedItems : ProjectNotesEvent()
     object ToggleCheckedItemsExpanded : ProjectNotesEvent()
+
+    // Search in Note
+    object ToggleNoteSearch : ProjectNotesEvent()
+    data class OnNoteSearchQueryChange(val query: String) : ProjectNotesEvent()
+    object NextSearchResult : ProjectNotesEvent()
+    object PreviousSearchResult : ProjectNotesEvent()
+
+    // External file
+    data class LoadExternalFile(val uri: android.net.Uri) : ProjectNotesEvent()
+    object SaveExternalAsNote : ProjectNotesEvent()
 }

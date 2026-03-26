@@ -57,7 +57,7 @@ sealed interface Destination {
     data object Todo : Destination
     
     @Serializable
-    data class AddEditNote(val projectId: Int = -1, val noteType: NoteType = NoteType.TEXT) : Destination
+    data class AddEditNote(val projectId: Int = -1, val noteType: NoteType = NoteType.TEXT, val externalUri: String? = null) : Destination
     
     @Serializable
     data object Drawing : Destination

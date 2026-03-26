@@ -236,6 +236,13 @@ fun AddEditNoteScreen(
                 is NotesUiEvent.LinkPreviewRemoved -> {
                     Toast.makeText(context, "Link preview removed", Toast.LENGTH_SHORT).show()
                 }
+                is NotesUiEvent.ScrollToSearchResult -> {
+                    scope.launch {
+                        // For NoteContentEditor (TextField), we might need to use a different scrolling method if not using scrollState
+                        // But since we have a scrollState on the Column, we'll try that first.
+                        scrollState.animateScrollTo(event.index)
+                    }
+                }
                 else -> {}
             }
         }
@@ -328,6 +335,20 @@ fun AddEditNoteScreen(
                         .padding(padding)
                         .imePadding()
                 ) {
+                    AnimatedVisibility(visible = state.isSearchingInNote) {
+                        NoteSearchBar(
+                            query = state.noteSearchQuery,
+                            onQueryChange = { onEvent(NotesEvent.OnNoteSearchQueryChange(it)) },
+                            onNext = { onEvent(NotesEvent.NextSearchResult) },
+                            onPrevious = { onEvent(NotesEvent.PreviousSearchResult) },
+                            onClose = { onEvent(NotesEvent.ToggleNoteSearch) },
+                            currentResult = state.currentSearchResultIndex + 1,
+                            totalResults = state.searchResultIndices.size,
+                            backgroundColor = backgroundColor,
+                            contentColor = contentColor
+                        )
+                    }
+
                     if (state.editingNoteType == NoteType.TEXT) {
                         Column(
                             modifier = Modifier

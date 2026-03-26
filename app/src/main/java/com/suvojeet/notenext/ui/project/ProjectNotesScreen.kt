@@ -129,6 +129,7 @@ fun ProjectNotesScreen(
                         Toast.makeText(context, "Note \"${event.title}\" not found", Toast.LENGTH_SHORT).show()
                     }
                 }
+                is ProjectNotesUiEvent.ScrollToSearchResult -> {}
             }
         }
     }
