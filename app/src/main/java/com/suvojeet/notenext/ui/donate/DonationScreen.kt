@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.donate
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -43,9 +45,9 @@ fun DonationScreen(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    val billingState by viewModel.billingState.collectAsState()
-    val purchaseState by viewModel.purchaseState.collectAsState()
-    val products by viewModel.products.collectAsState()
+    val billingState by viewModel.billingState.collectAsStateWithLifecycle()
+    val purchaseState by viewModel.purchaseState.collectAsStateWithLifecycle()
+    val products by viewModel.products.collectAsStateWithLifecycle()
 
     var showThankYouDialog by remember { mutableStateOf(false) }
 

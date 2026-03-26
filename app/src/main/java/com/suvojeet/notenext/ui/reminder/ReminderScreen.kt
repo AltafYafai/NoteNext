@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.reminder
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,9 +37,9 @@ fun ReminderScreen(
     onNoteClick: (Note) -> Unit,
     reminderViewModel: ReminderViewModel = hiltViewModel()
 ) {
-    val allReminders by reminderViewModel.allReminders.collectAsState()
-    val upcomingReminders by reminderViewModel.upcomingReminders.collectAsState()
-    val elapsedReminders by reminderViewModel.elapsedReminders.collectAsState()
+    val allReminders by reminderViewModel.allReminders.collectAsStateWithLifecycle()
+    val upcomingReminders by reminderViewModel.upcomingReminders.collectAsStateWithLifecycle()
+    val elapsedReminders by reminderViewModel.elapsedReminders.collectAsStateWithLifecycle()
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0: All, 1: Upcoming, 2: Elapsed
 

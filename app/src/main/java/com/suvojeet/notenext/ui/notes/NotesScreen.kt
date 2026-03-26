@@ -33,7 +33,7 @@ import androidx.compose.material3.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,8 +79,8 @@ fun NotesScreen(
     onTodoClick: () -> Unit = {},
     events: SharedFlow<NotesUiEvent>
 ) {
-    val listState by viewModel.listState.collectAsState()
-    val editState by viewModel.editState.collectAsState()
+    val listState by viewModel.listState.collectAsStateWithLifecycle()
+    val editState by viewModel.editState.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     
@@ -288,7 +288,7 @@ fun NotesScreen(
                             )
                         }
                     ) { padding ->
-                        val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
+                        val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsStateWithLifecycle(initialValue = 7)
                         if (showDeleteDialog) {
                             AlertDialog(
                                 onDismissRequest = { showDeleteDialog = false },
@@ -620,7 +620,7 @@ fun NotesScreen(
                 }
             } else {
                  AddEditNoteScreen(
-                    state = viewModel.state.collectAsState().value,
+                    state = viewModel.state.collectAsStateWithLifecycle().value,
                     onEvent = viewModel::onEvent,
                     onDismiss = { viewModel.onEvent(NotesEvent.CollapseNote) },
                     themeMode = themeMode,

@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.settings
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -47,14 +49,14 @@ fun GroqSettingsScreen(
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val useCustomKey by viewModel.useCustomKey.collectAsState(initial = false)
-    val customKey by viewModel.customKey.collectAsState(initial = "")
-    val customFastModel by viewModel.customFastModel.collectAsState(initial = "llama-3.1-8b-instant")
-    val customLargeModel by viewModel.customLargeModel.collectAsState(initial = "llama-3.3-70b-versatile")
+    val useCustomKey by viewModel.useCustomKey.collectAsStateWithLifecycle(initialValue = false)
+    val customKey by viewModel.customKey.collectAsStateWithLifecycle(initialValue = "")
+    val customFastModel by viewModel.customFastModel.collectAsStateWithLifecycle(initialValue = "llama-3.1-8b-instant")
+    val customLargeModel by viewModel.customLargeModel.collectAsStateWithLifecycle(initialValue = "llama-3.3-70b-versatile")
     
-    val availableModels by viewModel.availableModels.collectAsState()
-    val isLoadingModels by viewModel.isLoadingModels.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val availableModels by viewModel.availableModels.collectAsStateWithLifecycle()
+    val isLoadingModels by viewModel.isLoadingModels.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
 
     var showKeyVisible by remember { mutableStateOf(false) }
 

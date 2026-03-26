@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import com.suvojeet.notenext.navigation.NavGraph
 import com.suvojeet.notenext.ui.theme.NoteNextTheme
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -154,16 +154,16 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             val windowSizeClass = calculateWindowSizeClass(this)
-            val themeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+            val themeMode by settingsRepository.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
 
-            val enableAppLockLoaded by _enableAppLockLoaded.collectAsState()
-            val isSetupCompleteLoaded by _isSetupCompleteLoaded.collectAsState()
-            val lockTrigger by _lockTrigger.collectAsState()
+            val enableAppLockLoaded by _enableAppLockLoaded.collectAsStateWithLifecycle()
+            val isSetupCompleteLoaded by _isSetupCompleteLoaded.collectAsStateWithLifecycle()
+            val lockTrigger by _lockTrigger.collectAsStateWithLifecycle()
 
             var unlockedByAuth by remember(lockTrigger) { mutableStateOf(unlocked) }
 
             // In-App Update Handling
-            val updateStatus by updateChecker.updateStatus.collectAsState()
+            val updateStatus by updateChecker.updateStatus.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
             var showUpdateDialog by remember { mutableStateOf(false) }
             
@@ -236,12 +236,12 @@ class MainActivity : FragmentActivity() {
                                     unlockedByAuth = true 
                                 })
                             } else {
-                                val startNoteId by _startNoteIdFlow.collectAsState()
-                                val startAddNote by _startAddNoteFlow.collectAsState()
-                                val sharedText by _sharedTextFlow.collectAsState()
-                                val initialTitle by _initialTitleFlow.collectAsState()
-                                val searchQuery by _searchQueryFlow.collectAsState()
-                                val externalUri by _externalUriFlow.collectAsState()
+                                val startNoteId by _startNoteIdFlow.collectAsStateWithLifecycle()
+                                val startAddNote by _startAddNoteFlow.collectAsStateWithLifecycle()
+                                val sharedText by _sharedTextFlow.collectAsStateWithLifecycle()
+                                val initialTitle by _initialTitleFlow.collectAsStateWithLifecycle()
+                                val searchQuery by _searchQueryFlow.collectAsStateWithLifecycle()
+                                val externalUri by _externalUriFlow.collectAsStateWithLifecycle()
 
                                 NavGraph(
                                     themeMode = themeMode,

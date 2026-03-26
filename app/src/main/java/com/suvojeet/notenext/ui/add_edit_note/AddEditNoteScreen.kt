@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
@@ -107,7 +109,7 @@ fun AddEditNoteScreen(
     val scrollState = rememberScrollState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsState(initial = false)
+    val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsStateWithLifecycle(initialValue = false)
 
     // Auto-save on background
     val lifecycleOwner = LocalLifecycleOwner.current

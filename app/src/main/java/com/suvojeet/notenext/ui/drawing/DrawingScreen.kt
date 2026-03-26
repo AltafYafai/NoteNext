@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.drawing
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.spring
@@ -46,7 +48,7 @@ fun DrawingScreen(
     onDismiss: () -> Unit,
     viewModel: DrawingViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     var currentPath by remember { mutableStateOf<Path?>(null) }
     val context = LocalContext.current
     

@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 package com.suvojeet.notenext.ui.setup
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import android.Manifest
 import android.content.Intent
 import android.os.Build
@@ -54,8 +56,8 @@ fun SetupScreen(
 ) {
     val viewModel: SetupViewModel = hiltViewModel()
     val backupViewModel: BackupRestoreViewModel = hiltViewModel()
-    val state by viewModel.state.collectAsState()
-    val backupState by backupViewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val backupState by backupViewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 

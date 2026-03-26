@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.settings
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import org.acra.ACRA
 import androidx.core.content.ContextCompat
 import android.app.ActivityManager
@@ -68,12 +70,12 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
         }
     }
 
-    val selectedThemeMode by settingsRepository.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
-    val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsState(initial = 7)
-    val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsState(initial = false)
-    val enableAppLock by settingsRepository.enableAppLock.collectAsState(initial = false)
-    val selectedLanguage by settingsRepository.language.collectAsState(initial = "en")
-    val disallowScreenshots by settingsRepository.disallowScreenshots.collectAsState(initial = false)
+    val selectedThemeMode by settingsRepository.themeMode.collectAsStateWithLifecycle(initialValue = ThemeMode.SYSTEM)
+    val autoDeleteDays by settingsRepository.autoDeleteDays.collectAsStateWithLifecycle(initialValue = 7)
+    val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsStateWithLifecycle(initialValue = false)
+    val enableAppLock by settingsRepository.enableAppLock.collectAsStateWithLifecycle(initialValue = false)
+    val selectedLanguage by settingsRepository.language.collectAsStateWithLifecycle(initialValue = "en")
+    val disallowScreenshots by settingsRepository.disallowScreenshots.collectAsStateWithLifecycle(initialValue = false)
 
     var searchQuery by remember { mutableStateOf("") }
 

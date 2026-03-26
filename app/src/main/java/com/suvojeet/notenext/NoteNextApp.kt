@@ -20,9 +20,15 @@ import org.acra.sender.HttpSender
 import com.suvojeet.notenext.util.CrashReportSenderFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class NoteNextApp : Application(), Configuration.Provider {
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -56,8 +62,10 @@ class NoteNextApp : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannels()
-        setupAutoDeleteWorker()
+        applicationScope.launch {
+            createNotificationChannels()
+            setupAutoDeleteWorker()
+        }
     }
 
     private fun createNotificationChannels() {
