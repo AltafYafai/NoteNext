@@ -1,18 +1,15 @@
-
 package com.suvojeet.notenext.ui.notes
 
 import android.net.Uri
-import com.suvojeet.notenext.data.SortType
-
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.TextFieldValue
-import com.suvojeet.notenext.data.Note
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.data.LinkPreview
-
-import com.suvojeet.notenext.data.NoteWithAttachments
-
-import com.suvojeet.notenext.data.RepeatOption
+import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteVersion
+import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.RepeatOption
+import com.suvojeet.notenext.data.SortType
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -30,18 +27,14 @@ sealed class NotesEvent {
     object CopySelectedNotes : NotesEvent()
     object SendSelectedNotes : NotesEvent()
     data class SetReminderForSelectedNotes(val date: LocalDate, val time: LocalTime, val repeatOption: RepeatOption) : NotesEvent()
-    import com.suvojeet.notenext.core.model.NoteType
-
-    sealed class NotesEvent {
-    ...
-        data class SetLabelForSelectedNotes(val label: String) : NotesEvent()
-        data class ExpandNote(
-            val noteId: Int, 
-            val noteType: NoteType = NoteType.TEXT,
-            val authenticatedCipherTitle: javax.crypto.Cipher? = null,
-            val authenticatedCipherContent: javax.crypto.Cipher? = null
-        ) : NotesEvent()
-        object CollapseNote : NotesEvent()
+    data class SetLabelForSelectedNotes(val label: String) : NotesEvent()
+    data class ExpandNote(
+        val noteId: Int, 
+        val noteType: NoteType = NoteType.TEXT,
+        val authenticatedCipherTitle: javax.crypto.Cipher? = null,
+        val authenticatedCipherContent: javax.crypto.Cipher? = null
+    ) : NotesEvent()
+    object CollapseNote : NotesEvent()
 
     // Checklist Events
     data class OnChecklistItemCheckedChange(val itemId: String, val isChecked: Boolean) : NotesEvent()
