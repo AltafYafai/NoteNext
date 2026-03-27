@@ -74,6 +74,7 @@ fun MoreOptionsSheet(
             
             options.add(OptionItem(lockLabel, lockIcon) { onToggleLock() })
             options.add(OptionItem(convertLabel, convertIcon) { onEvent(NotesEvent.OnToggleNoteType) })
+            options.add(OptionItem(stringResource(id = R.string.search), Icons.Default.Search) { onEvent(NotesEvent.ToggleNoteSearch) })
             options.add(OptionItem(stringResource(id = R.string.delete), Icons.Default.Delete) { showDeleteDialog(true) })
             options.add(OptionItem(stringResource(id = R.string.make_a_copy), Icons.Default.ContentCopy) { onEvent(NotesEvent.OnCopyCurrentNoteClick) })
             options.add(OptionItem(stringResource(id = R.string.share), Icons.Default.Share) {

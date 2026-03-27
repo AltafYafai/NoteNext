@@ -278,7 +278,6 @@ fun AddEditNoteScreen(
                         state = state,
                         onEvent = onEvent,
                         onDismiss = onDismiss,
-                        showDeleteDialog = { showDeleteDialog = it },
                         editingNoteType = state.editingNoteType,
                         onToggleFocusMode = { isFocusMode = !isFocusMode },
                         isFocusMode = isFocusMode,

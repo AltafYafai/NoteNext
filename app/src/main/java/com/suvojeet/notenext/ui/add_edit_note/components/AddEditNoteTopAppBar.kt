@@ -40,7 +40,6 @@ fun AddEditNoteTopAppBar(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onDismiss: () -> Unit,
-    showDeleteDialog: (Boolean) -> Unit,
     editingNoteType: NoteType,
     onToggleFocusMode: () -> Unit,
     isFocusMode: Boolean,
@@ -105,17 +104,6 @@ fun AddEditNoteTopAppBar(
                     )
                 }
 
-                IconButton(
-                    onClick = { onEvent(NotesEvent.ToggleNoteSearch) },
-                    modifier = Modifier.springPress()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search in Note",
-                        tint = if (state.isSearchingInNote) MaterialTheme.colorScheme.primary else contentColor
-                    )
-                }
-
                 if (!state.editingIsNewNote) {
                     val pinContainerColor by animateColorAsState(
                         targetValue = if (state.isPinned) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -159,10 +147,6 @@ fun AddEditNoteTopAppBar(
                             contentDescription = if (state.isArchived) stringResource(id = R.string.unarchive_note) else stringResource(id = R.string.archive_note),
                             tint = if (state.isArchived) MaterialTheme.colorScheme.primary else contentColor
                         )
-                    }
-                    
-                    IconButton(onClick = { showDeleteDialog(true) }, modifier = Modifier.springPress()) {
-                        Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.delete_note), tint = contentColor)
                     }
                 }
             }
