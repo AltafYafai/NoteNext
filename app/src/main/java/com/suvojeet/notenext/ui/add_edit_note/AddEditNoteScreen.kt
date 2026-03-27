@@ -106,6 +106,8 @@ fun AddEditNoteScreen(
     var clickedUrl by remember { mutableStateOf<String?>(null) }
     var showExactAlarmDialog by remember { mutableStateOf(false) }
 
+    val chunks = rememberNoteContentChunks(state.editingContent)
+
     val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -401,6 +403,7 @@ fun AddEditNoteScreen(
                             }
                             
                             NoteContentItems(
+                                chunks = chunks,
                                 state = state,
                                 onEvent = onEvent,
                                 onUrlClick = { url -> clickedUrl = url },
@@ -453,6 +456,7 @@ fun AddEditNoteScreen(
                                 )
                             } else {
                                 NoteContentItems(
+                                    chunks = chunks,
                                     state = state,
                                     onEvent = onEvent,
                                     onUrlClick = { url -> clickedUrl = url },

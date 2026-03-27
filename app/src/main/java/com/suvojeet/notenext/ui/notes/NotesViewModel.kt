@@ -1203,7 +1203,7 @@ class NotesViewModel @Inject constructor(
                         repository.getNoteById(noteId)?.let { note ->
                             val updatedNote = note.note.copy(isArchived = !note.note.isArchived)
                             repository.updateNote(updatedNote)
-                            val updatedNotesList = listState.value.notes.map { if (it.note.id == updatedNote.id) it.copy(note = updatedNote) else it }
+                            val updatedNotesList = listState.value.notes.map { if (it.note.id == updatedNote.id) it.copy(note = updatedNote.toNoteSummary()) else it }
                             _editState.value = editState.value.copy(
                                 isArchived = updatedNote.isArchived,
                             )
