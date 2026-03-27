@@ -43,4 +43,31 @@ data class Note(
     val aiSummary: String? = null,
     val iv: String? = null,
     val isEncrypted: Boolean = false
-)
+) {
+    fun toNoteSummary(): NoteSummary {
+        return NoteSummary(
+            id = id,
+            title = title,
+            content = content,
+            createdAt = createdAt,
+            lastEdited = lastEdited,
+            color = color,
+            isPinned = isPinned,
+            isArchived = isArchived,
+            reminderTime = reminderTime,
+            label = label,
+            isBinned = isBinned,
+            binnedOn = binnedOn,
+            isImportant = isImportant,
+            noteType = noteType,
+            projectId = projectId,
+            isLocked = isLocked,
+            position = position,
+            aiSummary = aiSummary,
+            iv = iv,
+            isEncrypted = isEncrypted,
+            repeatOption = repeatOption,
+            linkPreviews = linkPreviews
+        )
+    }
+}

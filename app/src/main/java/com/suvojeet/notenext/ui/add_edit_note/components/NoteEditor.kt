@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.TextFieldValue
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import androidx.compose.ui.res.stringResource
@@ -94,18 +95,10 @@ fun NoteTitleEditor(
     }
 }
 
-fun LazyListScope.NoteContentItems(
-    state: NotesState,
-    onEvent: (NotesEvent) -> Unit,
-    onUrlClick: (String) -> Unit,
-    onSlashCommand: () -> Unit,
-    onTextLayout: (TextLayoutResult) -> Unit = {}
-) {
-    val content = state.editingContent
+@Composable
+fun rememberNoteContentChunks(content: TextFieldValue): List<TextFieldValue> {
     val text = content.text
-    
-    // Chunk size: 50 lines or 5000 characters
-    val chunks = remember(text) {
+    return remember(text) {
         val list = mutableListOf<TextFieldValue>()
         var currentStart = 0
         var lineCount = 0
@@ -128,7 +121,16 @@ fun LazyListScope.NoteContentItems(
         }
         list
     }
+}
 
+fun LazyListScope.NoteContentItems(
+    chunks: List<TextFieldValue>,
+    state: NotesState,
+    onEvent: (NotesEvent) -> Unit,
+    onUrlClick: (String) -> Unit,
+    onSlashCommand: () -> Unit,
+    onTextLayout: (TextLayoutResult) -> Unit = {}
+) {
     itemsIndexed(chunks) { index, chunk ->
         NoteContentChunkEditor(
             index = index,
@@ -222,20 +224,22 @@ fun NoteContentChunkEditor(
                     }
                 }
                 
-                val globalSelection = newChunk.selection.let {
-                    it.copy(start = it.start + startOffset, end = it.end + startOffset)
+                val globalSelection = newChunk.selection.let { selection ->
+                    androidx.compose.ui.text.TextRange(selection.start + startOffset, selection.end + startOffset)
                 }
                 
-                val builder = androidx.compose.ui.text.AnnotatedString.Builder(state.editingContent.annotatedString)
-                try {
-                    builder.replace(startOffset, startOffset + chunk.text.length, newChunk.annotatedString)
+                val original = state.editingContent.annotatedString
+                val newAnnotatedString = try {
+                    original.subSequence(0, startOffset) + 
+                    newChunk.annotatedString + 
+                    original.subSequence(startOffset + chunk.text.length, original.length)
                 } catch (e: Exception) {
                     // Fallback if re-calculation mismatch
                     return@BasicTextField
                 }
                 
                 onEvent(NotesEvent.OnContentChange(newChunk.copy(
-                    annotatedString = builder.toAnnotatedString(),
+                    annotatedString = newAnnotatedString,
                     selection = globalSelection
                 )))
             },

@@ -106,6 +106,8 @@ fun AddEditNoteScreen(
     var clickedUrl by remember { mutableStateOf<String?>(null) }
     var showExactAlarmDialog by remember { mutableStateOf(false) }
 
+    val chunks = rememberNoteContentChunks(state.editingContent)
+
     val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -317,7 +319,8 @@ fun AddEditNoteScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 12.dp)
+                            .imePadding(),
                         shape = MaterialTheme.shapes.extraLarge,
                         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
                         tonalElevation = 3.dp,
@@ -358,7 +361,7 @@ fun AddEditNoteScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .imePadding()
+                        .then(if (isFocusMode) Modifier.imePadding() else Modifier)
                 ) {
                     AnimatedVisibility(visible = state.isSearchingInNote) {
                         NoteSearchBar(
@@ -401,6 +404,7 @@ fun AddEditNoteScreen(
                             }
                             
                             NoteContentItems(
+                                chunks = chunks,
                                 state = state,
                                 onEvent = onEvent,
                                 onUrlClick = { url -> clickedUrl = url },
@@ -453,6 +457,7 @@ fun AddEditNoteScreen(
                                 )
                             } else {
                                 NoteContentItems(
+                                    chunks = chunks,
                                     state = state,
                                     onEvent = onEvent,
                                     onUrlClick = { url -> clickedUrl = url },
@@ -511,6 +516,7 @@ fun AddEditNoteScreen(
             exit = fadeOut(spring()) + slideOutVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleOut(animationSpec = spring(), targetScale = 0.8f),
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .imePadding()
                 .offset { IntOffset(aiButtonOffsetX.roundToInt(), aiButtonOffsetY.roundToInt()) }
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->

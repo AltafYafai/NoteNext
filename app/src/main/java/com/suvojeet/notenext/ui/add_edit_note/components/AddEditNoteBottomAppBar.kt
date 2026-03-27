@@ -51,7 +51,7 @@ fun AddEditNoteBottomAppBar(
 
     BottomAppBar(
         containerColor = backgroundColor,
-        windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)
+        windowInsets = BottomAppBarDefaults.windowInsets
     ) {
         Row(
             modifier = Modifier

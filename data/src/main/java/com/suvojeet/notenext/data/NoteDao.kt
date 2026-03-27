@@ -384,6 +384,20 @@ interface NoteDao {
         SELECT notes.id AS id, notes.title AS title, 
         CASE WHEN notes.isEncrypted = 1 THEN notes.content ELSE SUBSTR(notes.content, 1, 500) END AS content,
         notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
+        FROM notes
+        JOIN notes_fts ON notes.id = notes_fts.rowid
+        WHERE notes_fts MATCH :query
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
+        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        ORDER BY notes.position ASC
+    """)
+    fun searchOtherNoteSummariesPagedOrderedByPosition(query: String, projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
+
+    @Transaction
+    @Query("""
+        SELECT notes.id AS id, notes.title AS title, 
+        CASE WHEN notes.isEncrypted = 1 THEN notes.content ELSE SUBSTR(notes.content, 1, 500) END AS content,
+        notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
         FROM notes WHERE
  isArchived = 1 ORDER BY lastEdited DESC
     """)
