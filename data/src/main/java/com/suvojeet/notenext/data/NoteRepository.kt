@@ -8,6 +8,14 @@ interface NoteRepository {
     fun getNotes(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED, projectId: Int? = null): Flow<List<NoteWithAttachments>>
     fun getPinnedNotes(searchQuery: String = "", projectId: Int? = null): Flow<List<NoteWithAttachments>>
     fun getOtherNotesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED, projectId: Int? = null): Flow<PagingData<NoteWithAttachments>>
+
+    // Optimized Note Summary operations
+    fun getPinnedNoteSummaries(searchQuery: String = "", projectId: Int? = null): Flow<List<NoteSummaryWithAttachments>>
+    fun getOtherNoteSummariesPaged(searchQuery: String = "", sortType: SortType = SortType.DATE_MODIFIED, projectId: Int? = null): Flow<PagingData<NoteSummaryWithAttachments>>
+    fun getArchivedNoteSummaries(): Flow<List<NoteSummaryWithAttachments>>
+    fun getBinnedNoteSummaries(): Flow<List<NoteSummaryWithAttachments>>
+    fun getNoteSummariesByProjectId(projectId: Int): Flow<List<NoteSummaryWithAttachments>>
+
     fun getArchivedNotes(): Flow<List<NoteWithAttachments>>
     fun getBinnedNotes(): Flow<List<NoteWithAttachments>>
     fun getNotesByProjectId(projectId: Int): Flow<List<NoteWithAttachments>>

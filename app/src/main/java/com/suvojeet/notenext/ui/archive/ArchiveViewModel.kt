@@ -14,7 +14,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ArchiveViewModel @Inject constructor(private val repository: com.suvojeet.notenext.data.NoteRepository) : ViewModel() {
 
-    val state: StateFlow<ArchiveState> = repository.getArchivedNotes()
+    val state: StateFlow<ArchiveState> = repository.getArchivedNoteSummaries()
         .map { ArchiveState(notes = it) }
         .stateIn(
             scope = viewModelScope,
@@ -26,7 +26,9 @@ class ArchiveViewModel @Inject constructor(private val repository: com.suvojeet.
         when (event) {
             is ArchiveEvent.UnarchiveNote -> {
                 viewModelScope.launch {
-                    repository.updateNote(event.note.copy(isArchived = false))
+                    repository.getNoteById(event.note.id)?.let { note ->
+                         repository.updateNote(note.note.copy(isArchived = false))
+                    }
                 }
             }
         }

@@ -4,6 +4,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.suvojeet.notenext.data.Note
+import com.suvojeet.notenext.data.NoteSummary
 import com.suvojeet.notenext.data.NoteVersion
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -94,10 +95,39 @@ object CryptoUtils {
      * or if the key doesn't require auth (legacy notes).
      */
     fun decryptNote(note: Note, authenticatedCipherTitle: Cipher? = null, authenticatedCipherContent: Cipher? = null): Note {
-        if (!note.isEncrypted || note.iv == null) return note
+        val decrypted = decryptNoteInternal(
+            note.id, note.title, note.content, note.iv, note.isEncrypted, note.isLocked,
+            authenticatedCipherTitle, authenticatedCipherContent
+        )
+        return note.copy(
+            title = decrypted.first,
+            content = decrypted.second,
+            iv = null,
+            isEncrypted = false
+        )
+    }
+
+    fun decryptNote(summary: NoteSummary, authenticatedCipherTitle: Cipher? = null, authenticatedCipherContent: Cipher? = null): NoteSummary {
+        val decrypted = decryptNoteInternal(
+            summary.id, summary.title, summary.content, summary.iv, summary.isEncrypted, summary.isLocked,
+            authenticatedCipherTitle, authenticatedCipherContent
+        )
+        return summary.copy(
+            title = decrypted.first,
+            content = decrypted.second,
+            iv = null,
+            isEncrypted = false
+        )
+    }
+
+    private fun decryptNoteInternal(
+        id: Int, title: String, content: String, iv: String?, isEncrypted: Boolean, isLocked: Boolean,
+        authenticatedCipherTitle: Cipher? = null, authenticatedCipherContent: Cipher? = null
+    ): Pair<String, String> {
+        if (!isEncrypted || iv == null) return Pair(title, content)
 
         return try {
-            val rawIv = note.iv
+            val rawIv = iv
             val isV3 = rawIv.startsWith("v3:") || rawIv.startsWith("v3-plain:")
             val isV2 = rawIv.startsWith("v2:")
             
@@ -110,63 +140,52 @@ object CryptoUtils {
             }
             
             val ivs = cleanIv.split(":")
-            val isLocked = if (isV3) rawIv.startsWith("v3:") else (note.isLocked && cleanIv.contains(":"))
+            val effectiveIsLocked = if (isV3) rawIv.startsWith("v3:") else (isLocked && cleanIv.contains(":"))
 
-            val (decryptedTitle, decryptedContent) = if (isV3) {
+            if (isV3) {
                 // v3 format: title is already unencrypted
                 val ivContent = Base64.decode(cleanIv, Base64.DEFAULT)
-                val content = if (authenticatedCipherContent != null) {
-                    String(authenticatedCipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                val decryptedContent = if (authenticatedCipherContent != null) {
+                    String(authenticatedCipherContent.doFinal(Base64.decode(content, Base64.DEFAULT)))
                 } else {
-                    val cipherContent = getDecryptionCipher(ivContent, isLocked, useV1 = false)
-                    String(cipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                    val cipherContent = getDecryptionCipher(ivContent, effectiveIsLocked, useV1 = false)
+                    String(cipherContent.doFinal(Base64.decode(content, Base64.DEFAULT)))
                 }
-                Pair(note.title, content)
+                Pair(title, decryptedContent)
             } else if (ivs.size == 2) {
                 // v2 or v1 format with two IVs
                 val ivTitle = Base64.decode(ivs[0], Base64.DEFAULT)
                 val ivContent = Base64.decode(ivs[1], Base64.DEFAULT)
                 
-                val title = if (authenticatedCipherTitle != null) {
-                    String(authenticatedCipherTitle.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
+                val decryptedTitle = if (authenticatedCipherTitle != null) {
+                    String(authenticatedCipherTitle.doFinal(Base64.decode(title, Base64.DEFAULT)))
                 } else {
-                    val cipherTitle = getDecryptionCipher(ivTitle, isLocked, useV1 = !isV2)
-                    String(cipherTitle.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
+                    val cipherTitle = getDecryptionCipher(ivTitle, effectiveIsLocked, useV1 = !isV2)
+                    String(cipherTitle.doFinal(Base64.decode(title, Base64.DEFAULT)))
                 }
                 
-                val content = if (authenticatedCipherContent != null) {
-                    String(authenticatedCipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                val decryptedContent = if (authenticatedCipherContent != null) {
+                    String(authenticatedCipherContent.doFinal(Base64.decode(content, Base64.DEFAULT)))
                 } else {
-                    val cipherContent = getDecryptionCipher(ivContent, isLocked, useV1 = !isV2)
-                    String(cipherContent.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
+                    val cipherContent = getDecryptionCipher(ivContent, effectiveIsLocked, useV1 = !isV2)
+                    String(cipherContent.doFinal(Base64.decode(content, Base64.DEFAULT)))
                 }
                 
-                Pair(title, content)
+                Pair(decryptedTitle, decryptedContent)
             } else {
                 // Legacy format with single IV for both
-                val iv = Base64.decode(cleanIv, Base64.DEFAULT)
-                val cipher = getDecryptionCipher(iv, isLocked, useV1 = !isV2)
-                val title = String(cipher.doFinal(Base64.decode(note.title, Base64.DEFAULT)))
+                val ivBytes = Base64.decode(cleanIv, Base64.DEFAULT)
+                val cipher = getDecryptionCipher(ivBytes, effectiveIsLocked, useV1 = !isV2)
+                val decryptedTitle = String(cipher.doFinal(Base64.decode(title, Base64.DEFAULT)))
                 
                 // Re-init for content
-                cipher.init(Cipher.DECRYPT_MODE, getSecretKey(if (isLocked) (if (isV2) AUTH_KEY_ALIAS_V2 else AUTH_KEY_ALIAS_V1) else KEY_ALIAS, isLocked), GCMParameterSpec(128, iv))
-                val content = String(cipher.doFinal(Base64.decode(note.content, Base64.DEFAULT)))
-                Pair(title, content)
+                cipher.init(Cipher.DECRYPT_MODE, getSecretKey(if (effectiveIsLocked) (if (isV2) AUTH_KEY_ALIAS_V2 else AUTH_KEY_ALIAS_V1) else KEY_ALIAS, effectiveIsLocked), GCMParameterSpec(128, ivBytes))
+                val decryptedContent = String(cipher.doFinal(Base64.decode(content, Base64.DEFAULT)))
+                Pair(decryptedTitle, decryptedContent)
             }
-
-            note.copy(
-                title = decryptedTitle,
-                content = decryptedContent,
-                iv = null,
-                isEncrypted = false
-            )
         } catch (e: Exception) {
             e.printStackTrace()
-            note.copy(
-                title = note.title, // Don't mask the title if decryption fails, as it might be unencrypted now
-                content = "Unable to decrypt this note. It may require biometric authentication or the key was lost.",
-                isEncrypted = true
-            )
+            Pair(title, "Unable to decrypt this note. It may require biometric authentication or the key was lost.")
         }
     }
 

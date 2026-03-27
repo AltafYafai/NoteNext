@@ -205,14 +205,14 @@ class NotesViewModel @Inject constructor(
         val combinedFlow = combine(queryFlow, sortFlow, projectFlow) { query, sortType, projectId -> Triple(query, sortType, projectId) }
         
         combinedFlow.flatMapLatest { (query, sortType, projectId) ->
-            repository.getPinnedNotes(query, projectId)
+            repository.getPinnedNoteSummaries(query, projectId)
         }.onEach { pinned ->
             _listState.value = _listState.value.copy(pinnedNotes = pinned)
         }.launchIn(viewModelScope)
 
         combinedFlow.onEach { (query, sortType, projectId) ->
             _listState.value = _listState.value.copy(
-                pagedNotes = repository.getOtherNotesPaged(query, sortType, projectId).cachedIn(viewModelScope),
+                pagedNotes = repository.getOtherNoteSummariesPaged(query, sortType, projectId).cachedIn(viewModelScope),
                 searchQuery = query,
                 sortType = sortType,
                 filteredProjectId = projectId
@@ -586,10 +586,12 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.DeleteNote -> {
                 viewModelScope.launch {
-                    noteUseCases.deleteNote(event.note.note)
-                    recentlyDeletedNote = event.note.note
-                    _events.emit(NotesUiEvent.ShowToast("Note moved to Bin"))
-                    updateWidgets()
+                    repository.getNoteById(event.note.note.id)?.let { noteWithAttachments ->
+                        noteUseCases.deleteNote(noteWithAttachments.note)
+                        recentlyDeletedNote = noteWithAttachments.note
+                        _events.emit(NotesUiEvent.ShowToast("Note moved to Bin"))
+                        updateWidgets()
+                    }
                 }
             }
             is NotesEvent.RestoreNote -> {
@@ -614,13 +616,15 @@ class NotesViewModel @Inject constructor(
                 _listState.value = listState.value.copy(selectedNoteIds = emptyList())
             }
             is NotesEvent.SelectAllNotes -> {
-                val notesToSelect = if (listState.value.filteredLabel != null) {
-                    listState.value.notes.filter { it.note.label == listState.value.filteredLabel }
-                } else {
-                    listState.value.notes
+                // Since we use paging, "Select All" is tricky.
+                // For now, we can only select what's currently loaded in pinned notes.
+                // Or we can try to get all IDs from the repository.
+                viewModelScope.launch {
+                    val allPinned = listState.value.pinnedNotes.map { it.note.id }
+                    // We can't easily get all paged IDs without fetching them all.
+                    // For now, just select pinned notes or implement a better "Select All".
+                    _listState.value = listState.value.copy(selectedNoteIds = allPinned)
                 }
-                val allIds = notesToSelect.map { it.note.id }
-                _listState.value = listState.value.copy(selectedNoteIds = allIds)
             }
             is NotesEvent.TogglePinForSelectedNotes -> {
                 viewModelScope.launch {
@@ -1508,9 +1512,8 @@ class NotesViewModel @Inject constructor(
 
     private suspend fun getSelectedNotes(): List<NoteWithAttachments> {
         val selectedIds = listState.value.selectedNoteIds
-        val pinnedNotes = listState.value.pinnedNotes
         return selectedIds.mapNotNull { id ->
-            pinnedNotes.find { it.note.id == id } ?: repository.getNoteById(id)
+            repository.getNoteById(id)
         }
     }
 

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
-import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.util.HtmlConverter
@@ -39,7 +39,7 @@ import com.suvojeet.notenext.util.HtmlConverter
 @Composable
 fun NoteItem(
     modifier: Modifier = Modifier,
-    note: NoteWithAttachments,
+    note: NoteSummaryWithAttachments,
     isSelected: Boolean,
     searchQuery: String = "",
     onNoteClick: () -> Unit,

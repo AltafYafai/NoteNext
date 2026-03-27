@@ -410,7 +410,7 @@ fun NotesScreen(
                                         description = if (listState.searchQuery.isEmpty()) stringResource(id = R.string.create_your_first_note) else null
                                     )
                                 } else {
-                                    val onNoteClickAction: (com.suvojeet.notenext.data.NoteWithAttachments) -> Unit = { note ->
+                                    val onNoteClickAction: (com.suvojeet.notenext.data.NoteSummaryWithAttachments) -> Unit = { note ->
                                         if (isSelectionModeActive) {
                                             viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                         } else {

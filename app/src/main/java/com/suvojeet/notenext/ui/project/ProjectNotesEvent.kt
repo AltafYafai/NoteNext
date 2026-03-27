@@ -2,7 +2,7 @@ package com.suvojeet.notenext.ui.project
 
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.TextFieldValue
-import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.data.RepeatOption
 import com.suvojeet.notenext.data.NoteVersion
@@ -11,7 +11,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 
 sealed class ProjectNotesEvent {
-    data class DeleteNote(val note: NoteWithAttachments) : ProjectNotesEvent()
+    data class DeleteNote(val note: NoteSummaryWithAttachments) : ProjectNotesEvent()
     object RestoreNote : ProjectNotesEvent()
     data class ToggleNoteSelection(val noteId: Int) : ProjectNotesEvent()
     object ClearSelection : ProjectNotesEvent()

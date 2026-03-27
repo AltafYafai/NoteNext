@@ -5,7 +5,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.LinkPreview
-import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
@@ -14,7 +14,7 @@ import com.suvojeet.notenext.ui.notes.SaveStatus
 import com.suvojeet.notenext.core.model.NoteType
 
 data class ProjectNotesState(
-    val notes: List<NoteWithAttachments> = emptyList(),
+    val notes: List<NoteSummaryWithAttachments> = emptyList(),
     val projects: List<Project> = emptyList(),
     val sortType: SortType = SortType.DATE_MODIFIED,
     val layoutType: LayoutType = LayoutType.GRID,

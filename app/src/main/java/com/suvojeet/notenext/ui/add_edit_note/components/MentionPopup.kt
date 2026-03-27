@@ -11,12 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 
 @Composable
 fun MentionPopup(
     isVisible: Boolean,
-    notes: List<NoteWithAttachments>,
+    notes: List<NoteSummaryWithAttachments>,
     onNoteClick: (Int, String) -> Unit,
     onDismiss: () -> Unit
 ) {

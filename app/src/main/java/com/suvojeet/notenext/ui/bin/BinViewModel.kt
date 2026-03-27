@@ -24,7 +24,7 @@ class BinViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     init {
-        repository.getBinnedNotes()
+        repository.getBinnedNoteSummaries()
             .onEach { list ->
                 _state.value = state.value.copy(notes = list)
             }
@@ -42,7 +42,9 @@ class BinViewModel @Inject constructor(
             is BinEvent.RestoreNote -> {
                 viewModelScope.launch {
                     try {
-                        repository.updateNote(event.note.copy(isBinned = false, binnedOn = null))
+                        repository.getNoteById(event.note.id)?.let { fullNote ->
+                            repository.updateNote(fullNote.note.copy(isBinned = false, binnedOn = null))
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -51,7 +53,9 @@ class BinViewModel @Inject constructor(
             is BinEvent.DeleteNotePermanently -> {
                 viewModelScope.launch {
                     try {
-                        repository.deleteNote(event.note)
+                        repository.getNoteById(event.note.id)?.let { fullNote ->
+                            repository.deleteNote(fullNote.note)
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -80,18 +84,22 @@ class BinViewModel @Inject constructor(
             }
             is BinEvent.RestoreSelectedNotes -> {
                 viewModelScope.launch {
-                    val selectedNotes = _state.value.notes.filter { _state.value.selectedNoteIds.contains(it.note.id) }
-                    selectedNotes.forEach { noteWithAttachments ->
-                        repository.updateNote(noteWithAttachments.note.copy(isBinned = false, binnedOn = null))
+                    val selectedIds = _state.value.selectedNoteIds
+                    selectedIds.forEach { id ->
+                        repository.getNoteById(id)?.let { fullNote ->
+                            repository.updateNote(fullNote.note.copy(isBinned = false, binnedOn = null))
+                        }
                     }
                     _state.value = _state.value.copy(selectedNoteIds = emptySet())
                 }
             }
             is BinEvent.DeleteSelectedNotesPermanently -> {
                 viewModelScope.launch {
-                    val selectedNotes = _state.value.notes.filter { _state.value.selectedNoteIds.contains(it.note.id) }
-                    selectedNotes.forEach { noteWithAttachments ->
-                        repository.deleteNote(noteWithAttachments.note)
+                    val selectedIds = _state.value.selectedNoteIds
+                    selectedIds.forEach { id ->
+                        repository.getNoteById(id)?.let { fullNote ->
+                            repository.deleteNote(fullNote.note)
+                        }
                     }
                     _state.value = _state.value.copy(selectedNoteIds = emptySet())
                 }

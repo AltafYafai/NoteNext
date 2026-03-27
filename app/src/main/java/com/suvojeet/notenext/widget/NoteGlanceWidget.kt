@@ -28,7 +28,7 @@ import androidx.glance.unit.ColorProvider
 import com.suvojeet.notenext.MainActivity
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.data.ChecklistItem
-import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.flow.map
 import androidx.core.text.HtmlCompat
@@ -39,7 +39,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
         val entryPoint = EntryPointAccessors.fromApplication(context, WidgetEntryPoint::class.java)
         val repository = entryPoint.repository()
 
-        val notesFlow = repository.getPinnedNotes().map { allPinned ->
+        val notesFlow = repository.getPinnedNoteSummaries().map { allPinned ->
             allPinned.filter { !it.note.isArchived && !it.note.isBinned && !it.note.isLocked }
         }
 
@@ -50,7 +50,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun WidgetContent(context: Context, notes: List<NoteWithAttachments>) {
+    private fun WidgetContent(context: Context, notes: List<NoteSummaryWithAttachments>) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -110,7 +110,7 @@ class NoteGlanceWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun NoteItem(context: Context, noteWithAttachments: NoteWithAttachments) {
+    private fun NoteItem(context: Context, noteWithAttachments: NoteSummaryWithAttachments) {
         val note = noteWithAttachments.note
         val intent = Intent(context, MainActivity::class.java).apply {
             putExtra("NOTE_ID", note.id)

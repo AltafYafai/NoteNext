@@ -32,7 +32,7 @@ fun ArchiveScreen(
     val viewModel: ArchiveViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showRestoreDialog by remember { mutableStateOf(false) }
-    var noteToRestore by remember { mutableStateOf<Note?>(null) }
+    var noteToRestore by remember { mutableStateOf<com.suvojeet.notenext.data.NoteSummary?>(null) }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 

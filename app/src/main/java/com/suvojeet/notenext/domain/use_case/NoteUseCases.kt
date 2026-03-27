@@ -8,7 +8,8 @@ data class NoteUseCases @Inject constructor(
     val addNote: AddNoteUseCase,
     val getNote: GetNoteUseCase
 ) {
-    fun getPinnedNotes() = getNotes.getPinnedNotes()
-    fun getOtherNotesPaged(query: String = "", sortType: com.suvojeet.notenext.data.SortType = com.suvojeet.notenext.data.SortType.DATE_MODIFIED) = 
-        getNotes.getOtherNotesPaged(query, sortType)
+    fun getPinnedNoteSummaries() = getNotes.getPinnedNoteSummaries()
+    fun getOtherNoteSummariesPaged(query: String = "", sortType: com.suvojeet.notenext.data.SortType = com.suvojeet.notenext.data.SortType.DATE_MODIFIED) =
+        getNotes.getOtherNoteSummariesPaged(query, sortType)
 }
+

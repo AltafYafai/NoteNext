@@ -1,0 +1,26 @@
+package com.suvojeet.notenext.data
+
+import com.suvojeet.notenext.core.model.NoteType
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class NoteSummary(
+    val id: Int,
+    val title: String,
+    val content: String,
+    val createdAt: Long,
+    val lastEdited: Long,
+    val color: Int,
+    val isPinned: Boolean,
+    val isArchived: Boolean,
+    val reminderTime: Long?,
+    val label: String?,
+    val isBinned: Boolean,
+    val binnedOn: Long?,
+    val isImportant: Boolean = false,
+    val noteType: NoteType,
+    val isLocked: Boolean,
+    val iv: String?,
+    val isEncrypted: Boolean,
+    val linkPreviews: List<LinkPreview> = emptyList()
+)

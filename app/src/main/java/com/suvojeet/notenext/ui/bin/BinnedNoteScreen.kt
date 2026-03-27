@@ -29,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.core.model.AttachmentType

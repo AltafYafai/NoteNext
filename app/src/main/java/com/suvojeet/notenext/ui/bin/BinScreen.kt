@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.*
-import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.ui.components.springPress
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)

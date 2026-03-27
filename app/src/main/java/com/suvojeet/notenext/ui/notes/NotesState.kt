@@ -4,6 +4,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.Project
@@ -12,7 +13,7 @@ import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.core.model.NoteType
 
 data class NotesState(
-    val notes: List<NoteWithAttachments> = emptyList(),
+    val notes: List<NoteSummaryWithAttachments> = emptyList(),
     val layoutType: LayoutType = LayoutType.GRID,
     val sortType: SortType = SortType.DATE_MODIFIED,
     val selectedNoteIds: List<Int> = emptyList(),
@@ -65,7 +66,7 @@ data class NotesState(
     // Mention state
     val isMentionPopupVisible: Boolean = false,
     val mentionSearchQuery: String = "",
-    val mentionableNotes: List<NoteWithAttachments> = emptyList(),
+    val mentionableNotes: List<NoteSummaryWithAttachments> = emptyList(),
 
     // External file & Search in note
     val externalUri: android.net.Uri? = null,
@@ -76,9 +77,9 @@ data class NotesState(
 )
 
 data class NotesListState(
-    val notes: List<NoteWithAttachments> = emptyList(),
-    val pinnedNotes: List<NoteWithAttachments> = emptyList(),
-    val pagedNotes: kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<NoteWithAttachments>> = kotlinx.coroutines.flow.emptyFlow(),
+    val notes: List<NoteSummaryWithAttachments> = emptyList(),
+    val pinnedNotes: List<NoteSummaryWithAttachments> = emptyList(),
+    val pagedNotes: kotlinx.coroutines.flow.Flow<androidx.paging.PagingData<NoteSummaryWithAttachments>> = kotlinx.coroutines.flow.emptyFlow(),
     val layoutType: LayoutType = LayoutType.GRID,
     val sortType: SortType = SortType.DATE_MODIFIED,
     val selectedNoteIds: List<Int> = emptyList(),
@@ -133,7 +134,7 @@ data class NotesEditState(
     // Mention state
     val isMentionPopupVisible: Boolean = false,
     val mentionSearchQuery: String = "",
-    val mentionableNotes: List<NoteWithAttachments> = emptyList(),
+    val mentionableNotes: List<NoteSummaryWithAttachments> = emptyList(),
 
     // External file & Search in note
     val externalUri: android.net.Uri? = null,

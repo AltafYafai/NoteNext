@@ -63,6 +63,15 @@ class NoteRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getPinnedNoteSummaries(searchQuery: String, projectId: Int?): Flow<List<NoteSummaryWithAttachments>> {
+        return if (searchQuery.isBlank()) {
+            noteDao.getPinnedNoteSummaries(projectId)
+        } else {
+            val formattedQuery = "$searchQuery*"
+            noteDao.searchPinnedNoteSummaries(formattedQuery, projectId)
+        }
+    }
+
     override fun getOtherNotesPaged(searchQuery: String, sortType: SortType, projectId: Int?): Flow<PagingData<NoteWithAttachments>> {
         return Pager(
             config = PagingConfig(pageSize = 20, enablePlaceholders = true),
@@ -86,6 +95,39 @@ class NoteRepositoryImpl @Inject constructor(
             }
         ).flow
     }
+
+    override fun getOtherNoteSummariesPaged(searchQuery: String, sortType: SortType, projectId: Int?): Flow<PagingData<NoteSummaryWithAttachments>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = true),
+            pagingSourceFactory = {
+                if (searchQuery.isBlank()) {
+                    when (sortType) {
+                        SortType.DATE_MODIFIED -> noteDao.getOtherNoteSummariesPagedOrderedByDateModified(projectId)
+                        SortType.DATE_CREATED -> noteDao.getOtherNoteSummariesPagedOrderedByDateCreated(projectId)
+                        SortType.TITLE -> noteDao.getOtherNoteSummariesPagedOrderedByTitle(projectId)
+                        SortType.CUSTOM -> noteDao.getOtherNoteSummariesPagedOrderedByPosition(projectId)
+                    }
+                } else {
+                    val formattedQuery = "$searchQuery*"
+                    when (sortType) {
+                        SortType.DATE_MODIFIED -> noteDao.searchOtherNoteSummariesPagedOrderedByDateModified(formattedQuery, projectId)
+                        SortType.DATE_CREATED -> noteDao.searchOtherNoteSummariesPagedOrderedByDateCreated(formattedQuery, projectId)
+                        SortType.TITLE -> noteDao.searchOtherNoteSummariesPagedOrderedByTitle(formattedQuery, projectId)
+                        SortType.CUSTOM -> noteDao.searchOtherNoteSummariesPagedOrderedByPosition(formattedQuery, projectId)
+                    }
+                }
+            }
+        ).flow
+    }
+
+    override fun getArchivedNoteSummaries(): Flow<List<NoteSummaryWithAttachments>> = 
+        noteDao.getArchivedNoteSummaries()
+
+    override fun getBinnedNoteSummaries(): Flow<List<NoteSummaryWithAttachments>> = 
+        noteDao.getBinnedNoteSummaries()
+
+    override fun getNoteSummariesByProjectId(projectId: Int): Flow<List<NoteSummaryWithAttachments>> = 
+        noteDao.getNoteSummariesByProjectId(projectId)
 
     override fun getArchivedNotes(): Flow<List<NoteWithAttachments>> = 
         noteDao.getArchivedNotes()

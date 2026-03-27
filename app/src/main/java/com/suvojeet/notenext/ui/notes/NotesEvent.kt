@@ -7,14 +7,14 @@ import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteVersion
-import com.suvojeet.notenext.data.NoteWithAttachments
+import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.data.RepeatOption
 import com.suvojeet.notenext.data.SortType
 import java.time.LocalDate
 import java.time.LocalTime
 
 sealed class NotesEvent {
-    data class DeleteNote(val note: NoteWithAttachments) : NotesEvent()
+    data class DeleteNote(val note: NoteSummaryWithAttachments) : NotesEvent()
     object RestoreNote : NotesEvent()
     data class ToggleNoteSelection(val noteId: Int) : NotesEvent()
     object ClearSelection : NotesEvent()
