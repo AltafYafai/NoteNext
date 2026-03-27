@@ -19,8 +19,12 @@ data class NoteSummary(
     val binnedOn: Long?,
     val isImportant: Boolean = false,
     val noteType: NoteType,
+    val projectId: Int?,
     val isLocked: Boolean,
+    val position: Int,
+    val aiSummary: String?,
     val iv: String?,
     val isEncrypted: Boolean,
+    val repeatOption: String?,
     val linkPreviews: List<LinkPreview> = emptyList()
 )

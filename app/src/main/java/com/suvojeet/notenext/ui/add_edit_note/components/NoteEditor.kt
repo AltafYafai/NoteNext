@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
@@ -92,26 +94,81 @@ fun NoteTitleEditor(
     }
 }
 
-@Composable
-fun NoteContentEditor(
+fun LazyListScope.NoteContentItems(
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
     onSlashCommand: () -> Unit,
     onTextLayout: (TextLayoutResult) -> Unit = {}
 ) {
-    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val content = state.editingContent
+    val text = content.text
+    
+    // Chunk size: 50 lines or 5000 characters
+    val chunks = remember(text) {
+        val list = mutableListOf<TextFieldValue>()
+        var currentStart = 0
+        var lineCount = 0
+        
+        for (i in text.indices) {
+            if (text[i] == '\n') lineCount++
+            
+            // Split if 50 lines reached OR 5000 chars reached
+            if (lineCount >= 50 || (i - currentStart) >= 5000) {
+                val sub = content.annotatedString.subSequence(currentStart, i + 1)
+                list.add(TextFieldValue(sub, content.selection))
+                currentStart = i + 1
+                lineCount = 0
+            }
+        }
+        
+        if (currentStart < text.length || list.isEmpty()) {
+            val sub = content.annotatedString.subSequence(currentStart, text.length)
+            list.add(TextFieldValue(sub, content.selection))
+        }
+        list
+    }
+
+    itemsIndexed(chunks) { index, chunk ->
+        NoteContentChunkEditor(
+            index = index,
+            chunk = chunk,
+            totalChunks = chunks.size,
+            state = state,
+            onEvent = onEvent,
+            onUrlClick = onUrlClick,
+            onSlashCommand = onSlashCommand,
+            onTextLayout = onTextLayout
+        )
+    }
+
+    item {
+        MentionPopup(
+            isVisible = state.isMentionPopupVisible,
+            notes = state.mentionableNotes,
+            onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
+            onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
+        )
+    }
+}
+
+@Composable
+fun NoteContentChunkEditor(
+    index: Int,
+    chunk: TextFieldValue,
+    totalChunks: Int,
+    state: NotesState,
+    onEvent: (NotesEvent) -> Unit,
+    onUrlClick: (String) -> Unit,
+    onSlashCommand: () -> Unit,
+    onTextLayout: (TextLayoutResult) -> Unit
+) {
     val interactionSource = remember { MutableInteractionSource() }
     val density = LocalDensity.current
-
-    // Limit height to prevent Constraints overflow crash for extremely long notes (approx > 262143 pixels)
-    // We use a safe value of 200,000 pixels converted to Dp
-    val maxSafeHeight = remember(density) { with(density) { 200000.toDp() } }
-
-    // Hold latest references for use inside pointerInput(Unit) coroutine
+    
+    // Hold latest references
     val currentOnUrlClick by rememberUpdatedState(onUrlClick)
     val currentOnEvent by rememberUpdatedState(onEvent)
-    val currentContent by rememberUpdatedState(state.editingContent)
     
     val infiniteTransition = rememberInfiniteTransition(label = "cursor_glow")
     val glowAlpha by infiniteTransition.animateFloat(
@@ -134,66 +191,77 @@ fun NoteContentEditor(
         radius = 60f
     )
 
-    Column(
-        modifier = Modifier.padding(horizontal = 24.dp)
-    ) {
-        val contentTextColor = MaterialTheme.colorScheme.onSurface
-        val contentTextStyle = when (state.activeHeadingStyle) {
-            1 -> MaterialTheme.typography.headlineLarge.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
-            2 -> MaterialTheme.typography.headlineMedium.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
-            3 -> MaterialTheme.typography.headlineSmall.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
-            4 -> MaterialTheme.typography.titleLarge.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
-            5 -> MaterialTheme.typography.titleMedium.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
-            6 -> MaterialTheme.typography.titleSmall.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
-            else -> MaterialTheme.typography.bodyLarge.copy(color = contentTextColor, lineHeight = 28.sp)
-        }
+    val contentTextColor = MaterialTheme.colorScheme.onSurface
+    val contentTextStyle = when (state.activeHeadingStyle) {
+        1 -> MaterialTheme.typography.headlineLarge.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+        2 -> MaterialTheme.typography.headlineMedium.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+        3 -> MaterialTheme.typography.headlineSmall.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+        4 -> MaterialTheme.typography.titleLarge.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+        5 -> MaterialTheme.typography.titleMedium.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+        6 -> MaterialTheme.typography.titleSmall.copy(color = contentTextColor, fontWeight = FontWeight.Bold)
+        else -> MaterialTheme.typography.bodyLarge.copy(color = contentTextColor, lineHeight = 28.sp)
+    }
 
+    var chunkLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    Box(modifier = Modifier.padding(horizontal = 24.dp)) {
         BasicTextField(
-            value = state.editingContent,
-            onValueChange = { newContent -> 
-                onEvent(NotesEvent.OnContentChange(newContent))
-                val cursor = newContent.selection.start
-                val text = newContent.text
-                if (cursor > 0 && text.isNotEmpty() && cursor <= text.length) {
-                    val lastChar = text[cursor - 1]
-                    if (lastChar == '/') {
-                         val precedingChar = if (cursor > 1) text[cursor - 2] else ' '
-                         if (precedingChar.isWhitespace()) {
-                             onSlashCommand()
-                         }
+            value = chunk,
+            onValueChange = { newChunk ->
+                val globalText = state.editingContent.text
+                var startOffset = 0
+                var currentChunk = 0
+                var lineCount = 0
+                for (i in globalText.indices) {
+                    if (currentChunk == index) break
+                    if (globalText[i] == '\n') lineCount++
+                    if (lineCount >= 50 || (i - startOffset) >= 5000) {
+                        startOffset = i + 1
+                        lineCount = 0
+                        currentChunk++
                     }
-                    
-                    // Mention detection
-                    val textBeforeCursor = text.substring(0, cursor)
-                    val lastAtSymbol = textBeforeCursor.lastIndexOf('@')
-                    if (lastAtSymbol != -1) {
-                        val isStartOrSpace = lastAtSymbol == 0 || textBeforeCursor[lastAtSymbol - 1].isWhitespace() || textBeforeCursor[lastAtSymbol - 1] == '\n'
-                        if (isStartOrSpace) {
-                            val query = textBeforeCursor.substring(lastAtSymbol + 1)
-                            if (!query.contains(Regex("\\s"))) {
-                                onEvent(NotesEvent.OnMentionSearchQueryChange(query))
-                            } else {
-                                onEvent(NotesEvent.CloseMentionPopup)
-                            }
-                        } else {
-                            onEvent(NotesEvent.CloseMentionPopup)
-                        }
-                    } else {
-                        onEvent(NotesEvent.CloseMentionPopup)
-                    }
-                } else {
-                    onEvent(NotesEvent.CloseMentionPopup)
                 }
+                
+                val globalSelection = newChunk.selection.let {
+                    it.copy(start = it.start + startOffset, end = it.end + startOffset)
+                }
+                
+                val builder = androidx.compose.ui.text.AnnotatedString.Builder(state.editingContent.annotatedString)
+                try {
+                    builder.replace(startOffset, startOffset + chunk.text.length, newChunk.annotatedString)
+                } catch (e: Exception) {
+                    // Fallback if re-calculation mismatch
+                    return@BasicTextField
+                }
+                
+                onEvent(NotesEvent.OnContentChange(newChunk.copy(
+                    annotatedString = builder.toAnnotatedString(),
+                    selection = globalSelection
+                )))
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = maxSafeHeight)
                 .drawBehind {
-                    textLayoutResult?.let { layout ->
-                        val cursorPosition = state.editingContent.selection.start
-                        if (cursorPosition >= 0 && layout.layoutInput.text.isNotEmpty() && cursorPosition <= layout.layoutInput.text.length) {
+                    chunkLayoutResult?.let { layout ->
+                        val globalCursor = state.editingContent.selection.start
+                        var startOffset = 0
+                        var currentChunk = 0
+                        var lineCount = 0
+                        val globalText = state.editingContent.text
+                        for (i in globalText.indices) {
+                            if (currentChunk == index) break
+                            if (globalText[i] == '\n') lineCount++
+                            if (lineCount >= 50 || (i - startOffset) >= 5000) {
+                                startOffset = i + 1
+                                lineCount = 0
+                                currentChunk++
+                            }
+                        }
+
+                        val localCursor = globalCursor - startOffset
+                        if (localCursor >= 0 && localCursor <= chunk.text.length && layout.layoutInput.text.isNotEmpty()) {
                             try {
-                                val cursorRect = layout.getCursorRect(cursorPosition.coerceIn(0, layout.layoutInput.text.length))
+                                val cursorRect = layout.getCursorRect(localCursor.coerceIn(0, layout.layoutInput.text.length))
                                 drawCircle(
                                     brush = glowBrush,
                                     radius = 40f,
@@ -205,40 +273,44 @@ fun NoteContentEditor(
                 }
                 .pointerInput(Unit) {
                     detectTapGestures { offset ->
-                            textLayoutResult?.let { layoutResult ->
-                                val position = layoutResult.getOffsetForPosition(offset)
-                                val content = currentContent
+                         chunkLayoutResult?.let { layoutResult ->
+                             val position = layoutResult.getOffsetForPosition(offset)
+                             val annotatedString = chunk.annotatedString
 
-                                val urlAnnotation = content.annotatedString.getStringAnnotations("URL", position, position).firstOrNull()
-                                    ?: content.annotatedString.getStringAnnotations("EMAIL", position, position).firstOrNull()
-                                    ?: content.annotatedString.getStringAnnotations("PHONE", position, position).firstOrNull()
+                             val urlAnnotation = annotatedString.getStringAnnotations("URL", position, position).firstOrNull()
+                                 ?: annotatedString.getStringAnnotations("EMAIL", position, position).firstOrNull()
+                                 ?: annotatedString.getStringAnnotations("PHONE", position, position).firstOrNull()
 
-                                if (urlAnnotation != null) {
-                                    currentOnUrlClick(urlAnnotation.item)
-                                } else {
-                                    content.annotatedString.getStringAnnotations("NOTE_LINK", position, position)
-                                        .firstOrNull()?.let { annotation ->
-                                            currentOnEvent(NotesEvent.NavigateToNoteByTitle(annotation.item))
-                                        }
-                                }
-                            }
+                             if (urlAnnotation != null) {
+                                 currentOnUrlClick(urlAnnotation.item)
+                             } else {
+                                 annotatedString.getStringAnnotations("NOTE_LINK", position, position)
+                                     .firstOrNull()?.let { annotation ->
+                                         currentOnEvent(NotesEvent.NavigateToNoteByTitle(annotation.item))
+                                     }
+                             }
+                         }
                     }
                 },
             onTextLayout = { 
-                textLayoutResult = it 
+                chunkLayoutResult = it 
                 onTextLayout(it)
             },
             textStyle = contentTextStyle,
             cursorBrush = SolidColor(cursorColor),
             decorationBox = { innerTextField ->
                 TextFieldDefaults.DecorationBox(
-                    value = state.editingContent.text,
+                    value = chunk.text,
                     innerTextField = innerTextField,
                     enabled = true,
                     singleLine = false,
                     visualTransformation = VisualTransformation.None,
                     interactionSource = interactionSource,
-                    placeholder = { Text(stringResource(id = R.string.note), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), style = contentTextStyle) },
+                    placeholder = { 
+                        if (index == 0 && chunk.text.isEmpty()) {
+                            Text(stringResource(id = R.string.note), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), style = contentTextStyle)
+                        }
+                    },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -246,7 +318,7 @@ fun NoteContentEditor(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                         cursorColor = cursorColor,
-                        selectionColors = TextSelectionColors(
+                        selectionColors = androidx.compose.foundation.text.selection.TextSelectionColors(
                             handleColor = cursorColor,
                             backgroundColor = cursorColor.copy(alpha = 0.3f)
                         )

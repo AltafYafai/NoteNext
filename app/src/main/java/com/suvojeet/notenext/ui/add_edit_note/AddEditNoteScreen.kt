@@ -106,7 +106,7 @@ fun AddEditNoteScreen(
     var clickedUrl by remember { mutableStateOf<String?>(null) }
     var showExactAlarmDialog by remember { mutableStateOf(false) }
 
-    val scrollState = rememberScrollState()
+    val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsStateWithLifecycle(initialValue = false)
@@ -241,10 +241,31 @@ fun AddEditNoteScreen(
                     Toast.makeText(context, "Link preview removed", Toast.LENGTH_SHORT).show()
                 }
                 is NotesUiEvent.ScrollToSearchResult -> {
-                    textLayoutResult?.let { layout ->
-                        val cursorRect = layout.getCursorRect(event.index.coerceIn(0, layout.layoutInput.text.length))
-                        scope.launch {
-                            scrollState.animateScrollTo(cursorRect.top.roundToInt())
+                    val globalIndex = event.index
+                    val text = state.editingContent.text
+                    
+                    // Re-calculate chunks to find which item to scroll to
+                    var startOffset = 0
+                    var lineCount = 0
+                    var chunkIndex = 0
+                    
+                    // Account for NoteAttachmentsList and NoteTitleEditor items (2 items)
+                    val baseItemCount = 2 
+
+                    for (i in text.indices) {
+                        if (globalIndex >= startOffset && globalIndex <= i) {
+                            // Found it!
+                            scope.launch {
+                                lazyListState.animateScrollToItem(baseItemCount + chunkIndex)
+                            }
+                            break
+                        }
+                        
+                        if (text[i] == '\n') lineCount++
+                        if (lineCount >= 50 || (i - startOffset) >= 5000) {
+                            startOffset = i + 1
+                            lineCount = 0
+                            chunkIndex++
                         }
                     }
                 }
@@ -354,47 +375,42 @@ fun AddEditNoteScreen(
                     }
 
                     if (state.editingNoteType == NoteType.TEXT) {
-                        Column(
+                        LazyColumn(
+                            state = lazyListState,
                             modifier = Modifier
                                 .weight(1f)
                                 .background(backgroundColor)
-                                .verticalScroll(scrollState)
                         ) {
-                            NoteAttachmentsList(
-                                attachments = state.editingAttachments,
-                                onEvent = onEvent,
-                                onImageClick = { data ->
-                                    selectedImageData = data
-                                    showImageViewer = true
-                                }
-                            )
-
-                            NoteTitleEditor(
-                                state = state,
-                                onEvent = onEvent,
-                                onReminderClick = { checkAndRequestReminderPermissions() }
-                            )
-                            
-                            Box {
-                                NoteContentEditor(
-                                    state = state,
+                            item {
+                                NoteAttachmentsList(
+                                    attachments = state.editingAttachments,
                                     onEvent = onEvent,
-                                    onUrlClick = { url -> clickedUrl = url },
-                                    onSlashCommand = { showSlashCommandSheet = true },
-                                    onTextLayout = { textLayoutResult = it }
-                                )
-
-                                MentionPopup(
-                                    isVisible = state.isMentionPopupVisible,
-                                    notes = state.mentionableNotes,
-                                    onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
-                                    onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
+                                    onImageClick = { data ->
+                                        selectedImageData = data
+                                        showImageViewer = true
+                                    }
                                 )
                             }
 
+                            item {
+                                NoteTitleEditor(
+                                    state = state,
+                                    onEvent = onEvent,
+                                    onReminderClick = { checkAndRequestReminderPermissions() }
+                                )
+                            }
+                            
+                            NoteContentItems(
+                                state = state,
+                                onEvent = onEvent,
+                                onUrlClick = { url -> clickedUrl = url },
+                                onSlashCommand = { showSlashCommandSheet = true },
+                                onTextLayout = { textLayoutResult = it }
+                            )
+
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(16.dp))
-                                state.linkPreviews.forEach { linkPreview ->
+                                item { Spacer(modifier = Modifier.height(16.dp)) }
+                                items(state.linkPreviews) { linkPreview ->
                                     LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
@@ -402,6 +418,7 @@ fun AddEditNoteScreen(
                         }
                     } else {
                         LazyColumn(
+                            state = lazyListState,
                             modifier = Modifier
                                 .weight(1f)
                                 .background(backgroundColor)
@@ -435,24 +452,14 @@ fun AddEditNoteScreen(
                                     backgroundColor = backgroundColor
                                 )
                             } else {
-                                item {
-                                    Box {
-                                        NoteContentEditor(
-                                            state = state,
-                                            onEvent = onEvent,
-                                            onUrlClick = { url -> clickedUrl = url },
-                                            onSlashCommand = { showSlashCommandSheet = true },
-                                            onTextLayout = { textLayoutResult = it }
-                                        )
-
-                                        MentionPopup(
-                                            isVisible = state.isMentionPopupVisible,
-                                            notes = state.mentionableNotes,
-                                            onNoteClick = { id, title -> onEvent(NotesEvent.InsertMention(id, title)) },
-                                            onDismiss = { onEvent(NotesEvent.CloseMentionPopup) }
-                                        )
-                                    }
-                                }                            }
+                                NoteContentItems(
+                                    state = state,
+                                    onEvent = onEvent,
+                                    onUrlClick = { url -> clickedUrl = url },
+                                    onSlashCommand = { showSlashCommandSheet = true },
+                                    onTextLayout = { textLayoutResult = it }
+                                )
+                            }
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 item { Spacer(modifier = Modifier.height(16.dp)) }
