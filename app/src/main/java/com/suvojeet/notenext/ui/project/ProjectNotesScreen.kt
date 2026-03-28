@@ -412,163 +412,165 @@ fun ProjectNotesScreen(
                             val otherNotes = filteredNotes.filter { !it.note.isPinned }
 
                             AnimatedVisibility(visible = true) {
-                                when (state.layoutType) {
-                                    LayoutType.GRID -> {
-                                        LazyVerticalStaggeredGrid(
-                                            columns = StaggeredGridCells.Fixed(2),
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(8.dp),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                            verticalItemSpacing = 12.dp
-                                        ) {
-                                            if (pinnedNotes.isNotEmpty()) {
-                                                item(span = StaggeredGridItemSpan.FullLine) {
-                                                    Text(
-                                                        text = stringResource(id = R.string.pinned),
-                                                        modifier = Modifier.padding(8.dp),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                                StaggeredGridItems(
-                                                    pinnedNotes,
-                                                    key = { it.note.id },
-                                                    contentType = { it.note.noteType }
-                                                ) { note ->
-                                                    val isExpanded = state.expandedNoteId == note.note.id
-                                                    NoteItem(
-                                                        modifier = Modifier
-                                                            .animateItem()
-                                                            .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        onNoteClick = {
-                                                            if (isSelectionModeActive) {
-                                                                viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                            } else {
-                                                                viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
-                                                            }
-                                                        },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        sharedTransitionScope = this@SharedTransitionLayout,
-                                                        animatedVisibilityScope = this@AnimatedVisibility
-                                                    )
-                                                }
-                                            }
-
-                                            if (otherNotes.isNotEmpty()) {
+                                Box {
+                                    when (state.layoutType) {
+                                        LayoutType.GRID -> {
+                                            LazyVerticalStaggeredGrid(
+                                                columns = StaggeredGridCells.Fixed(2),
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentPadding = PaddingValues(8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                verticalItemSpacing = 12.dp
+                                            ) {
                                                 if (pinnedNotes.isNotEmpty()) {
                                                     item(span = StaggeredGridItemSpan.FullLine) {
                                                         Text(
-                                                            text = stringResource(id = R.string.others),
+                                                            text = stringResource(id = R.string.pinned),
                                                             modifier = Modifier.padding(8.dp),
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
-                                                }
-                                                StaggeredGridItems(
-                                                    otherNotes,
-                                                    key = { it.note.id },
-                                                    contentType = { it.note.noteType }
-                                                ) { note ->
-                                                    val isExpanded = state.expandedNoteId == note.note.id
-                                                    NoteItem(
-                                                        modifier = Modifier
-                                                            .animateItem()
-                                                            .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        onNoteClick = {
-                                                            if (isSelectionModeActive) {
+                                                    StaggeredGridItems(
+                                                        pinnedNotes,
+                                                        key = { it.note.id },
+                                                        contentType = { it.note.noteType }
+                                                    ) { note ->
+                                                        val isExpanded = state.expandedNoteId == note.note.id
+                                                        NoteItem(
+                                                            modifier = Modifier
+                                                                .animateItem()
+                                                                .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            onNoteClick = {
+                                                                if (isSelectionModeActive) {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
+                                                                } else {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
+                                                                }
+                                                            },
+                                                            onNoteLongClick = {
                                                                 viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                            } else {
-                                                                viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
-                                                            }
-                                                        },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        sharedTransitionScope = this@SharedTransitionLayout,
-                                                        animatedVisibilityScope = this@AnimatedVisibility
-                                                    )
+                                                            },
+                                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                                            animatedVisibilityScope = this@AnimatedVisibility
+                                                        )
+                                                    }
+                                                }
+
+                                                if (otherNotes.isNotEmpty()) {
+                                                    if (pinnedNotes.isNotEmpty()) {
+                                                        item(span = StaggeredGridItemSpan.FullLine) {
+                                                            Text(
+                                                                text = stringResource(id = R.string.others),
+                                                                modifier = Modifier.padding(8.dp),
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                    StaggeredGridItems(
+                                                        otherNotes,
+                                                        key = { it.note.id },
+                                                        contentType = { it.note.noteType }
+                                                    ) { note ->
+                                                        val isExpanded = state.expandedNoteId == note.note.id
+                                                        NoteItem(
+                                                            modifier = Modifier
+                                                                .animateItem()
+                                                                .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            onNoteClick = {
+                                                                if (isSelectionModeActive) {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
+                                                                } else {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
+                                                                }
+                                                            },
+                                                            onNoteLongClick = {
+                                                                viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
+                                                            },
+                                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                                            animatedVisibilityScope = this@AnimatedVisibility
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                    LayoutType.LIST -> {
-                                        LazyColumn(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(8.dp),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            if (pinnedNotes.isNotEmpty()) {
-                                                item {
-                                                    Text(
-                                                        text = stringResource(id = R.string.pinned),
-                                                        modifier = Modifier.padding(8.dp),
-                                                        style = MaterialTheme.typography.labelSmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-                                                items(pinnedNotes, key = { it.note.id }) { note ->
-                                                    val isExpanded = state.expandedNoteId == note.note.id
-                                                    NoteItem(
-                                                        modifier = Modifier
-                                                            .animateItem()
-                                                            .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        onNoteClick = {
-                                                            if (isSelectionModeActive) {
-                                                                viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                            } else {
-                                                                viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
-                                                            }
-                                                        },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        sharedTransitionScope = this@SharedTransitionLayout,
-                                                        animatedVisibilityScope = this@AnimatedVisibility
-                                                    )
-                                                }
-                                            }
-
-                                            if (otherNotes.isNotEmpty()) {
+                                        LayoutType.LIST -> {
+                                            LazyColumn(
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentPadding = PaddingValues(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
                                                 if (pinnedNotes.isNotEmpty()) {
                                                     item {
                                                         Text(
-                                                            text = stringResource(id = R.string.others),
+                                                            text = stringResource(id = R.string.pinned),
                                                             modifier = Modifier.padding(8.dp),
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
-                                                }
-                                                items(otherNotes, key = { it.note.id }) { note ->
-                                                    val isExpanded = state.expandedNoteId == note.note.id
-                                                    NoteItem(
-                                                        modifier = Modifier
-                                                            .animateItem()
-                                                            .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
-                                                        note = note,
-                                                        isSelected = state.selectedNoteIds.contains(note.note.id),
-                                                        onNoteClick = {
-                                                            if (isSelectionModeActive) {
+                                                    items(pinnedNotes, key = { it.note.id }) { note ->
+                                                        val isExpanded = state.expandedNoteId == note.note.id
+                                                        NoteItem(
+                                                            modifier = Modifier
+                                                                .animateItem()
+                                                                .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            onNoteClick = {
+                                                                if (isSelectionModeActive) {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
+                                                                } else {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
+                                                                }
+                                                            },
+                                                            onNoteLongClick = {
                                                                 viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                            } else {
-                                                                viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
-                                                            }
-                                                        },
-                                                        onNoteLongClick = {
-                                                            viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
-                                                        },
-                                                        sharedTransitionScope = this@SharedTransitionLayout,
-                                                        animatedVisibilityScope = this@AnimatedVisibility
-                                                    )
+                                                            },
+                                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                                            animatedVisibilityScope = this@AnimatedVisibility
+                                                        )
+                                                    }
+                                                }
+
+                                                if (otherNotes.isNotEmpty()) {
+                                                    if (pinnedNotes.isNotEmpty()) {
+                                                        item {
+                                                            Text(
+                                                                text = stringResource(id = R.string.others),
+                                                                modifier = Modifier.padding(8.dp),
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
+                                                        }
+                                                    }
+                                                    items(otherNotes, key = { it.note.id }) { note ->
+                                                        val isExpanded = state.expandedNoteId == note.note.id
+                                                        NoteItem(
+                                                            modifier = Modifier
+                                                                .animateItem()
+                                                                .graphicsLayer { alpha = if (isExpanded) 0f else 1f },
+                                                            note = note,
+                                                            isSelected = state.selectedNoteIds.contains(note.note.id),
+                                                            onNoteClick = {
+                                                                if (isSelectionModeActive) {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
+                                                                } else {
+                                                                    viewModel.onEvent(ProjectNotesEvent.ExpandNote(note.note.id))
+                                                                }
+                                                            },
+                                                            onNoteLongClick = {
+                                                                viewModel.onEvent(ProjectNotesEvent.ToggleNoteSelection(note.note.id))
+                                                            },
+                                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                                            animatedVisibilityScope = this@AnimatedVisibility
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }

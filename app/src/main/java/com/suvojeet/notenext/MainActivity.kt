@@ -236,6 +236,7 @@ class MainActivity : FragmentActivity() {
                                     unlockedByAuth = true 
                                 })
                             } else {
+                                val notesViewModel: com.suvojeet.notenext.ui.notes.NotesViewModel = hiltViewModel()
                                 val startNoteId by _startNoteIdFlow.collectAsStateWithLifecycle()
                                 val startAddNote by _startAddNoteFlow.collectAsStateWithLifecycle()
                                 val sharedText by _sharedTextFlow.collectAsStateWithLifecycle()
@@ -244,6 +245,7 @@ class MainActivity : FragmentActivity() {
                                 val externalUri by _externalUriFlow.collectAsStateWithLifecycle()
 
                                 NavGraph(
+                                    notesViewModel = notesViewModel,
                                     themeMode = themeMode,
                                     windowSizeClass = windowSizeClass,
                                     settingsRepository = settingsRepository,

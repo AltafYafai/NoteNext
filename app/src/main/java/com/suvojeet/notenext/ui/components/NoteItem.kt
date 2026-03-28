@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.text.HtmlCompat
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteSummaryWithAttachments
@@ -45,7 +46,6 @@ import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.core.model.AttachmentType
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import com.suvojeet.notenext.util.HtmlConverter
 
 @Composable
 fun NoteItem(
@@ -215,7 +215,7 @@ fun NoteItem(
                     }
                 } else if (decryptedNote.content.isNotBlank()) {
                     val plainText = remember(decryptedNote.content) {
-                        HtmlConverter.fromHtml(decryptedNote.content).toString()
+                        HtmlCompat.fromHtml(decryptedNote.content, HtmlCompat.FROM_HTML_MODE_COMPACT).toString()
                     }
                     Text(
                         text = buildAnnotatedString {

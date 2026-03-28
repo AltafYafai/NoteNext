@@ -1,95 +1,67 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 package com.suvojeet.notenext.navigation
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.spring
-import com.suvojeet.notenext.ui.project.toNotesUiEvent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.PlaylistAddCheck
-import androidx.compose.material.icons.filled.CreateNewFolder
-import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Label
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.suvojeet.notenext.R
+import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.data.repository.SettingsRepository
-import com.suvojeet.notenext.ui.MainActivity
+import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.archive.ArchiveScreen
+import com.suvojeet.notenext.ui.archive.ArchiveViewModel
 import com.suvojeet.notenext.ui.bin.BinScreen
+import com.suvojeet.notenext.ui.bin.BinViewModel
+import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesScreen
 import com.suvojeet.notenext.ui.notes.NotesViewModel
-import com.suvojeet.notenext.ui.settings.SettingsScreen
-import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.reminder.ReminderScreen
-import com.suvojeet.notenext.ui.todo.TodoScreen
-import com.suvojeet.notenext.ui.project.ProjectScreen
-import com.suvojeet.notenext.ui.project.ProjectNotesScreen
-import com.suvojeet.notenext.ui.project.ProjectNotesViewModel
-import com.suvojeet.notenext.ui.project.toProjectNotesEvent
-import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
-import com.suvojeet.notenext.ui.drawing.DrawingScreen
-import com.suvojeet.notenext.ui.settings.GroqSettingsScreen
-import com.suvojeet.notenext.ui.settings.BackupScreen
-import com.suvojeet.notenext.ui.labels.EditLabelsScreen
-import com.suvojeet.notenext.ui.bin.BinViewModel
-import com.suvojeet.notenext.ui.bin.BinEvent
+import com.suvojeet.notenext.ui.project.*
 import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
+import com.suvojeet.notenext.ui.reminder.ReminderScreen
+import com.suvojeet.notenext.ui.settings.*
+import com.suvojeet.notenext.ui.theme.ThemeMode
+import com.suvojeet.notenext.ui.todo.TodoScreen
 import com.suvojeet.notenext.ui.donate.DonationScreen
-import com.suvojeet.notenext.ui.credits.CreditsScreen
-import com.suvojeet.notenext.ui.changelog.ChangelogScreen
-import com.suvojeet.notenext.ui.project.ProjectNotesUiEvent
-import com.suvojeet.notenext.core.model.NoteType
-import com.suvojeet.notenext.ui.project.ProjectViewModel
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
-import com.suvojeet.notenext.ui.notes.NotesUiEvent
-import com.suvojeet.notenext.ui.about.AboutScreen
+import com.suvojeet.notenext.ui.drawing.DrawingScreen
+import com.suvojeet.notenext.ui.labels.EditLabelsScreen
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.launch
 
 @Composable
 fun NavGraph(
@@ -97,13 +69,33 @@ fun NavGraph(
     notesViewModel: NotesViewModel,
     themeMode: ThemeMode,
     windowSizeClass: WindowSizeClass,
-    settingsRepository: SettingsRepository
+    settingsRepository: SettingsRepository,
+    startNoteId: Int = -1,
+    startAddNote: Boolean = false,
+    sharedText: String? = null,
+    initialTitle: String? = null,
+    searchQuery: String? = null,
+    externalUri: Uri? = null
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
+
+    // Handle initial intent parameters
+    LaunchedEffect(startNoteId, startAddNote, sharedText, initialTitle, searchQuery, externalUri) {
+        if (startNoteId != -1) {
+            notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
+        } else if (startAddNote) {
+            notesViewModel.onEvent(NotesEvent.ExpandNote(-1))
+        }
+        
+        sharedText?.let { notesViewModel.onEvent(NotesEvent.OnContentChange(androidx.compose.ui.text.input.TextFieldValue(it))) }
+        initialTitle?.let { notesViewModel.onEvent(NotesEvent.OnTitleChange(it)) }
+        searchQuery?.let { notesViewModel.onEvent(NotesEvent.OnSearchQueryChange(it)) }
+        externalUri?.let { notesViewModel.onEvent(NotesEvent.ImportImage(it)) }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -180,107 +172,118 @@ private fun DrawerItems(
 ) {
     Column(modifier = Modifier.padding(horizontal = 12.dp)) {
         DrawerItem(
-            R.string.notes, 
-            { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = stringResource(id = R.string.notes)) }, 
-            currentDestination?.hasRoute<Destination.Notes>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Notes()) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.notes, 
+            icon = { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = stringResource(id = R.string.notes)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Notes>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Notes()) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        }
+        )
         
         DrawerItem(
-            R.string.projects, 
-            { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, 
-            currentDestination?.hasRoute<Destination.Projects>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Projects) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.projects, 
+            icon = { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Projects>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Projects) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        },
+        )
+        
         DrawerItem(
-            R.string.archive, 
-            { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) }, 
-            currentDestination?.hasRoute<Destination.Archive>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Archive) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.archive, 
+            icon = { Icon(Icons.Default.Archive, contentDescription = stringResource(id = R.string.archive)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Archive>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Archive) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        },
+        )
+        
         DrawerItem(
-            R.string.reminders, 
-            { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) }, 
-            currentDestination?.hasRoute<Destination.Reminder>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Reminder) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.reminders, 
+            icon = { Icon(Icons.Default.Notifications, contentDescription = stringResource(id = R.string.reminders)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Reminder>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Reminder) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        },
+        )
+        
         DrawerItem(
-            R.string.todos, 
-            { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) }, 
-            currentDestination?.hasRoute<Destination.Todo>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Todo) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.todos, 
+            icon = { Icon(Icons.Default.PlaylistAddCheck, contentDescription = stringResource(id = R.string.todos)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Todo>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Todo) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        },
+        )
+        
         DrawerItem(
-            R.string.bin_title, 
-            { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin_title)) }, 
-            currentDestination?.hasRoute<Destination.Bin>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Bin) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.bin_title, 
+            icon = { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin_title)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Bin>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Bin) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        }
+        )
         
         HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         
         DrawerItem(
-            R.string.settings, 
-            { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) }, 
-            currentDestination?.hasRoute<Destination.Settings>() == true
-        ) {
-            onCloseDrawer()
-            navController.navigate(Destination.Settings) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
+            labelRes = R.string.settings, 
+            icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) }, 
+            isSelected = currentDestination?.hasRoute<Destination.Settings>() == true,
+            onClick = {
+                onCloseDrawer()
+                navController.navigate(Destination.Settings) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
                 }
-                launchSingleTop = true
-                restoreState = true
             }
-        }
+        )
     }
 }
 
@@ -418,7 +421,8 @@ private fun NavGraphBuilder.sharedRoutes(
         enterTransition = { slideEnter },
         exitTransition = { slideExit }
     ) {
-        ArchiveScreen(onMenuClick = onMenuClick)
+        val archiveViewModel: ArchiveViewModel = hiltViewModel()
+        ArchiveScreen(viewModel = archiveViewModel, onBackClick = { navController.popBackStack() })
     }
 
     composable<Destination.EditLabels>(

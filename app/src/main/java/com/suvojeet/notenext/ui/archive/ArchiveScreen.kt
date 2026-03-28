@@ -103,7 +103,7 @@ fun ArchiveScreen(
                 text = { Text(stringResource(id = R.string.restore_note_confirmation)) },
                 confirmButton = {
                     TextButton(onClick = {
-                        noteToRestore?.let { viewModel.restoreNote(it.id) }
+                        noteToRestore?.let { viewModel.onEvent(ArchiveEvent.UnarchiveNote(it)) }
                         showRestoreDialog = false
                         noteToRestore = null
                     }) {
