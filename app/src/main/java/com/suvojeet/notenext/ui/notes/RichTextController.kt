@@ -2,6 +2,7 @@ package com.suvojeet.notenext.ui.notes
 
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -222,15 +223,18 @@ class RichTextController @Inject constructor() {
         // Basic selection adjustment (could be more sophisticated)
         val diff = newText.length - text.length
         val newSelection = if (selection.collapsed) {
-             androidx.compose.ui.text.TextRange(selection.start + if (diff > 0) 2 else if (diff < 0) -2 else 0)
+             TextRange(selection.start + if (diff > 0) 2 else if (diff < 0) -2 else 0)
         } else {
-            androidx.compose.ui.text.TextRange(selection.start, selection.end + diff)
+            TextRange(selection.start, selection.end + diff)
         }
 
         return content.copy(
             text = newText,
             annotatedString = parseMarkdownToAnnotatedString(newText),
-            selection = newSelection.coerceIn(0, newText.length)
+            selection = TextRange(
+                newSelection.start.coerceIn(0, newText.length),
+                newSelection.end.coerceIn(0, newText.length)
+            )
         )
     }
 
