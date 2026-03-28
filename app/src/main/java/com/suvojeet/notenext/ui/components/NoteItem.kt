@@ -115,11 +115,11 @@ fun NoteItem(
             modifier = modifier
                 .fillMaxWidth()
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "note-${note.note.id}"),
+                    sharedContentState = rememberSharedContentState(key = "note-${note.note.id ?: -1}"),
                     animatedVisibilityScope = animatedVisibilityScope,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
                 .combinedClickable(
                     onClick = onNoteClick,

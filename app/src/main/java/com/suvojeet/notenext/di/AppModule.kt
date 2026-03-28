@@ -15,6 +15,8 @@ import com.suvojeet.notenext.data.TodoRepositoryImpl
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.data.AlarmScheduler
 import com.suvojeet.notenext.data.AlarmSchedulerImpl
+import com.suvojeet.notenext.util.UpdateChecker
+import com.suvojeet.notenext.util.ReviewManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,6 +27,18 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideUpdateChecker(@ApplicationContext context: Context): UpdateChecker {
+        return UpdateChecker(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideReviewManager(@ApplicationContext context: Context): ReviewManager {
+        return ReviewManager(context)
+    }
 
     @Provides
     @Singleton

@@ -181,6 +181,7 @@ fun NotesScreen(
                 }
             }
         ) { expandedId ->
+            val noteTransitionScope = this
             if (expandedId == null) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -464,7 +465,7 @@ fun NotesScreen(
                                                             .animateItem()
                                                             .sharedElement(
                                                                 rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                animatedVisibilityScope = this@AnimatedContent
+                                                                animatedVisibilityScope = noteTransitionScope
                                                             )
                                                         NoteItem(
                                                             modifier = noteModifier,
@@ -477,7 +478,7 @@ fun NotesScreen(
                                                             },
                                                             isDarkTheme = isDarkTheme,
                                                             sharedTransitionScope = this@SharedTransitionLayout,
-                                                            animatedVisibilityScope = this@AnimatedContent
+                                                            animatedVisibilityScope = noteTransitionScope
                                                         )
                                                     }
                                                 }
@@ -505,7 +506,7 @@ fun NotesScreen(
                                                                 .animateItem()
                                                                 .sharedElement(
                                                                     rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                    animatedVisibilityScope = this@AnimatedContent
+                                                                    animatedVisibilityScope = noteTransitionScope
                                                                 )
                                                             NoteItem(
                                                                 modifier = noteModifier,
@@ -518,7 +519,7 @@ fun NotesScreen(
                                                                 },
                                                                 isDarkTheme = isDarkTheme,
                                                                 sharedTransitionScope = this@SharedTransitionLayout,
-                                                                animatedVisibilityScope = this@AnimatedContent
+                                                                animatedVisibilityScope = noteTransitionScope
                                                             )
                                                         }
                                                     }
@@ -550,7 +551,7 @@ fun NotesScreen(
                                                             .animateItem()
                                                             .sharedElement(
                                                                 rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                animatedVisibilityScope = this@AnimatedContent
+                                                                animatedVisibilityScope = noteTransitionScope
                                                             )
                                                         NoteItem(
                                                             modifier = noteModifier,
@@ -563,7 +564,7 @@ fun NotesScreen(
                                                             },
                                                             isDarkTheme = isDarkTheme,
                                                             sharedTransitionScope = this@SharedTransitionLayout,
-                                                            animatedVisibilityScope = this@AnimatedContent
+                                                            animatedVisibilityScope = noteTransitionScope
                                                         )
                                                     }
                                                 }
@@ -591,7 +592,7 @@ fun NotesScreen(
                                                                 .animateItem()
                                                                 .sharedElement(
                                                                     rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                    animatedVisibilityScope = this@AnimatedContent
+                                                                    animatedVisibilityScope = noteTransitionScope
                                                                 )
                                                             NoteItem(
                                                                 modifier = noteModifier,
@@ -604,7 +605,7 @@ fun NotesScreen(
                                                                 },
                                                                 isDarkTheme = isDarkTheme,
                                                                 sharedTransitionScope = this@SharedTransitionLayout,
-                                                                animatedVisibilityScope = this@AnimatedContent
+                                                                animatedVisibilityScope = noteTransitionScope
                                                             )
                                                         }
                                                     }
@@ -638,7 +639,7 @@ fun NotesScreen(
                     settingsRepository = settingsRepository,
                     events = viewModel.events,
                     sharedTransitionScope = this@SharedTransitionLayout,
-                    animatedVisibilityScope = this@AnimatedContent
+                    animatedVisibilityScope = noteTransitionScope
                 )
             }
         }

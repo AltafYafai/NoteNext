@@ -517,15 +517,13 @@ private fun NavGraphBuilder.sharedRoutes(
         enterTransition = { slideEnter },
         exitTransition = { slideExit }
     ) {
-        AnimatedVisibility(visible = true) {
-            ProjectNotesScreen(
-                onBackClick = { navController.popBackStack() },
-                themeMode = themeMode,
-                settingsRepository = settingsRepository,
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = this@AnimatedVisibility
-            )
-        }
+        ProjectNotesScreen(
+            onBackClick = { navController.popBackStack() },
+            themeMode = themeMode,
+            settingsRepository = settingsRepository,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = this
+        )
     }
 
     composable<Destination.AddEditNote>(
@@ -533,18 +531,16 @@ private fun NavGraphBuilder.sharedRoutes(
         exitTransition = { slideExit }
     ) {
         val viewModel: ProjectNotesViewModel = hiltViewModel()
-        AnimatedVisibility(visible = true) {
-            AddEditNoteScreen(
-                state = viewModel.state.collectAsState().value.toNotesState(),
-                onEvent = { viewModel.onEvent(it.toProjectNotesEvent()) },
-                onDismiss = { navController.popBackStack() },
-                themeMode = themeMode,
-                settingsRepository = settingsRepository,
-                events = viewModel.events.map { it.toNotesUiEvent() }.shareIn(rememberCoroutineScope(), SharingStarted.WhileSubscribed()),
-                sharedTransitionScope = sharedTransitionScope,
-                animatedVisibilityScope = this@AnimatedVisibility
-            )
-        }
+        AddEditNoteScreen(
+            state = viewModel.state.collectAsState().value.toNotesState(),
+            onEvent = { viewModel.onEvent(it.toProjectNotesEvent()) },
+            onDismiss = { navController.popBackStack() },
+            themeMode = themeMode,
+            settingsRepository = settingsRepository,
+            events = viewModel.events.map { it.toNotesUiEvent() }.shareIn(rememberCoroutineScope(), SharingStarted.WhileSubscribed()),
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = this
+        )
     }
 
     composable<Destination.Drawing>(
