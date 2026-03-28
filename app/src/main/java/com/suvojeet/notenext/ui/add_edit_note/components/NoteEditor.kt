@@ -95,47 +95,37 @@ fun NoteTitleEditor(
     }
 }
 
-@Composable
-fun rememberNoteContentChunks(content: TextFieldValue): List<TextFieldValue> {
-    val text = content.text
-    return remember(text) {
-        val list = mutableListOf<TextFieldValue>()
-        var currentStart = 0
-        var lineCount = 0
-        
-        for (i in text.indices) {
-            if (text[i] == '\n') lineCount++
-            
-            // Split if 50 lines reached OR 5000 chars reached
-            if (lineCount >= 50 || (i - currentStart) >= 5000) {
-                val sub = content.annotatedString.subSequence(currentStart, i + 1)
-                list.add(TextFieldValue(sub, content.selection))
-                currentStart = i + 1
-                lineCount = 0
-            }
-        }
-        
-        if (currentStart < text.length || list.isEmpty()) {
-            val sub = content.annotatedString.subSequence(currentStart, text.length)
-            list.add(TextFieldValue(sub, content.selection))
-        }
-        list
-    }
-}
-
 fun LazyListScope.NoteContentItems(
-    chunks: List<TextFieldValue>,
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
     onSlashCommand: () -> Unit,
     onTextLayout: (TextLayoutResult) -> Unit = {}
 ) {
-    itemsIndexed(chunks) { index, chunk ->
+    val globalContent = state.editingContent
+    val text = globalContent.text
+    
+    // We still need to know where to split for rendering items
+    val splitOffsets = mutableListOf<Int>()
+    var currentStart = 0
+    var lineCount = 0
+    for (i in text.indices) {
+        if (text[i] == '\n') lineCount++
+        if (lineCount >= 50 || (i - currentStart) >= 5000) {
+            splitOffsets.add(currentStart)
+            currentStart = i + 1
+            lineCount = 0
+        }
+    }
+    splitOffsets.add(currentStart)
+
+    itemsIndexed(splitOffsets) { index, startOffset ->
+        val endOffset = if (index + 1 < splitOffsets.size) splitOffsets[index + 1] else text.length
+        
         NoteContentChunkEditor(
             index = index,
-            chunk = chunk,
-            totalChunks = chunks.size,
+            startOffset = startOffset,
+            endOffset = endOffset,
             state = state,
             onEvent = onEvent,
             onUrlClick = onUrlClick,
@@ -157,8 +147,8 @@ fun LazyListScope.NoteContentItems(
 @Composable
 fun NoteContentChunkEditor(
     index: Int,
-    chunk: TextFieldValue,
-    totalChunks: Int,
+    startOffset: Int,
+    endOffset: Int,
     state: NotesState,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
@@ -166,7 +156,6 @@ fun NoteContentChunkEditor(
     onTextLayout: (TextLayoutResult) -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
-    val density = LocalDensity.current
     
     // Hold latest references
     val currentOnUrlClick by rememberUpdatedState(onUrlClick)
@@ -206,22 +195,26 @@ fun NoteContentChunkEditor(
 
     var chunkLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
-    // Calculate startOffset for this chunk to handle global indices
-    val startOffset = remember(index, state.editingContent.text) {
-        val globalText = state.editingContent.text
-        var offset = 0
-        var currentChunk = 0
-        var lineCount = 0
-        for (i in globalText.indices) {
-            if (currentChunk == index) break
-            if (globalText[i] == '\n') lineCount++
-            if (lineCount >= 50 || (i - offset) >= 5000) {
-                offset = i + 1
-                lineCount = 0
-                currentChunk++
-            }
+    // Derive the chunk from global state
+    val chunk = remember(state.editingContent, startOffset, endOffset) {
+        val globalContent = state.editingContent
+        val text = globalContent.text
+        val safeEnd = endOffset.coerceAtMost(text.length)
+        val safeStart = startOffset.coerceAtMost(safeEnd)
+        
+        val chunkAnnotated = try {
+            globalContent.annotatedString.subSequence(safeStart, safeEnd)
+        } catch (e: Exception) {
+            androidx.compose.ui.text.AnnotatedString("")
         }
-        offset
+        
+        val globalSelection = globalContent.selection
+        val localSelection = androidx.compose.ui.text.TextRange(
+            (globalSelection.start - startOffset).coerceIn(0, safeEnd - safeStart),
+            (globalSelection.end - startOffset).coerceIn(0, safeEnd - safeStart)
+        )
+        
+        TextFieldValue(chunkAnnotated, localSelection)
     }
 
     // Apply search highlighting
@@ -262,28 +255,33 @@ fun NoteContentChunkEditor(
         BasicTextField(
             value = highlightedChunk,
             onValueChange = { newHighlightedChunk ->
-                // Strip highlighting styles before saving back to state
-                val newChunkText = newHighlightedChunk.text
-                val newAnnotatedString = newHighlightedChunk.annotatedString
+                val globalContent = state.editingContent
+                val originalAnnotatedString = globalContent.annotatedString
                 
-                val globalText = state.editingContent.text
-                val globalSelection = newHighlightedChunk.selection.let { selection ->
-                    androidx.compose.ui.text.TextRange(selection.start + startOffset, selection.end + startOffset)
+                // Calculate global selection
+                val newGlobalSelection = androidx.compose.ui.text.TextRange(
+                    newHighlightedChunk.selection.start + startOffset,
+                    newHighlightedChunk.selection.end + startOffset
+                )
+
+                // If text changed, merge it back
+                if (newHighlightedChunk.text != chunk.text) {
+                    val updatedAnnotatedString = try {
+                        originalAnnotatedString.subSequence(0, startOffset) + 
+                        newHighlightedChunk.annotatedString + 
+                        originalAnnotatedString.subSequence(endOffset.coerceAtMost(originalAnnotatedString.length), originalAnnotatedString.length)
+                    } catch (e: Exception) {
+                        originalAnnotatedString
+                    }
+                    
+                    onEvent(NotesEvent.OnContentChange(TextFieldValue(
+                        annotatedString = updatedAnnotatedString,
+                        selection = newGlobalSelection
+                    )))
+                } else {
+                    // Only selection changed
+                    onEvent(NotesEvent.OnContentChange(globalContent.copy(selection = newGlobalSelection)))
                 }
-                
-                val original = state.editingContent.annotatedString
-                val updatedAnnotatedString = try {
-                    original.subSequence(0, startOffset) + 
-                    newAnnotatedString + 
-                    original.subSequence(startOffset + chunk.text.length, original.length)
-                } catch (e: Exception) {
-                    return@BasicTextField
-                }
-                
-                onEvent(NotesEvent.OnContentChange(newHighlightedChunk.copy(
-                    annotatedString = updatedAnnotatedString,
-                    selection = globalSelection
-                )))
             },
             modifier = Modifier
                 .fillMaxWidth()
