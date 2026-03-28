@@ -1,6 +1,10 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 package com.suvojeet.notenext.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.spring
 import com.suvojeet.notenext.ui.project.toNotesUiEvent
 import androidx.compose.animation.fadeIn
@@ -48,241 +52,148 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.toRoute
+import com.suvojeet.notenext.data.repository.SettingsRepository
+import com.suvojeet.notenext.ui.MainActivity
 import com.suvojeet.notenext.ui.archive.ArchiveScreen
 import com.suvojeet.notenext.ui.bin.BinScreen
-import com.suvojeet.notenext.ui.bin.BinViewModel
-import com.suvojeet.notenext.ui.labels.EditLabelsScreen
-import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesScreen
 import com.suvojeet.notenext.ui.notes.NotesViewModel
-
 import com.suvojeet.notenext.ui.settings.SettingsScreen
+import com.suvojeet.notenext.ui.theme.ThemeMode
+import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.reminder.ReminderScreen
-import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
-import com.suvojeet.notenext.ui.settings.AboutScreen
-import com.suvojeet.notenext.ui.settings.CreditsScreen
-import com.suvojeet.notenext.ui.settings.ChangelogScreen
-import com.suvojeet.notenext.ui.settings.GroqSettingsScreen
-import com.suvojeet.notenext.ui.donate.DonationScreen
+import com.suvojeet.notenext.ui.todo.TodoScreen
 import com.suvojeet.notenext.ui.project.ProjectScreen
-import com.suvojeet.notenext.ui.project.ProjectViewModel
 import com.suvojeet.notenext.ui.project.ProjectNotesScreen
 import com.suvojeet.notenext.ui.project.ProjectNotesViewModel
-import com.suvojeet.notenext.ui.project.toNotesState
 import com.suvojeet.notenext.ui.project.toProjectNotesEvent
 import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
-import com.suvojeet.notenext.ui.theme.ThemeMode
-import com.suvojeet.notenext.data.LinkPreviewRepository
-import com.suvojeet.notenext.data.repository.SettingsRepository
-import com.suvojeet.notenext.ui.settings.BackupScreen
-import com.suvojeet.notenext.ui.todo.TodoScreen
-
 import com.suvojeet.notenext.ui.drawing.DrawingScreen
-
-import kotlinx.coroutines.launch
+import com.suvojeet.notenext.ui.settings.GroqSettingsScreen
+import com.suvojeet.notenext.ui.settings.BackupScreen
+import com.suvojeet.notenext.ui.labels.EditLabelsScreen
+import com.suvojeet.notenext.ui.bin.BinViewModel
+import com.suvojeet.notenext.ui.bin.BinEvent
+import com.suvojeet.notenext.ui.reminder.AddEditReminderScreen
+import com.suvojeet.notenext.ui.donate.DonationScreen
+import com.suvojeet.notenext.ui.credits.CreditsScreen
+import com.suvojeet.notenext.ui.changelog.ChangelogScreen
+import com.suvojeet.notenext.ui.project.ProjectNotesUiEvent
+import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notenext.ui.project.ProjectViewModel
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import com.suvojeet.notenext.ui.notes.NotesUiEvent
+import com.suvojeet.notenext.ui.about.AboutScreen
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
-import com.suvojeet.notenext.R
-import kotlinx.coroutines.flow.SharingStarted
-import com.suvojeet.notenext.util.BiometricAuthManager
-import com.suvojeet.notenext.util.findActivity
-import androidx.fragment.app.FragmentActivity
-import android.widget.Toast
-import androidx.navigation.toRoute
-import com.suvojeet.notenext.ui.components.springPress
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavDestination.Companion.hasRoute
-import com.suvojeet.notenext.ui.notes.NotesState
 
 @Composable
 fun NavGraph(
+    navController: NavHostController = rememberNavController(),
+    notesViewModel: NotesViewModel,
     themeMode: ThemeMode,
     windowSizeClass: WindowSizeClass,
-    settingsRepository: SettingsRepository,
-    startNoteId: Int = -1,
-    startAddNote: Boolean = false,
-    sharedText: String? = null,
-    initialTitle: String? = null,
-    searchQuery: String? = null,
-    externalUri: android.net.Uri? = null
+    settingsRepository: SettingsRepository
 ) {
-    val navController = rememberNavController()
-    val context = LocalContext.current
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val notesViewModel: NotesViewModel = hiltViewModel()
-    val notesState by notesViewModel.state.collectAsState()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    val isCompact = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
 
-    val activity = context.findActivity() as? FragmentActivity
-    val biometricAuthManager = if (activity != null) {
-        remember(activity) {
-            BiometricAuthManager(context, activity)
-        }
-    } else {
-        null
-    }
-
-    LaunchedEffect(startNoteId) {
-        if (startNoteId != -1) {
-            val isLocked = notesViewModel.getNoteLockStatus(startNoteId)
-            if (isLocked) {
-                biometricAuthManager?.showBiometricPrompt(
-                    onAuthSuccess = {
-                        notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
-                        navController.navigate(Destination.Notes()) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                    },
-                    onAuthError = {
-                        Toast.makeText(context, "Authentication Failed", Toast.LENGTH_SHORT).show()
-                    }
-                ) ?: Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
-            } else {
-                notesViewModel.onEvent(NotesEvent.ExpandNote(startNoteId))
-                navController.navigate(Destination.Notes()) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
-                }
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = !isCompact || (currentDestination?.hasRoute<Destination.Notes>() == true),
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                drawerTonalElevation = 0.dp,
+                windowInsets = WindowInsets.statusBars
+            ) {
+                DrawerHeader()
+                Spacer(modifier = Modifier.height(12.dp))
+                DrawerItems(
+                    currentDestination = currentDestination,
+                    navController = navController,
+                    onCloseDrawer = { scope.launch { drawerState.close() } }
+                )
             }
         }
-    }
-
-    LaunchedEffect(startAddNote) {
-        if (startAddNote) {
-            notesViewModel.onEvent(NotesEvent.ExpandNote(-1))
-        }
-    }
-
-    LaunchedEffect(sharedText) {
-        if (sharedText != null) {
-            notesViewModel.onEvent(NotesEvent.CreateNoteFromSharedText(sharedText))
-        }
-    }
-
-    LaunchedEffect(initialTitle) {
-        if (initialTitle != null) {
-            notesViewModel.onEvent(NotesEvent.SetInitialTitle(initialTitle))
-        }
-    }
-
-    LaunchedEffect(searchQuery) {
-        if (searchQuery != null) {
-            notesViewModel.onEvent(NotesEvent.OnSearchQueryChange(searchQuery))
-        }
-    }
-
-    LaunchedEffect(externalUri) {
-        if (externalUri != null) {
-            notesViewModel.onEvent(NotesEvent.LoadExternalFile(externalUri))
-        }
-    }
-
-    val isExpandedScreen = windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded
-
-    if (isExpandedScreen) {
-        PermanentNavigationDrawer(
-            drawerContent = {
-                PermanentDrawerSheet(
-                    modifier = Modifier.fillMaxWidth(0.15f),
-                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    drawerShape = MaterialTheme.shapes.extraLarge
-                ) {
-                    DrawerContent(
-                        navController = navController,
-                        notesState = notesState,
-                        notesViewModel = notesViewModel,
-                        onCloseDrawer = { /* no-op for permanent drawer */ }
-                    )
-                }
-            }
-        ) {
-            AppNavHost(
-                navController = navController,
-                notesViewModel = notesViewModel,
-                themeMode = themeMode,
-                windowSizeClass = windowSizeClass,
-                settingsRepository = settingsRepository,
-                onMenuClick = { scope.launch { drawerState.open() } },
-                isCompact = false
-            )
-        }
-    } else {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            gesturesEnabled = notesState.expandedNoteId == null,
-            drawerContent = {
-                ModalDrawerSheet(
-                    modifier = Modifier.fillMaxWidth(0.85f),
-                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    drawerShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
-                ) {
-                    DrawerContent(
-                        navController = navController,
-                        notesState = notesState,
-                        notesViewModel = notesViewModel,
-                        onCloseDrawer = { scope.launch { drawerState.close() } }
-                    )
-                }
-            }
-        ) {
-            AppNavHost(
-                navController = navController,
-                notesViewModel = notesViewModel,
-                themeMode = themeMode,
-                windowSizeClass = windowSizeClass,
-                settingsRepository = settingsRepository,
-                onMenuClick = { scope.launch { drawerState.open() } },
-                isCompact = true
-            )
-        }
+    ) {
+        AppNavHost(
+            navController = navController,
+            notesViewModel = notesViewModel,
+            themeMode = themeMode,
+            windowSizeClass = windowSizeClass,
+            settingsRepository = settingsRepository,
+            onMenuClick = { scope.launch { drawerState.open() } },
+            isCompact = isCompact
+        )
     }
 }
 
-// ─── Shared drawer content ───────────────────────────────────────────
+@Composable
+private fun DrawerHeader() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Surface(
+            modifier = Modifier.size(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 2.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(id = R.string.app_name),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "Your digital second brain",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 @Composable
-private fun DrawerContent(
+private fun DrawerItems(
+    currentDestination: androidx.navigation.NavDestination?,
     navController: NavHostController,
-    notesState: NotesState,
-    notesViewModel: NotesViewModel,
     onCloseDrawer: () -> Unit
 ) {
-    Text(
-        text = stringResource(id = R.string.app_name),
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Black,
-        modifier = Modifier.padding(24.dp)
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-
-    data class DrawerItem(val label: Int, val icon: @Composable () -> Unit, val isSelected: Boolean, val onClick: () -> Unit)
-
-    val items = listOf(
+    Column(modifier = Modifier.padding(horizontal = 12.dp)) {
         DrawerItem(
             R.string.notes, 
-            { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.notes)) }, 
-            currentDestination?.hasRoute<Destination.Notes>() == true && notesState.filteredLabel == null
+            { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = stringResource(id = R.string.notes)) }, 
+            currentDestination?.hasRoute<Destination.Notes>() == true
         ) {
             onCloseDrawer()
-            if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != null) {
-                notesViewModel.onEvent(NotesEvent.FilterByLabel(null))
-                navController.navigate(Destination.Notes()) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
-                    }
-                    launchSingleTop = true
-                    restoreState = true
+            navController.navigate(Destination.Notes()) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
                 }
+                launchSingleTop = true
+                restoreState = true
             }
-        },
+        }
+        
         DrawerItem(
             R.string.projects, 
             { Icon(Icons.Default.CreateNewFolder, contentDescription = stringResource(id = R.string.projects)) }, 
@@ -340,8 +251,8 @@ private fun DrawerContent(
             }
         },
         DrawerItem(
-            R.string.bin, 
-            { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin)) }, 
+            R.string.bin_title, 
+            { Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.bin_title)) }, 
             currentDestination?.hasRoute<Destination.Bin>() == true
         ) {
             onCloseDrawer()
@@ -352,7 +263,10 @@ private fun DrawerContent(
                 launchSingleTop = true
                 restoreState = true
             }
-        },
+        }
+        
+        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        
         DrawerItem(
             R.string.settings, 
             { Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings)) }, 
@@ -367,94 +281,33 @@ private fun DrawerContent(
                 restoreState = true
             }
         }
-    )
-
-    items.forEach { item ->
-        NavigationDrawerItem(
-            icon = { item.icon() },
-            label = { Text(stringResource(id = item.label), fontWeight = FontWeight.Bold) },
-            selected = item.isSelected,
-            onClick = item.onClick,
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-        )
-    }
-
-    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp))
-
-    if (notesState.labels.isEmpty()) {
-        NavigationDrawerItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = stringResource(id = R.string.create_new_label)) },
-            label = { Text(stringResource(id = R.string.create_new_label), fontWeight = FontWeight.Bold) },
-            selected = false,
-            onClick = {
-                onCloseDrawer()
-                navController.navigate(Destination.EditLabels) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
-                    }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-        )
-    } else {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = stringResource(id = R.string.labels_title),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            IconButton(onClick = {
-                onCloseDrawer()
-                navController.navigate(Destination.EditLabels) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
-                    }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }, modifier = Modifier.size(24.dp).springPress()) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = stringResource(id = R.string.edit_labels),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        notesState.labels.forEach { label ->
-            NavigationDrawerItem(
-                icon = { Icon(Icons.AutoMirrored.Outlined.Label, contentDescription = label) },
-                label = { Text(label, fontWeight = FontWeight.Medium) },
-                selected = notesState.filteredLabel == label,
-                onClick = {
-                    onCloseDrawer()
-                    notesViewModel.onEvent(NotesEvent.FilterByLabel(label))
-                    if (currentDestination?.hasRoute<Destination.Notes>() != true || notesState.filteredLabel != label) {
-                        navController.navigate(Destination.Notes()) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding).springPress()
-            )
-        }
     }
 }
 
-// ─── Shared NavHost ──────────────────────────────────────────────────
+@Composable
+private fun DrawerItem(
+    labelRes: Int,
+    icon: @Composable () -> Unit,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    NavigationDrawerItem(
+        label = { Text(text = stringResource(id = labelRes), fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+        selected = isSelected,
+        onClick = onClick,
+        icon = icon,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.padding(vertical = 2.dp),
+        colors = NavigationDrawerItemDefaults.colors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+            unselectedContainerColor = Color.Transparent,
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    )
+}
 
 @Composable
 private fun AppNavHost(
@@ -466,13 +319,15 @@ private fun AppNavHost(
     onMenuClick: () -> Unit,
     isCompact: Boolean
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = Destination.Notes(),
-        modifier = Modifier.background(MaterialTheme.colorScheme.background)
-    ) {
-        notesRoute(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, isCompact)
-        sharedRoutes(navController, notesViewModel, themeMode, windowSizeClass, settingsRepository, onMenuClick)
+    SharedTransitionLayout {
+        NavHost(
+            navController = navController,
+            startDestination = Destination.Notes(),
+            modifier = Modifier.background(MaterialTheme.colorScheme.background)
+        ) {
+            notesRoute(navController, notesViewModel, themeMode, settingsRepository, onMenuClick, isCompact)
+            sharedRoutes(navController, notesViewModel, themeMode, windowSizeClass, settingsRepository, onMenuClick, this@SharedTransitionLayout)
+        }
     }
 }
 
@@ -519,7 +374,8 @@ private fun NavGraphBuilder.sharedRoutes(
     themeMode: ThemeMode,
     windowSizeClass: WindowSizeClass,
     settingsRepository: SettingsRepository,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    sharedTransitionScope: SharedTransitionScope
 ) {
     val slideEnter = slideInHorizontally(initialOffsetX = { it }, animationSpec = spring()) + fadeIn(spring())
     val slideExit = slideOutHorizontally(targetOffsetX = { it }, animationSpec = spring()) + fadeOut(spring())
@@ -657,11 +513,15 @@ private fun NavGraphBuilder.sharedRoutes(
         enterTransition = { slideEnter },
         exitTransition = { slideExit }
     ) {
-        ProjectNotesScreen(
-            onBackClick = { navController.popBackStack() },
-            themeMode = themeMode,
-            settingsRepository = settingsRepository
-        )
+        AnimatedVisibility(visible = true) {
+            ProjectNotesScreen(
+                onBackClick = { navController.popBackStack() },
+                themeMode = themeMode,
+                settingsRepository = settingsRepository,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this@AnimatedVisibility
+            )
+        }
     }
 
     composable<Destination.AddEditNote>(
@@ -669,14 +529,18 @@ private fun NavGraphBuilder.sharedRoutes(
         exitTransition = { slideExit }
     ) {
         val viewModel: ProjectNotesViewModel = hiltViewModel()
-        AddEditNoteScreen(
-            state = viewModel.state.collectAsState().value.toNotesState(),
-            onEvent = { viewModel.onEvent(it.toProjectNotesEvent()) },
-            onDismiss = { navController.popBackStack() },
-            themeMode = themeMode,
-            settingsRepository = settingsRepository,
-            events = viewModel.events.map { it.toNotesUiEvent() }.shareIn(rememberCoroutineScope(), SharingStarted.WhileSubscribed())
-        )
+        AnimatedVisibility(visible = true) {
+            AddEditNoteScreen(
+                state = viewModel.state.collectAsState().value.toNotesState(),
+                onEvent = { viewModel.onEvent(it.toProjectNotesEvent()) },
+                onDismiss = { navController.popBackStack() },
+                themeMode = themeMode,
+                settingsRepository = settingsRepository,
+                events = viewModel.events.map { it.toNotesUiEvent() }.shareIn(rememberCoroutineScope(), SharingStarted.WhileSubscribed()),
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this@AnimatedVisibility
+            )
+        }
     }
 
     composable<Destination.Drawing>(

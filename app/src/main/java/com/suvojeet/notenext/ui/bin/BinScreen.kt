@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 package com.suvojeet.notenext.ui.bin
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,113 +38,119 @@ fun BinScreen(
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                if (isSelectionModeActive) {
-                    BinContextualTopAppBar(
-                        selectedItemCount = state.selectedNoteIds.size,
-                        onClearSelection = { viewModel.onEvent(BinEvent.ClearSelection) },
-                        onRestoreClick = { viewModel.onEvent(BinEvent.RestoreSelectedNotes) },
-                        onDeletePermanentlyClick = { viewModel.onEvent(BinEvent.DeleteSelectedNotesPermanently) }
-                    )
-                } else {
-                    LargeTopAppBar(
-                        title = { 
-                            Text(
-                                text = stringResource(id = R.string.bin_title),
-                                style = MaterialTheme.typography.headlineLarge,
-                                fontWeight = FontWeight.Black
-                            ) 
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = onMenuClick, modifier = Modifier.springPress()) {
-                                Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
-                            }
-                        },
-                        actions = {
-                            if (state.notes.isNotEmpty()) {
-                                IconButton(onClick = { showEmptyBinDialog = true }, modifier = Modifier.springPress()) {
-                                    Icon(imageVector = Icons.Default.DeleteForever, contentDescription = "Empty Bin")
-                                }
-                            }
-                        },
-                        scrollBehavior = scrollBehavior,
-                        colors = TopAppBarDefaults.largeTopAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.background,
-                            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+    SharedTransitionLayout {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                topBar = {
+                    if (isSelectionModeActive) {
+                        BinContextualTopAppBar(
+                            selectedItemCount = state.selectedNoteIds.size,
+                            onClearSelection = { viewModel.onEvent(BinEvent.ClearSelection) },
+                            onRestoreClick = { viewModel.onEvent(BinEvent.RestoreSelectedNotes) },
+                            onDeletePermanentlyClick = { viewModel.onEvent(BinEvent.DeleteSelectedNotesPermanently) }
                         )
-                    )
-                }
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                if (state.notes.isEmpty()) {
-                    EmptyState(
-                        icon = Icons.Default.Delete,
-                        message = stringResource(id = R.string.bin_empty_message)
-                    )
-                } else {
-                    ExpressiveSection(
-                        title = "Deleted Notes",
-                        description = "Notes in the bin will be automatically deleted after ${state.autoDeleteDays} days"
-                    ) {
-                        LazyVerticalStaggeredGrid(
-                            columns = StaggeredGridCells.Fixed(2),
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 32.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalItemSpacing = 12.dp
-                        ) {
-                            items(
-                                items = state.notes,
-                                key = { it.note.id },
-                                contentType = { it.note.noteType }
-                            ) { noteWithAttachments ->
-                                NoteItem(
-                                    modifier = Modifier.animateItem(),
-                                    note = noteWithAttachments,
-                                    onNoteClick = {
-                                        if (isSelectionModeActive) {
-                                            viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id))
-                                        } else {
-                                            viewModel.onEvent(BinEvent.ExpandNote(noteWithAttachments.note.id))
-                                        }
-                                    },
-                                    onNoteLongClick = { viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id)) },
-                                    isSelected = state.selectedNoteIds.contains(noteWithAttachments.note.id),
-                                    binnedDaysRemaining = if (noteWithAttachments.note.isBinned) {
-                                        val binnedOn = noteWithAttachments.note.binnedOn
-                                        if (binnedOn != null) {
-                                            val daysSinceBinned = (System.currentTimeMillis() - binnedOn) / (1000 * 60 * 60 * 24)
-                                            (state.autoDeleteDays - daysSinceBinned).toInt().coerceAtLeast(0)
-                                        } else {
-                                            null
-                                        }
-                                    } else {
-                                        null
+                    } else {
+                        LargeTopAppBar(
+                            title = { 
+                                Text(
+                                    text = stringResource(id = R.string.bin_title),
+                                    style = MaterialTheme.typography.headlineLarge,
+                                    fontWeight = FontWeight.Black
+                                ) 
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = onMenuClick, modifier = Modifier.springPress()) {
+                                    Icon(Icons.Default.Menu, contentDescription = stringResource(id = R.string.menu))
+                                }
+                            },
+                            actions = {
+                                if (state.notes.isNotEmpty()) {
+                                    IconButton(onClick = { showEmptyBinDialog = true }, modifier = Modifier.springPress()) {
+                                        Icon(imageVector = Icons.Default.DeleteForever, contentDescription = "Empty Bin")
                                     }
-                                )
+                                }
+                            },
+                            scrollBehavior = scrollBehavior,
+                            colors = TopAppBarDefaults.largeTopAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.background,
+                                scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    if (state.notes.isEmpty()) {
+                        EmptyState(
+                            icon = Icons.Default.Delete,
+                            message = stringResource(id = R.string.bin_empty_message)
+                        )
+                    } else {
+                        ExpressiveSection(
+                            title = "Deleted Notes",
+                            description = "Notes in the bin will be automatically deleted after ${state.autoDeleteDays} days"
+                        ) {
+                            AnimatedVisibility(visible = true) {
+                                LazyVerticalStaggeredGrid(
+                                    columns = StaggeredGridCells.Fixed(2),
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(bottom = 32.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalItemSpacing = 12.dp
+                                ) {
+                                    items(
+                                        items = state.notes,
+                                        key = { it.note.id },
+                                        contentType = { it.note.noteType }
+                                    ) { noteWithAttachments ->
+                                        NoteItem(
+                                            modifier = Modifier.animateItem(),
+                                            note = noteWithAttachments,
+                                            onNoteClick = {
+                                                if (isSelectionModeActive) {
+                                                    viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id))
+                                                } else {
+                                                    viewModel.onEvent(BinEvent.ExpandNote(noteWithAttachments.note.id))
+                                                }
+                                            },
+                                            onNoteLongClick = { viewModel.onEvent(BinEvent.ToggleNoteSelection(noteWithAttachments.note.id)) },
+                                            isSelected = state.selectedNoteIds.contains(noteWithAttachments.note.id),
+                                            binnedDaysRemaining = if (noteWithAttachments.note.isBinned) {
+                                                val binnedOn = noteWithAttachments.note.binnedOn
+                                                if (binnedOn != null) {
+                                                    val daysSinceBinned = (System.currentTimeMillis() - binnedOn) / (1000 * 60 * 60 * 24)
+                                                    (state.autoDeleteDays - daysSinceBinned).toInt().coerceAtLeast(0)
+                                                } else {
+                                                    null
+                                                }
+                                            } else {
+                                                null
+                                            },
+                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                            animatedVisibilityScope = this@AnimatedVisibility
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-        AnimatedVisibility(
-            visible = state.expandedNoteId != null,
-            enter = scaleIn(initialScale = 0.85f, animationSpec = spring()) + fadeIn(animationSpec = spring()),
-            exit = scaleOut(targetScale = 0.85f, animationSpec = spring()) + fadeOut(animationSpec = spring())
-        ) {
-            BinnedNoteScreen(
-                state = state,
-                onDismiss = { viewModel.onEvent(BinEvent.CollapseNote) }
-            )
+            AnimatedVisibility(
+                visible = state.expandedNoteId != null,
+                enter = scaleIn(initialScale = 0.85f, animationSpec = spring()) + fadeIn(animationSpec = spring()),
+                exit = scaleOut(targetScale = 0.85f, animationSpec = spring()) + fadeOut(animationSpec = spring())
+            ) {
+                BinnedNoteScreen(
+                    state = state,
+                    onDismiss = { viewModel.onEvent(BinEvent.CollapseNote) }
+                )
+            }
         }
     }
 

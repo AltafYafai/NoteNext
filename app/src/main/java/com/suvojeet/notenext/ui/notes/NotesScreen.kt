@@ -170,13 +170,14 @@ fun NotesScreen(
             targetState = editState.expandedNoteId,
             label = "NoteTransition",
             transitionSpec = {
-                val springSpec = spring<Float>(dampingRatio = 0.85f, stiffness = 400f)
+                val scaleSpring = spring<Float>(dampingRatio = 0.85f, stiffness = 400f)
+                val offsetSpring = spring<androidx.compose.ui.unit.IntOffset>(dampingRatio = 0.85f, stiffness = 400f)
                 if (targetState != null) {
-                    (fadeIn(spring()) + scaleIn(initialScale = 0.92f, animationSpec = springSpec) + slideInVertically(initialOffsetY = { it / 8 }, animationSpec = springSpec))
+                    (fadeIn(spring()) + scaleIn(initialScale = 0.92f, animationSpec = scaleSpring) + slideInVertically(initialOffsetY = { it / 8 }, animationSpec = offsetSpring))
                         .togetherWith(fadeOut(spring()))
                 } else {
                     fadeIn(spring())
-                        .togetherWith(fadeOut(spring()) + scaleOut(targetScale = 0.92f, animationSpec = springSpec) + slideOutVertically(targetOffsetY = { it / 8 }, animationSpec = springSpec))
+                        .togetherWith(fadeOut(spring()) + scaleOut(targetScale = 0.92f, animationSpec = scaleSpring) + slideOutVertically(targetOffsetY = { it / 8 }, animationSpec = offsetSpring))
                 }
             }
         ) { expandedId ->

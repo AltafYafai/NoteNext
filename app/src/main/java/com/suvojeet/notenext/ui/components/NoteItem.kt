@@ -11,9 +11,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Indication
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -32,12 +35,15 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.util.HtmlConverter
 
@@ -113,7 +119,7 @@ fun NoteItem(
                     animatedVisibilityScope = animatedVisibilityScope,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds
                 )
                 .combinedClickable(
                     onClick = onNoteClick,
@@ -175,7 +181,7 @@ fun NoteItem(
                             val type = object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
                             com.google.gson.Gson().fromJson<List<ChecklistItem>>(decryptedNote.content, type)
                         } catch (e: Exception) {
-                            emptyList()
+                            emptyList<ChecklistItem>()
                         }
                     }
                     checklistItems.take(5).forEach { item ->
@@ -209,7 +215,7 @@ fun NoteItem(
                     }
                 } else if (decryptedNote.content.isNotBlank()) {
                     val plainText = remember(decryptedNote.content) {
-                        HtmlConverter.fromHtml(decryptedNote.content)
+                        HtmlConverter.fromHtml(decryptedNote.content).toString()
                     }
                     Text(
                         text = buildAnnotatedString {
@@ -246,7 +252,7 @@ fun NoteItem(
                     )
                 }
 
-                if (note.note.isLocked || note.note.reminderTime != null || note.note.isEncrypted || note.note.labelIds.isNotEmpty() || binnedDaysRemaining != null) {
+                if (note.note.isLocked || note.note.reminderTime != null || note.note.isEncrypted || note.note.label != null || binnedDaysRemaining != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -286,7 +292,7 @@ fun NoteItem(
                             )
                         }
                         
-                        if (note.note.labelIds.isNotEmpty()) {
+                        if (note.note.label != null) {
                             Icon(
                                 imageVector = Icons.Default.Label,
                                 contentDescription = "Labels",
@@ -313,25 +319,25 @@ fun NoteItem(
 
 @Composable
 private fun NoteItemAttachments(
-    attachments: List<com.suvojeet.notenext.data.entity.Attachment>,
+    attachments: List<Attachment>,
     tintColor: Color
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        val imageCount = attachments.count { it.type == "IMAGE" }
-        val audioCount = attachments.count { it.type == "AUDIO" }
-        val fileCount = attachments.count { it.type == "FILE" }
+        val imageCount = attachments.count { it.type == AttachmentType.IMAGE }
+        val audioCount = attachments.count { it.type == AttachmentType.AUDIO }
+        val fileCount = attachments.count { it.type == AttachmentType.FILE }
 
         if (imageCount > 0) {
-            AttachmentBadge(icon = Icons.Default.Image, count = imageCount, tintColor = tintColor)
+            AttachmentBadge(imageVector = Icons.Default.Image, count = imageCount, tintColor = tintColor)
         }
         if (audioCount > 0) {
-            AttachmentBadge(icon = Icons.Default.Mic, count = audioCount, tintColor = tintColor)
+            AttachmentBadge(imageVector = Icons.Default.Mic, count = audioCount, tintColor = tintColor)
         }
         if (fileCount > 0) {
-            AttachmentBadge(icon = Icons.Default.AttachFile, count = fileCount, tintColor = tintColor)
+            AttachmentBadge(imageVector = Icons.Default.AttachFile, count = fileCount, tintColor = tintColor)
         }
     }
 }
