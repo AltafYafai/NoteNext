@@ -186,6 +186,54 @@ class RichTextController @Inject constructor() {
         return null
     }
 
+    fun toggleBulletedList(content: TextFieldValue): TextFieldValue {
+        val text = content.text
+        val selection = content.selection
+        val lines = text.split("\n")
+        
+        var currentOffset = 0
+        val newLines = lines.map { line ->
+            val lineStart = currentOffset
+            val lineEnd = currentOffset + line.length
+            val isLineSelected = if (selection.collapsed) {
+                selection.start in lineStart..lineEnd
+            } else {
+                val overlapStart = maxOf(selection.start, lineStart)
+                val overlapEnd = minOf(selection.end, lineEnd)
+                overlapStart < overlapEnd || (selection.start == selection.end && selection.start in lineStart..lineEnd)
+            }
+
+            val newLine = if (isLineSelected) {
+                if (line.trimStart().startsWith("• ")) {
+                    line.replaceFirst("• ", "")
+                } else {
+                    "• $line"
+                }
+            } else {
+                line
+            }
+            
+            currentOffset += line.length + 1
+            newLine
+        }
+
+        val newText = newLines.joinToString("\n")
+        
+        // Basic selection adjustment (could be more sophisticated)
+        val diff = newText.length - text.length
+        val newSelection = if (selection.collapsed) {
+             androidx.compose.ui.text.TextRange(selection.start + if (diff > 0) 2 else if (diff < 0) -2 else 0)
+        } else {
+            androidx.compose.ui.text.TextRange(selection.start, selection.end + diff)
+        }
+
+        return content.copy(
+            text = newText,
+            annotatedString = parseMarkdownToAnnotatedString(newText),
+            selection = newSelection.coerceIn(0, newText.length)
+        )
+    }
+
     private fun commonPrefixWith(a: CharSequence, b: CharSequence): String {
         val minLength = minOf(a.length, b.length)
         for (i in 0 until minLength) {

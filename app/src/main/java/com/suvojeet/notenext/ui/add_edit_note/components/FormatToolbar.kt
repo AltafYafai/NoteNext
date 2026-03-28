@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.FormatItalic
 import androidx.compose.material.icons.filled.AddLink
 import androidx.compose.material.icons.filled.FormatUnderlined
 import androidx.compose.material.icons.filled.FormatSize
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.automirrored.filled.FormatIndentDecrease
 import androidx.compose.material.icons.automirrored.filled.FormatIndentIncrease
@@ -131,6 +132,15 @@ fun FormatToolbar(
                         )
                     }
                 }
+            }
+
+            item {
+                FormatToggleButton(
+                    onCheckedChange = { _ -> onEvent(NotesEvent.ApplyBulletedList) },
+                    icon = Icons.Default.FormatListBulleted,
+                    description = "Bulleted List",
+                    isActive = false
+                )
             }
 
             item {

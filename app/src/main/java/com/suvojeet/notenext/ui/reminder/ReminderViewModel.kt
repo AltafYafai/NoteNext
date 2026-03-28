@@ -43,4 +43,23 @@ class ReminderViewModel @Inject constructor(
             repository.updateNote(updatedNote)
         }
     }
+
+    fun saveReminder(title: String, time: Long, repeatOption: String? = null) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val newNote = Note(
+                title = title,
+                content = "",
+                createdAt = now,
+                lastEdited = now,
+                color = 0,
+                reminderTime = time,
+                repeatOption = repeatOption,
+                isImportant = true // Default for standalone reminders
+            )
+            val id = repository.insertNote(newNote)
+            val noteWithId = newNote.copy(id = id.toInt())
+            alarmScheduler.schedule(noteWithId)
+        }
+    }
 }

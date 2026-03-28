@@ -52,8 +52,10 @@ import javax.inject.Inject
 @HiltViewModel
 class ProjectNotesViewModel @Inject constructor(
     private val repository: com.suvojeet.notenext.data.NoteRepository,
+    private val noteUseCases: com.suvojeet.notenext.domain.use_case.NoteUseCases,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
+    private val richTextController: com.suvojeet.notenext.ui.notes.RichTextController,
     private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle
@@ -67,6 +69,7 @@ class ProjectNotesViewModel @Inject constructor(
 
     private var recentlyDeletedNote: Note? = null
     private var autoSaveJob: Job? = null
+    private var linkDetectionJob: Job? = null
 
     private val projectId: Int = savedStateHandle.get<Int>("projectId") ?: -1
 
@@ -240,7 +243,16 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.ChangeColorForSelectedNotes -> {
-                // TODO: Implement color picker
+                viewModelScope.launch {
+                    val selectedIds = state.value.selectedNoteIds
+                    for (id in selectedIds) {
+                        repository.getNoteById(id)?.let { fullNote ->
+                            repository.updateNote(fullNote.note.copy(color = event.color))
+                        }
+                    }
+                    _state.value = state.value.copy(selectedNoteIds = emptyList())
+                    _events.emit(ProjectNotesUiEvent.ShowToast("Color updated for ${selectedIds.size} notes"))
+                }
             }
             is ProjectNotesEvent.CopySelectedNotes -> {
                 viewModelScope.launch {
@@ -522,17 +534,8 @@ class ProjectNotesViewModel @Inject constructor(
                     val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
                     val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet() // Use Set for efficient lookup
 
-                    val existingLinkPreviews = state.value.linkPreviews.filter { detectedUrls.contains(it.url) }
-                    val newUrlsToFetch = detectedUrls.filter { url -> existingLinkPreviews.none { it.url == url } }
-
-                    viewModelScope.launch {
-                        val fetchedNewLinkPreviews = newUrlsToFetch.map { url ->
-                            async { linkPreviewRepository.getLinkPreview(url) }
-                        }.awaitAll()
-
-                        val combinedLinkPreviews = (existingLinkPreviews + fetchedNewLinkPreviews).distinctBy { it.url }
-
-                        _state.value = _state.value.copy(linkPreviews = combinedLinkPreviews)
+                    detectedUrls.forEach { url ->
+                        onEvent(ProjectNotesEvent.OnLinkDetected(url))
                     }
                     scheduleAutoSave()
                 }
@@ -600,6 +603,16 @@ class ProjectNotesViewModel @Inject constructor(
                         editingHistoryIndex = newHistory.lastIndex
                     )
                 }
+            }
+            is ProjectNotesEvent.ApplyBulletedList -> {
+                val updatedContent = richTextController.toggleBulletedList(state.value.editingContent)
+                val updatedHistory = state.value.editingHistory.take(state.value.editingHistoryIndex + 1) + (state.value.editingTitle to updatedContent)
+                _state.value = state.value.copy(
+                    editingContent = updatedContent,
+                    editingHistory = updatedHistory,
+                    editingHistoryIndex = updatedHistory.lastIndex
+                )
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.ApplyHeadingStyle -> {
                 _state.value = state.value.copy(
@@ -1095,9 +1108,29 @@ class ProjectNotesViewModel @Inject constructor(
                 )
                 _state.value = state.value.copy(editingAttachments = state.value.editingAttachments + attachment)
             }
-            is ProjectNotesEvent.OnLinkDetected -> { /* TODO: Handle link detection */ }
-            is ProjectNotesEvent.OnLinkPreviewFetched -> { /* TODO: Handle link preview fetched */ }
-            is ProjectNotesEvent.RemoveAttachment -> {
+            is ProjectNotesEvent.OnLinkDetected -> {
+                linkDetectionJob?.cancel()
+                linkDetectionJob = viewModelScope.launch {
+                    delay(1000L) // 1s delay - only fetch when user stops typing
+
+                    val existingLinkPreviews = state.value.linkPreviews
+                    if (existingLinkPreviews.none { it.url == event.url }) {
+                        val preview = linkPreviewRepository.getLinkPreview(event.url)
+                        onEvent(ProjectNotesEvent.OnLinkPreviewFetched(
+                            url = preview.url,
+                            title = preview.title,
+                            description = preview.description,
+                            imageUrl = preview.imageUrl
+                        ))
+                    }
+                }
+            }
+            is ProjectNotesEvent.OnLinkPreviewFetched -> {
+                val newPreview = com.suvojeet.notenext.data.LinkPreview(event.url, event.title, event.description, event.imageUrl)
+                val updatedPreviews = (state.value.linkPreviews + newPreview).distinctBy { it.url }
+                _state.value = _state.value.copy(linkPreviews = updatedPreviews)
+                scheduleAutoSave()
+            }            is ProjectNotesEvent.RemoveAttachment -> {
                 viewModelScope.launch {
                     val attachmentToRemove = _state.value.editingAttachments.firstOrNull { it.tempId == event.tempId }
                     attachmentToRemove?.let {

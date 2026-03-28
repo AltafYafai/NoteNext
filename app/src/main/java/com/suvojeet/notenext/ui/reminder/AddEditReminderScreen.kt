@@ -23,12 +23,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.springPress
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Composable
-fun AddEditReminderScreen(onBackClick: () -> Unit) {
+fun AddEditReminderScreen(
+    onBackClick: () -> Unit,
+    viewModel: ReminderViewModel = hiltViewModel()
+) {
     var title by remember { mutableStateOf("") }
     val datePickerState = rememberDatePickerState()
     var showDatePicker by remember { mutableStateOf(false) }
@@ -89,7 +95,18 @@ fun AddEditReminderScreen(onBackClick: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Save reminder */ }, modifier = Modifier.springPress()) {
+                    IconButton(
+                        onClick = {
+                            val dateMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                            val localDate = java.time.Instant.ofEpochMilli(dateMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                            val dateTime = localDate.atTime(timePickerState.hour, timePickerState.minute)
+                            val reminderTime = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                            
+                            viewModel.saveReminder(title.ifBlank { "Reminder" }, reminderTime)
+                            onBackClick()
+                        }, 
+                        modifier = Modifier.springPress()
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = stringResource(id = R.string.save)

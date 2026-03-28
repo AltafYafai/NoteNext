@@ -683,7 +683,7 @@ fun AddEditNoteScreen(
                         "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
                         "Checklist" -> if (state.editingNoteType == NoteType.TEXT) onEvent(NotesEvent.OnToggleNoteType)
                         "Image" -> getContent.launch("image/*")
-                        "Bulleted List" -> { /* TODO: Implement Bullet list logic */ }
+                        "Bulleted List" -> onEvent(NotesEvent.ApplyBulletedList)
                     }
                 }
             )

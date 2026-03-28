@@ -90,6 +90,7 @@ fun ProjectNotesScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showReminderSetDialog by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
+    var showColorPickerDialog by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     val activity = context.findActivity() as? androidx.fragment.app.FragmentActivity
@@ -166,7 +167,7 @@ fun ProjectNotesScreen(
                             onClearSelection = { viewModel.onEvent(ProjectNotesEvent.ClearSelection) },
                             onTogglePinClick = { viewModel.onEvent(ProjectNotesEvent.TogglePinForSelectedNotes) },
                             onReminderClick = { showReminderSetDialog = true },
-                            onColorClick = { /* TODO */ },
+                            onColorClick = { showColorPickerDialog = true },
                             onArchiveClick = { viewModel.onEvent(ProjectNotesEvent.ArchiveSelectedNotes) },
                             onDeleteClick = { showDeleteDialog = true },
                             onCopyClick = { viewModel.onEvent(ProjectNotesEvent.CopySelectedNotes) },
@@ -296,6 +297,41 @@ fun ProjectNotesScreen(
                         showReminderSetDialog = false
                     }
                 )
+            }
+
+            if (showColorPickerDialog) {
+                 val colorPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                 ModalBottomSheet(
+                    onDismissRequest = { showColorPickerDialog = false },
+                    sheetState = colorPickerSheetState,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    dragHandle = { BottomSheetDefaults.DragHandle() }
+                ) {
+                    val systemInDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+                    val isDarkTheme = when (themeMode) {
+                        ThemeMode.DARK, ThemeMode.AMOLED -> true
+                        ThemeMode.SYSTEM -> systemInDarkTheme
+                        else -> false
+                    }
+                    val colors = com.suvojeet.notenext.ui.theme.NoteGradients.getNoteColors(isDarkTheme)
+                    Text(
+                        text = "Change Color",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    com.suvojeet.notenext.ui.add_edit_note.components.ColorPicker(
+                        colors = colors,
+                        editingColor = 0, // Not used for multiple notes
+                        onEvent = { event ->
+                            if (event is com.suvojeet.notenext.ui.notes.NotesEvent.OnColorChange) {
+                                viewModel.onEvent(ProjectNotesEvent.ChangeColorForSelectedNotes(event.color))
+                                showColorPickerDialog = false
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(48.dp))
+                }
             }
 
             Column(modifier = Modifier.padding(padding)) {

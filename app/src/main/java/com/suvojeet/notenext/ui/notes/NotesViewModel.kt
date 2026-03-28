@@ -1026,24 +1026,11 @@ class NotesViewModel @Inject constructor(
                     }
 
                     // Debounced Link detection
-                    linkDetectionJob?.cancel()
-                    linkDetectionJob = viewModelScope.launch {
-                        delay(1000L) // 1s delay - only detect links when user stops typing
-                        
-                        val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
-                        val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet()
+                    val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
+                    val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet()
 
-                        val existingLinkPreviews = editState.value.linkPreviews.filter { detectedUrls.contains(it.url) }
-                        val newUrlsToFetch = detectedUrls.filter { url -> existingLinkPreviews.none { it.url == url } }
-
-                        if (newUrlsToFetch.isNotEmpty()) {
-                            val fetchedNewLinkPreviews = newUrlsToFetch.map { url ->
-                                async { linkPreviewRepository.getLinkPreview(url) }
-                            }.awaitAll()
-
-                            val combinedLinkPreviews = (existingLinkPreviews + fetchedNewLinkPreviews).distinctBy { it.url }
-                            _editState.value = editState.value.copy(linkPreviews = combinedLinkPreviews)
-                        }
+                    detectedUrls.forEach { url ->
+                        onEvent(NotesEvent.OnLinkDetected(url))
                     }
                 }
             }
@@ -1149,6 +1136,16 @@ class NotesViewModel @Inject constructor(
                     )
                 }
                 }
+            }
+            is NotesEvent.ApplyBulletedList -> {
+                val updatedContent = richTextController.toggleBulletedList(editState.value.editingContent)
+                undoRedoManager.addState(editState.value.editingTitle to updatedContent)
+                _editState.value = editState.value.copy(
+                    editingContent = updatedContent,
+                    canUndo = undoRedoManager.canUndo.value,
+                    canRedo = undoRedoManager.canRedo.value
+                )
+                scheduleAutoSave()
             }
             is NotesEvent.ApplyHeadingStyle -> {
                 val updatedContent = richTextController.applyHeading(editState.value.editingContent, event.level)
@@ -1333,8 +1330,29 @@ class NotesViewModel @Inject constructor(
                 _editState.value = editState.value.copy(editingAttachments = editState.value.editingAttachments + attachment)
                 scheduleAutoSave()
             }
-            is NotesEvent.OnLinkDetected -> { /* TODO: Handle link detection */ }
-            is NotesEvent.OnLinkPreviewFetched -> { /* TODO: Handle link preview fetched */ }
+            is NotesEvent.OnLinkDetected -> {
+                linkDetectionJob?.cancel()
+                linkDetectionJob = viewModelScope.launch {
+                    delay(1000L) // 1s delay - only fetch when user stops typing
+                    
+                    val existingLinkPreviews = editState.value.linkPreviews
+                    if (existingLinkPreviews.none { it.url == event.url }) {
+                        val preview = linkPreviewRepository.getLinkPreview(event.url)
+                        onEvent(NotesEvent.OnLinkPreviewFetched(
+                            url = preview.url,
+                            title = preview.title,
+                            description = preview.description,
+                            imageUrl = preview.imageUrl
+                        ))
+                    }
+                }
+            }
+            is NotesEvent.OnLinkPreviewFetched -> {
+                val newPreview = LinkPreview(event.url, event.title, event.description, event.imageUrl)
+                val updatedPreviews = (editState.value.linkPreviews + newPreview).distinctBy { it.url }
+                _editState.value = editState.value.copy(linkPreviews = updatedPreviews)
+                scheduleAutoSave()
+            }
             is NotesEvent.RemoveAttachment -> {
                 viewModelScope.launch {
                     val attachmentToRemove = editState.value.editingAttachments.firstOrNull { it.tempId == event.tempId }
