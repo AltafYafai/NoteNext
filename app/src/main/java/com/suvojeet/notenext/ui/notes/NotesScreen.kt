@@ -11,6 +11,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -168,13 +170,13 @@ fun NotesScreen(
             targetState = editState.expandedNoteId,
             label = "NoteTransition",
             transitionSpec = {
-                val springSpec = spring<Float>(dampingRatio = 0.8f, stiffness = 300f)
+                val springSpec = spring<Float>(dampingRatio = 0.85f, stiffness = 400f)
                 if (targetState != null) {
-                    (fadeIn(spring()) + scaleIn(initialScale = 0.85f, animationSpec = springSpec))
+                    (fadeIn(spring()) + scaleIn(initialScale = 0.92f, animationSpec = springSpec) + slideInVertically(initialOffsetY = { it / 8 }, animationSpec = springSpec))
                         .togetherWith(fadeOut(spring()))
                 } else {
                     fadeIn(spring())
-                        .togetherWith(fadeOut(spring()) + scaleOut(targetScale = 0.85f, animationSpec = springSpec))
+                        .togetherWith(fadeOut(spring()) + scaleOut(targetScale = 0.92f, animationSpec = springSpec) + slideOutVertically(targetOffsetY = { it / 8 }, animationSpec = springSpec))
                 }
             }
         ) { expandedId ->
@@ -472,7 +474,9 @@ fun NotesScreen(
                                                             onNoteLongClick = {
                                                                 viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                                             },
-                                                            isDarkTheme = isDarkTheme
+                                                            isDarkTheme = isDarkTheme,
+                                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                                            animatedVisibilityScope = this@AnimatedContent
                                                         )
                                                     }
                                                 }
@@ -511,7 +515,9 @@ fun NotesScreen(
                                                                 onNoteLongClick = {
                                                                     viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                                                 },
-                                                                isDarkTheme = isDarkTheme
+                                                                isDarkTheme = isDarkTheme,
+                                                                sharedTransitionScope = this@SharedTransitionLayout,
+                                                                animatedVisibilityScope = this@AnimatedContent
                                                             )
                                                         }
                                                     }
@@ -554,7 +560,9 @@ fun NotesScreen(
                                                             onNoteLongClick = {
                                                                 viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                                             },
-                                                            isDarkTheme = isDarkTheme
+                                                            isDarkTheme = isDarkTheme,
+                                                            sharedTransitionScope = this@SharedTransitionLayout,
+                                                            animatedVisibilityScope = this@AnimatedContent
                                                         )
                                                     }
                                                 }
@@ -593,7 +601,9 @@ fun NotesScreen(
                                                                 onNoteLongClick = {
                                                                     viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                                                 },
-                                                                isDarkTheme = isDarkTheme
+                                                                isDarkTheme = isDarkTheme,
+                                                                sharedTransitionScope = this@SharedTransitionLayout,
+                                                                animatedVisibilityScope = this@AnimatedContent
                                                             )
                                                         }
                                                     }
@@ -626,10 +636,8 @@ fun NotesScreen(
                     themeMode = themeMode,
                     settingsRepository = settingsRepository,
                     events = viewModel.events,
-                    modifier = Modifier.sharedElement(
-                        rememberSharedContentState(key = "note-${expandedId}"),
-                        animatedVisibilityScope = this@AnimatedContent
-                    )
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@AnimatedContent
                 )
             }
         }

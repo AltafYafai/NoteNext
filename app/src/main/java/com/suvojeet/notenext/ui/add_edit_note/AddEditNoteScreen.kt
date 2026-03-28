@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 package com.suvojeet.notenext.ui.add_edit_note
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -10,6 +10,9 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -76,60 +79,96 @@ fun AddEditNoteScreen(
     themeMode: ThemeMode,
     settingsRepository: SettingsRepository,
     events: SharedFlow<NotesUiEvent>,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
-    // Local UI State
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var showColorPicker by remember { mutableStateOf(false) }
-    val colorPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    with(sharedTransitionScope) {
+        // Local UI State
+        var showDeleteDialog by remember { mutableStateOf(false) }
+        var showColorPicker by remember { mutableStateOf(false) }
+        val colorPickerSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    var showFormatBar by remember { mutableStateOf(false) }
-    var showReminderDialog by remember { mutableStateOf(false) }
-    val reminderSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
-    var showSlashCommandSheet by remember { mutableStateOf(false) }
-    val slashCommandSheetState = rememberModalBottomSheetState()
+        var showFormatBar by remember { mutableStateOf(false) }
+        var showReminderDialog by remember { mutableStateOf(false) }
+        val reminderSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        
+        var showSlashCommandSheet by remember { mutableStateOf(false) }
+        val slashCommandSheetState = rememberModalBottomSheetState()
 
-    var showMoreOptions by remember { mutableStateOf(false) }
-    var showLabelDialog by remember { mutableStateOf(false) }
-    var showSaveAsDialog by remember { mutableStateOf(false) }
-    var showInsertLinkDialog by remember { mutableStateOf(false) }
-    var showHistoryDialog by remember { mutableStateOf(false) }
-    var showImageViewer by remember { mutableStateOf(false) }
-    var selectedImageData by remember { mutableStateOf<ImageViewerData?>(null) }
-    var isFocusMode by remember { mutableStateOf(false) }
+        var showMoreOptions by remember { mutableStateOf(false) }
+        var showLabelDialog by remember { mutableStateOf(false) }
+        var showSaveAsDialog by remember { mutableStateOf(false) }
+        var showInsertLinkDialog by remember { mutableStateOf(false) }
+        var showHistoryDialog by remember { mutableStateOf(false) }
+        var showImageViewer by remember { mutableStateOf(false) }
+        var selectedImageData by remember { mutableStateOf<ImageViewerData?>(null) }
+        var isFocusMode by remember { mutableStateOf(false) }
 
-    var aiButtonOffsetX by remember { mutableStateOf(0f) }
-    var aiButtonOffsetY by remember { mutableStateOf(0f) }
-    var isAiButtonDismissed by remember { mutableStateOf(false) }
+        var aiButtonOffsetX by remember { mutableStateOf(0f) }
+        var aiButtonOffsetY by remember { mutableStateOf(0f) }
+        var isAiButtonDismissed by remember { mutableStateOf(false) }
 
-    var clickedUrl by remember { mutableStateOf<String?>(null) }
-    var showExactAlarmDialog by remember { mutableStateOf(false) }
+        var clickedUrl by remember { mutableStateOf<String?>(null) }
+        var showExactAlarmDialog by remember { mutableStateOf(false) }
 
-    val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsStateWithLifecycle(initialValue = false)
+        val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val enableRichLinkPreview by settingsRepository.enableRichLinkPreview.collectAsStateWithLifecycle(initialValue = false)
 
-    // Auto-save on background
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) {
-                onEvent(NotesEvent.AutoSaveNote)
+        // Auto-save on background
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE) {
+                    onEvent(NotesEvent.AutoSaveNote)
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
             }
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
 
-    // Permission Logic
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-             if (isGranted) {
+        // Permission Logic
+        val notificationPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+                 if (isGranted) {
+                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                         if (alarmManager.canScheduleExactAlarms()) {
+                             showReminderDialog = true
+                         } else {
+                             showExactAlarmDialog = true
+                         }
+                     } else {
+                         showReminderDialog = true
+                     }
+                 } else {
+                     Toast.makeText(context, "Notifications are required for reminders", Toast.LENGTH_LONG).show()
+                 }
+            }
+        )
+
+        val checkAndRequestReminderPermissions: () -> Unit = {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                 if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+                         if (alarmManager.canScheduleExactAlarms()) {
+                             showReminderDialog = true
+                         } else {
+                             showExactAlarmDialog = true
+                         }
+                     } else {
+                         showReminderDialog = true
+                     }
+                 } else {
+                     notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                 }
+            } else {
                  if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                      val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
                      if (alarmManager.canScheduleExactAlarms()) {
@@ -140,323 +179,248 @@ fun AddEditNoteScreen(
                  } else {
                      showReminderDialog = true
                  }
-             } else {
-                 Toast.makeText(context, "Notifications are required for reminders", Toast.LENGTH_LONG).show()
-             }
+            }
         }
-    )
 
-    val checkAndRequestReminderPermissions: () -> Unit = {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-             if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-                     if (alarmManager.canScheduleExactAlarms()) {
-                         showReminderDialog = true
-                     } else {
-                         showExactAlarmDialog = true
-                     }
-                 } else {
-                     showReminderDialog = true
-                 }
-             } else {
-                 notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-             }
-        } else {
-             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                 val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
-                 if (alarmManager.canScheduleExactAlarms()) {
-                     showReminderDialog = true
-                 } else {
-                     showExactAlarmDialog = true
-                 }
-             } else {
-                 showReminderDialog = true
-             }
-        }
-    }
-
-    // Image/Photo Pickers
-    val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        uris.forEach { uri ->
-            onEvent(NotesEvent.ImportImage(uri))
-        }
-    }
-
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
-    val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) {
-            photoUri?.let { uri ->
+        // Image/Photo Pickers
+        val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
+            uris.forEach { uri ->
                 onEvent(NotesEvent.ImportImage(uri))
             }
         }
-    }
 
-    // Helper to launch camera after permission is granted
-    val launchCamera: () -> Unit = {
-        try {
-            val uri = createImageFile(context)
-            photoUri = uri
-            takePictureLauncher.launch(uri)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    // Camera permission launcher
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                launchCamera()
-            } else {
-                Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_LONG).show()
+        var photoUri by remember { mutableStateOf<Uri?>(null) }
+        val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) {
+                photoUri?.let { uri ->
+                    onEvent(NotesEvent.ImportImage(uri))
+                }
             }
         }
-    )
 
-    PredictiveBackHandler { progress ->
-        try {
-            progress.collectLatest { /* handle progress */ }
-            if (showImageViewer) {
-                showImageViewer = false
-            } else if (isFocusMode) {
-                isFocusMode = false
-            } else if (state.isMentionPopupVisible) {
-                onEvent(NotesEvent.CloseMentionPopup)
-            } else {
+        // Helper to launch camera after permission is granted
+        val launchCamera: () -> Unit = {
+            try {
+                val uri = createImageFile(context)
+                photoUri = uri
+                takePictureLauncher.launch(uri)
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to open camera: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        // Camera permission launcher
+        val cameraPermissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted ->
+                if (isGranted) {
+                    launchCamera()
+                } else {
+                    Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_LONG).show()
+                }
+            }
+        )
+
+        PredictiveBackHandler { progress ->
+            try {
+                progress.collectLatest { /* handle progress */ }
+                if (showImageViewer) {
+                    showImageViewer = false
+                } else if (isFocusMode) {
+                    isFocusMode = false
+                } else if (state.isMentionPopupVisible) {
+                    onEvent(NotesEvent.CloseMentionPopup)
+                } else {
+                    onDismiss()
+                }
+            } catch (e: Exception) {
                 onDismiss()
             }
-        } catch (e: Exception) {
-            onDismiss()
         }
-    }
 
-    var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+        var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
 
-    LaunchedEffect(Unit) {
-        events.collect { event ->
-            when (event) {
-                is NotesUiEvent.LinkPreviewRemoved -> {
-                    Toast.makeText(context, "Link preview removed", Toast.LENGTH_SHORT).show()
-                }
-                is NotesUiEvent.ScrollToSearchResult -> {
-                    val globalIndex = event.index
-                    val text = state.editingContent.text
-                    
-                    // Re-calculate chunks to find which item to scroll to
-                    var startOffset = 0
-                    var lineCount = 0
-                    var chunkIndex = 0
-                    
-                    // Account for NoteAttachmentsList and NoteTitleEditor items (2 items)
-                    val baseItemCount = 2 
-
-                    for (i in text.indices) {
-                        if (globalIndex >= startOffset && globalIndex <= i) {
-                            // Found it!
-                            scope.launch {
-                                lazyListState.animateScrollToItem(baseItemCount + chunkIndex)
-                            }
-                            break
-                        }
+        LaunchedEffect(Unit) {
+            events.collect { event ->
+                when (event) {
+                    is NotesUiEvent.LinkPreviewRemoved -> {
+                        Toast.makeText(context, "Link preview removed", Toast.LENGTH_SHORT).show()
+                    }
+                    is NotesUiEvent.ScrollToSearchResult -> {
+                        val globalIndex = event.index
+                        val text = state.editingContent.text
                         
-                        if (text[i] == '\n') lineCount++
-                        if (lineCount >= 50 || (i - startOffset) >= 5000) {
-                            startOffset = i + 1
-                            lineCount = 0
-                            chunkIndex++
+                        // Re-calculate chunks to find which item to scroll to
+                        var startOffset = 0
+                        var lineCount = 0
+                        var chunkIndex = 0
+                        
+                        // Account for NoteAttachmentsList and NoteTitleEditor items (2 items)
+                        val baseItemCount = 2 
+
+                        for (i in text.indices) {
+                            if (globalIndex >= startOffset && globalIndex <= i) {
+                                // Found it!
+                                scope.launch {
+                                    lazyListState.animateScrollToItem(baseItemCount + chunkIndex)
+                                }
+                                break
+                            }
+                            
+                            if (text[i] == '\n') lineCount++
+                            if (lineCount >= 50 || (i - startOffset) >= 5000) {
+                                startOffset = i + 1
+                                lineCount = 0
+                                chunkIndex++
+                            }
                         }
                     }
+                    else -> {}
                 }
-                else -> {}
             }
         }
-    }
 
-    // Theme calculations
-    val systemInDarkTheme = isSystemInDarkTheme()
-    val isDarkTheme = when (themeMode) {
-        ThemeMode.DARK, ThemeMode.AMOLED -> true
-        ThemeMode.SYSTEM -> systemInDarkTheme
-        else -> false
-    }
-    val colors = NoteGradients.getNoteColors(isDarkTheme)
-    val adaptiveColor = NoteGradients.getAdaptiveColor(state.editingColor, isDarkTheme)
-    val backgroundColor = if (adaptiveColor != 0) Color(adaptiveColor) else MaterialTheme.colorScheme.surface
-    val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
+        // Theme calculations
+        val systemInDarkTheme = isSystemInDarkTheme()
+        val isDarkTheme = when (themeMode) {
+            ThemeMode.DARK, ThemeMode.AMOLED -> true
+            ThemeMode.SYSTEM -> systemInDarkTheme
+            else -> false
+        }
+        val colors = NoteGradients.getNoteColors(isDarkTheme)
+        val adaptiveColor = NoteGradients.getAdaptiveColor(state.editingColor, isDarkTheme)
+        val backgroundColor = if (adaptiveColor != 0) Color(adaptiveColor) else MaterialTheme.colorScheme.surface
+        val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Scaffold(
-            containerColor = backgroundColor,
-            topBar = {
-                AnimatedVisibility(
-                    visible = !isFocusMode,
-                    enter = slideInVertically(initialOffsetY = { -it }, animationSpec = spring()) + fadeIn(spring()),
-                    exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = spring()) + fadeOut(spring())
-                ) {
-                    AddEditNoteTopAppBar(
-                        state = state,
-                        onEvent = onEvent,
-                        onDismiss = onDismiss,
-                        editingNoteType = state.editingNoteType,
-                        onToggleFocusMode = { isFocusMode = !isFocusMode },
-                        isFocusMode = isFocusMode,
-
-                        backgroundColor = backgroundColor,
-                        contentColor = contentColor
-                    )
-                }
-            },
-            bottomBar = {
-                AnimatedVisibility(
-                    visible = !isFocusMode,
-                    enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()),
-                    exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring())
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                            .imePadding(),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
-                        tonalElevation = 3.dp,
-                        shadowElevation = 8.dp
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "note-${state.expandedNoteId}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                )
+        ) {
+            Scaffold(
+                containerColor = backgroundColor,
+                topBar = {
+                    AnimatedVisibility(
+                        visible = !isFocusMode,
+                        enter = slideInVertically(initialOffsetY = { -it }, animationSpec = spring()) + fadeIn(spring()),
+                        exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = spring()) + fadeOut(spring())
                     ) {
-                        AddEditNoteBottomAppBar(
+                        AddEditNoteTopAppBar(
                             state = state,
                             onEvent = onEvent,
-                            showColorPicker = { showColorPicker = !showColorPicker },
-                            showFormatBar = { showFormatBar = !showFormatBar },
-                            showReminderDialog = { 
-                                if (it) checkAndRequestReminderPermissions() else showReminderDialog = false 
-                            },
-                            showMoreOptions = { showMoreOptions = it },
-                            onImageClick = { getContent.launch("image/*") },
-                            onTakePhotoClick = {
-                                val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                                    context, android.Manifest.permission.CAMERA
-                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                if (hasCameraPermission) {
-                                    launchCamera()
-                                } else {
-                                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-                                }
-                            },
-                            onAudioClick = {
-                                Toast.makeText(context, "Audio recording not implemented yet", Toast.LENGTH_SHORT).show()
-                            },
-                            themeMode = themeMode,
-                            backgroundColor = Color.Transparent
-                        )
-                    }
-                }
-            }
-        ) { padding ->
-            SelectionContainer {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .then(if (isFocusMode) Modifier.imePadding() else Modifier)
-                ) {
-                    AnimatedVisibility(
-                        visible = state.isSearchingInNote,
-                        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
-                    ) {
-                        NoteSearchBar(
-                            query = state.noteSearchQuery,
-                            onQueryChange = { onEvent(NotesEvent.OnNoteSearchQueryChange(it)) },
-                            onNext = { onEvent(NotesEvent.NextSearchResult) },
-                            onPrevious = { onEvent(NotesEvent.PreviousSearchResult) },
-                            onClose = { onEvent(NotesEvent.ToggleNoteSearch) },
-                            currentResult = state.currentSearchResultIndex + 1,
-                            totalResults = state.searchResultIndices.size,
+                            onDismiss = onDismiss,
+                            editingNoteType = state.editingNoteType,
+                            onToggleFocusMode = { isFocusMode = !isFocusMode },
+                            isFocusMode = isFocusMode,
+
                             backgroundColor = backgroundColor,
                             contentColor = contentColor
                         )
                     }
-
-                    if (state.editingNoteType == NoteType.TEXT) {
-                        LazyColumn(
-                            state = lazyListState,
+                },
+                bottomBar = {
+                    AnimatedVisibility(
+                        visible = !isFocusMode,
+                        enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()),
+                        exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring())
+                    ) {
+                        Surface(
                             modifier = Modifier
-                                .weight(1f)
-                                .background(backgroundColor)
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                .imePadding(),
+                            shape = MaterialTheme.shapes.extraLarge,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+                            tonalElevation = 3.dp,
+                            shadowElevation = 8.dp
                         ) {
-                            item {
-                                NoteAttachmentsList(
-                                    attachments = state.editingAttachments,
-                                    onEvent = onEvent,
-                                    onImageClick = { data ->
-                                        selectedImageData = data
-                                        showImageViewer = true
-                                    }
-                                )
-                            }
-
-                            item {
-                                NoteTitleEditor(
-                                    state = state,
-                                    onEvent = onEvent,
-                                    onReminderClick = { checkAndRequestReminderPermissions() }
-                                )
-                            }
-                            
-                            NoteContentItems(
+                            AddEditNoteBottomAppBar(
                                 state = state,
                                 onEvent = onEvent,
-                                onUrlClick = { url -> clickedUrl = url },
-                                onSlashCommand = { showSlashCommandSheet = true },
-                                onTextLayout = { textLayoutResult = it }
-                            )
-
-                            if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
-                                item { Spacer(modifier = Modifier.height(16.dp)) }
-                                items(state.linkPreviews) { linkPreview ->
-                                    LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                }
-                            }
-                        }
-                    } else {
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier = Modifier
-                                .weight(1f)
-                                .background(backgroundColor)
-                        ) {
-                            item {
-                                NoteTitleEditor(
-                                    state = state,
-                                    onEvent = onEvent,
-                                    onReminderClick = { checkAndRequestReminderPermissions() }
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-
-                            item {
-                                 NoteAttachmentsList(
-                                    attachments = state.editingAttachments,
-                                    onEvent = onEvent,
-                                    onImageClick = { data ->
-                                        selectedImageData = data
-                                        showImageViewer = true
+                                showColorPicker = { showColorPicker = !showColorPicker },
+                                showFormatBar = { showFormatBar = !showFormatBar },
+                                showReminderDialog = { 
+                                    if (it) checkAndRequestReminderPermissions() else showReminderDialog = false 
+                                },
+                                showMoreOptions = { showMoreOptions = it },
+                                onImageClick = { getContent.launch("image/*") },
+                                onTakePhotoClick = {
+                                    val hasCameraPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                                        context, android.Manifest.permission.CAMERA
+                                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                    if (hasCameraPermission) {
+                                        launchCamera()
+                                    } else {
+                                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                                     }
-                                )
-                            }
+                                },
+                                onAudioClick = {
+                                    Toast.makeText(context, "Audio recording not implemented yet", Toast.LENGTH_SHORT).show()
+                                },
+                                themeMode = themeMode,
+                                backgroundColor = Color.Transparent
+                            )
+                        }
+                    }
+                }
+            ) { padding ->
+                SelectionContainer {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .then(if (isFocusMode) Modifier.imePadding() else Modifier)
+                    ) {
+                        AnimatedVisibility(
+                            visible = state.isSearchingInNote,
+                            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+                        ) {
+                            NoteSearchBar(
+                                query = state.noteSearchQuery,
+                                onQueryChange = { onEvent(NotesEvent.OnNoteSearchQueryChange(it)) },
+                                onNext = { onEvent(NotesEvent.NextSearchResult) },
+                                onPrevious = { onEvent(NotesEvent.PreviousSearchResult) },
+                                onClose = { onEvent(NotesEvent.ToggleNoteSearch) },
+                                currentResult = state.currentSearchResultIndex + 1,
+                                totalResults = state.searchResultIndices.size,
+                                backgroundColor = backgroundColor,
+                                contentColor = contentColor
+                            )
+                        }
 
-                            if (state.editingNoteType == NoteType.CHECKLIST) {
-                                ChecklistEditor(
-                                    state = state,
-                                    onEvent = onEvent,
-                                    isCheckedItemsExpanded = state.isCheckedItemsExpanded,
-                                    onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) },
-                                    backgroundColor = backgroundColor
-                                )
-                            } else {
+                        if (state.editingNoteType == NoteType.TEXT) {
+                            LazyColumn(
+                                state = lazyListState,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(backgroundColor)
+                            ) {
+                                item {
+                                    NoteAttachmentsList(
+                                        attachments = state.editingAttachments,
+                                        onEvent = onEvent,
+                                        onImageClick = { data ->
+                                            selectedImageData = data
+                                            showImageViewer = true
+                                        }
+                                    )
+                                }
+
+                                item {
+                                    NoteTitleEditor(
+                                        state = state,
+                                        onEvent = onEvent,
+                                        onReminderClick = { checkAndRequestReminderPermissions() }
+                                    )
+                                }
+                                
                                 NoteContentItems(
                                     state = state,
                                     onEvent = onEvent,
@@ -464,251 +428,304 @@ fun AddEditNoteScreen(
                                     onSlashCommand = { showSlashCommandSheet = true },
                                     onTextLayout = { textLayoutResult = it }
                                 )
-                            }
 
-                            if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
-                                item { Spacer(modifier = Modifier.height(16.dp)) }
-                                items(state.linkPreviews) { linkPreview ->
-                                    LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
+                                if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
+                                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                                    items(state.linkPreviews) { linkPreview ->
+                                        LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                state = lazyListState,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(backgroundColor)
+                            ) {
+                                item {
+                                    NoteTitleEditor(
+                                        state = state,
+                                        onEvent = onEvent,
+                                        onReminderClick = { checkAndRequestReminderPermissions() }
+                                    )
                                     Spacer(modifier = Modifier.height(8.dp))
+                                }
+
+                                item {
+                                     NoteAttachmentsList(
+                                        attachments = state.editingAttachments,
+                                        onEvent = onEvent,
+                                        onImageClick = { data ->
+                                            selectedImageData = data
+                                            showImageViewer = true
+                                        }
+                                    )
+                                }
+
+                                if (state.editingNoteType == NoteType.CHECKLIST) {
+                                    ChecklistEditor(
+                                        state = state,
+                                        onEvent = onEvent,
+                                        isCheckedItemsExpanded = state.isCheckedItemsExpanded,
+                                        onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) },
+                                        backgroundColor = backgroundColor
+                                    )
+                                } else {
+                                    NoteContentItems(
+                                        state = state,
+                                        onEvent = onEvent,
+                                        onUrlClick = { url -> clickedUrl = url },
+                                        onSlashCommand = { showSlashCommandSheet = true },
+                                        onTextLayout = { textLayoutResult = it }
+                                    )
+                                }
+
+                                if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
+                                    item { Spacer(modifier = Modifier.height(16.dp)) }
+                                    items(state.linkPreviews) { linkPreview ->
+                                        LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-        
-        AnimatedVisibility(
-            visible = showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.CHECKLIST),
-            enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = spring()),
-            exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = spring()),
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .imePadding()
-                .padding(bottom = 120.dp)
-        ) {
-            Surface(
-                shadowElevation = 12.dp,
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                modifier = Modifier.padding(horizontal = 24.dp)
+            
+            AnimatedVisibility(
+                visible = showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.CHECKLIST),
+                enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = spring()),
+                exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = spring()),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .imePadding()
+                    .padding(bottom = 120.dp)
             ) {
-                FormatToolbar(
-                    state = state, 
-                    onEvent = onEvent, 
-                    onInsertLinkClick = { showInsertLinkDialog = true }, 
-                    onGrammarFixClick = { onEvent(NotesEvent.FixGrammar) },
-                    isFixingGrammar = state.isFixingGrammar,
-                    themeMode = themeMode,
-                    modifier = Modifier.padding(12.dp)
+                Surface(
+                    shadowElevation = 12.dp,
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                ) {
+                    FormatToolbar(
+                        state = state, 
+                        onEvent = onEvent, 
+                        onInsertLinkClick = { showInsertLinkDialog = true }, 
+                        onGrammarFixClick = { onEvent(NotesEvent.FixGrammar) },
+                        isFixingGrammar = state.isFixingGrammar,
+                        themeMode = themeMode,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+            
+            var showAiChecklistSheet by remember { mutableStateOf(false) }
+            val showAiButton = (state.editingNoteType == NoteType.TEXT && state.editingContent.text.isEmpty()) || 
+                               (state.editingNoteType == NoteType.CHECKLIST && state.editingChecklist.isEmpty())
+                               
+            AnimatedVisibility(
+                visible = showAiButton && !isFocusMode && !isAiButtonDismissed,
+                enter = fadeIn(spring()) + slideInVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleIn(animationSpec = spring(), initialScale = 0.8f),
+                exit = fadeOut(spring()) + slideOutVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleOut(animationSpec = spring(), targetScale = 0.8f),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .imePadding()
+                    .offset { IntOffset(aiButtonOffsetX.roundToInt(), aiButtonOffsetY.roundToInt()) }
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            aiButtonOffsetX += dragAmount.x
+                            aiButtonOffsetY += dragAmount.y
+                        }
+                    }
+                    .padding(bottom = 120.dp, end = 20.dp) 
+            ) {
+                AiAssistantButton(
+                    onClick = { showAiChecklistSheet = true },
+                    onDismiss = { isAiButtonDismissed = true }
                 )
             }
-        }
-        
-        var showAiChecklistSheet by remember { mutableStateOf(false) }
-        val showAiButton = (state.editingNoteType == NoteType.TEXT && state.editingContent.text.isEmpty()) || 
-                           (state.editingNoteType == NoteType.CHECKLIST && state.editingChecklist.isEmpty())
-                           
-        AnimatedVisibility(
-            visible = showAiButton && !isFocusMode && !isAiButtonDismissed,
-            enter = fadeIn(spring()) + slideInVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleIn(animationSpec = spring(), initialScale = 0.8f),
-            exit = fadeOut(spring()) + slideOutVertically(animationSpec = spring()) { it } + androidx.compose.animation.scaleOut(animationSpec = spring(), targetScale = 0.8f),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .imePadding()
-                .offset { IntOffset(aiButtonOffsetX.roundToInt(), aiButtonOffsetY.roundToInt()) }
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        aiButtonOffsetX += dragAmount.x
-                        aiButtonOffsetY += dragAmount.y
+
+            AnimatedVisibility(
+                visible = state.fixedContentPreview != null,
+                enter = androidx.compose.animation.scaleIn(animationSpec = spring()) + fadeIn(spring()),
+                exit = androidx.compose.animation.scaleOut(animationSpec = spring()) + fadeOut(spring()),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 100.dp, end = 16.dp)
+            ) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    tonalElevation = 6.dp
+                ) {
+                    Row(modifier = Modifier.padding(4.dp)) {
+                        IconButton(onClick = { onEvent(NotesEvent.ApplyGrammarFix) }, modifier = Modifier.springPress()) {
+                            Icon(Icons.Filled.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
+                        }
+                        IconButton(onClick = { onEvent(NotesEvent.ClearGrammarFix) }, modifier = Modifier.springPress()) {
+                            Icon(Icons.Filled.Close, contentDescription = "Discard", tint = Color(0xFFE57373))
+                        }
                     }
                 }
-                .padding(bottom = 120.dp, end = 20.dp) 
-        ) {
-            AiAssistantButton(
-                onClick = { showAiChecklistSheet = true },
-                onDismiss = { isAiButtonDismissed = true }
+            }
+
+            AiChecklistSheet(
+                isVisible = showAiChecklistSheet,
+                isGenerating = state.isGeneratingChecklist,
+                generatedItems = state.generatedChecklistPreview,
+                onDismiss = { 
+                    showAiChecklistSheet = false
+                    onEvent(NotesEvent.ClearGeneratedChecklist)
+                },
+                onGenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) },
+                onInsert = { editedItems -> onEvent(NotesEvent.InsertGeneratedChecklist(editedItems)) },
+                onRegenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) }
             )
         }
 
-        AnimatedVisibility(
-            visible = state.fixedContentPreview != null,
-            enter = androidx.compose.animation.scaleIn(animationSpec = spring()) + fadeIn(spring()),
-            exit = androidx.compose.animation.scaleOut(animationSpec = spring()) + fadeOut(spring()),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 100.dp, end = 16.dp)
-        ) {
-            Surface(
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                tonalElevation = 6.dp
-            ) {
-                Row(modifier = Modifier.padding(4.dp)) {
-                    IconButton(onClick = { onEvent(NotesEvent.ApplyGrammarFix) }, modifier = Modifier.springPress()) {
-                        Icon(Icons.Filled.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
-                    }
-                    IconButton(onClick = { onEvent(NotesEvent.ClearGrammarFix) }, modifier = Modifier.springPress()) {
-                        Icon(Icons.Filled.Close, contentDescription = "Discard", tint = Color(0xFFE57373))
-                    }
-                }
-            }
+        val createTxtLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+            uri?.let { onEvent(NotesEvent.ExportNote(it, "TXT")) }
+        }
+        val createMdLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
+            uri?.let { onEvent(NotesEvent.ExportNote(it, "MD")) }
         }
 
-        AiChecklistSheet(
-            isVisible = showAiChecklistSheet,
-            isGenerating = state.isGeneratingChecklist,
-            generatedItems = state.generatedChecklistPreview,
-            onDismiss = { 
-                showAiChecklistSheet = false
-                onEvent(NotesEvent.ClearGeneratedChecklist)
+        AddEditNoteDialogs(
+            state = state,
+            onEvent = onEvent,
+            showDeleteDialog = showDeleteDialog,
+            onShowDeleteDialogChange = { showDeleteDialog = it },
+            showMoreOptions = showMoreOptions,
+            onShowMoreOptionsChange = { showMoreOptions = it },
+            showLabelDialog = showLabelDialog,
+            onShowLabelDialogChange = { showLabelDialog = it },
+            showSaveAsDialog = showSaveAsDialog,
+            onShowSaveAsDialogChange = { showSaveAsDialog = it },
+            showHistoryDialog = showHistoryDialog,
+            onShowHistoryDialogChange = { showHistoryDialog = it },
+            showInsertLinkDialog = showInsertLinkDialog,
+            onShowInsertLinkDialogChange = { showInsertLinkDialog = it },
+            clickedUrl = clickedUrl,
+            onClickedUrlChange = { clickedUrl = it },
+            showExactAlarmDialog = showExactAlarmDialog,
+            onShowExactAlarmDialogChange = { showExactAlarmDialog = it },
+            settingsRepository = settingsRepository,
+            scope = scope,
+            onSaveAsPdf = {
+                scope.launch {
+                    val fullHtml = com.suvojeet.notenext.util.NoteHtmlGenerator.generateNoteHtml(
+                        context,
+                        state.editingTitle,
+                        state.editingContent.annotatedString,
+                        state.editingAttachments
+                    )
+                    com.suvojeet.notenext.util.printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })
+                }
             },
-            onGenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) },
-            onInsert = { editedItems -> onEvent(NotesEvent.InsertGeneratedChecklist(editedItems)) },
-            onRegenerate = { topic -> onEvent(NotesEvent.GenerateChecklist(topic)) }
+            onSaveAsTxt = {
+                createTxtLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.txt")
+            },
+            onSaveAsMd = {
+                 createMdLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.md")
+            }
         )
-    }
-
-    val createTxtLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
-        uri?.let { onEvent(NotesEvent.ExportNote(it, "TXT")) }
-    }
-    val createMdLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/markdown")) { uri ->
-        uri?.let { onEvent(NotesEvent.ExportNote(it, "MD")) }
-    }
-
-    AddEditNoteDialogs(
-        state = state,
-        onEvent = onEvent,
-        showDeleteDialog = showDeleteDialog,
-        onShowDeleteDialogChange = { showDeleteDialog = it },
-        showMoreOptions = showMoreOptions,
-        onShowMoreOptionsChange = { showMoreOptions = it },
-        showLabelDialog = showLabelDialog,
-        onShowLabelDialogChange = { showLabelDialog = it },
-        showSaveAsDialog = showSaveAsDialog,
-        onShowSaveAsDialogChange = { showSaveAsDialog = it },
-        showHistoryDialog = showHistoryDialog,
-        onShowHistoryDialogChange = { showHistoryDialog = it },
-        showInsertLinkDialog = showInsertLinkDialog,
-        onShowInsertLinkDialogChange = { showInsertLinkDialog = it },
-        clickedUrl = clickedUrl,
-        onClickedUrlChange = { clickedUrl = it },
-        showExactAlarmDialog = showExactAlarmDialog,
-        onShowExactAlarmDialogChange = { showExactAlarmDialog = it },
-        settingsRepository = settingsRepository,
-        scope = scope,
-        onSaveAsPdf = {
-            scope.launch {
-                val fullHtml = com.suvojeet.notenext.util.NoteHtmlGenerator.generateNoteHtml(
-                    context,
-                    state.editingTitle,
-                    state.editingContent.annotatedString,
-                    state.editingAttachments
+        if (showImageViewer) {
+            selectedImageData?.let { data ->
+                ImageViewerScreen(
+                    imageUri = data.uri,
+                    attachmentTempId = data.tempId,
+                    onDismiss = { showImageViewer = false },
+                    onEvent = onEvent
                 )
-                com.suvojeet.notenext.util.printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })
             }
-        },
-        onSaveAsTxt = {
-            createTxtLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.txt")
-        },
-        onSaveAsMd = {
-             createMdLauncher.launch("${state.editingTitle.ifBlank { "Untitled" }}.md")
         }
-    )
-    if (showImageViewer) {
-        selectedImageData?.let { data ->
-            ImageViewerScreen(
-                imageUri = data.uri,
-                attachmentTempId = data.tempId,
-                onDismiss = { showImageViewer = false },
-                onEvent = onEvent
+        
+        if (state.showSummaryDialog) {
+            AiSummarySheet(
+                summary = state.summaryResult,
+                isSummarizing = state.isSummarizing,
+                onDismiss = { onEvent(NotesEvent.ClearSummary) },
+                onClearSummary = { onEvent(NotesEvent.ClearSummary) }
             )
         }
-    }
-    
-    if (state.showSummaryDialog) {
-        AiSummarySheet(
-            summary = state.summaryResult,
-            isSummarizing = state.isSummarizing,
-            onDismiss = { onEvent(NotesEvent.ClearSummary) },
-            onClearSummary = { onEvent(NotesEvent.ClearSummary) }
-        )
-    }
-    
-    if (showReminderDialog) {
-        ModalBottomSheet(
-            onDismissRequest = { showReminderDialog = false },
-            sheetState = reminderSheetState,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            val currentReminderDateTime = state.editingReminderTime?.let {
-                java.time.Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())
-            }
-            ReminderSheetContent(
-                initialDate = currentReminderDateTime?.toLocalDate(),
-                initialTime = currentReminderDateTime?.toLocalTime(),
-                initialRepeatOption = state.editingRepeatOption?.let { name ->
-                    RepeatOption.entries.find { it.name == name }
-                } ?: RepeatOption.NEVER,
+        
+        if (showReminderDialog) {
+            ModalBottomSheet(
                 onDismissRequest = { showReminderDialog = false },
-                onConfirm = { date: LocalDate, time: LocalTime, repeat: RepeatOption ->
-                    val reminderMillis = LocalDateTime.of(date, time)
-                        .atZone(ZoneId.systemDefault())
-                        .toInstant()
-                        .toEpochMilli()
-                    onEvent(NotesEvent.OnReminderChange(reminderMillis, repeat.name))
-                    showReminderDialog = false
+                sheetState = reminderSheetState,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                dragHandle = { BottomSheetDefaults.DragHandle() }
+            ) {
+                val currentReminderDateTime = state.editingReminderTime?.let {
+                    java.time.Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())
                 }
-            )
-        }
-    }
-
-    if (showSlashCommandSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSlashCommandSheet = false },
-            sheetState = slashCommandSheetState,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            SlashCommandSheetContent(
-                onDismissRequest = { showSlashCommandSheet = false },
-                onCommandSelected = { command ->
-                    showSlashCommandSheet = false
-                    when (command.title) {
-                        "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
-                        "Checklist" -> if (state.editingNoteType == NoteType.TEXT) onEvent(NotesEvent.OnToggleNoteType)
-                        "Image" -> getContent.launch("image/*")
-                        "Bulleted List" -> { /* TODO: Implement Bullet list logic */ }
+                ReminderSheetContent(
+                    initialDate = currentReminderDateTime?.toLocalDate(),
+                    initialTime = currentReminderDateTime?.toLocalTime(),
+                    initialRepeatOption = state.editingRepeatOption?.let { name ->
+                        RepeatOption.entries.find { it.name == name }
+                    } ?: RepeatOption.NEVER,
+                    onDismissRequest = { showReminderDialog = false },
+                    onConfirm = { date: LocalDate, time: LocalTime, repeat: RepeatOption ->
+                        val reminderMillis = LocalDateTime.of(date, time)
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()
+                            .toEpochMilli()
+                        onEvent(NotesEvent.OnReminderChange(reminderMillis, repeat.name))
+                        showReminderDialog = false
                     }
-                }
-            )
+                )
+            }
         }
-    }
 
-    if (showColorPicker) {
-        ModalBottomSheet(
-            onDismissRequest = { showColorPicker = false },
-            sheetState = colorPickerSheetState,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-            dragHandle = { BottomSheetDefaults.DragHandle() }
-        ) {
-            Text(
-                text = "Color",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            ColorPicker(
-                colors = colors,
-                editingColor = state.editingColor,
-                onEvent = onEvent
-            )
-            Spacer(modifier = Modifier.height(48.dp))
+        if (showSlashCommandSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showSlashCommandSheet = false },
+                sheetState = slashCommandSheetState,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                dragHandle = { BottomSheetDefaults.DragHandle() }
+            ) {
+                SlashCommandSheetContent(
+                    onDismissRequest = { showSlashCommandSheet = false },
+                    onCommandSelected = { command ->
+                        showSlashCommandSheet = false
+                        when (command.title) {
+                            "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
+                            "Checklist" -> if (state.editingNoteType == NoteType.TEXT) onEvent(NotesEvent.OnToggleNoteType)
+                            "Image" -> getContent.launch("image/*")
+                            "Bulleted List" -> { /* TODO: Implement Bullet list logic */ }
+                        }
+                    }
+                )
+            }
+        }
+
+        if (showColorPicker) {
+            ModalBottomSheet(
+                onDismissRequest = { showColorPicker = false },
+                sheetState = colorPickerSheetState,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                dragHandle = { BottomSheetDefaults.DragHandle() }
+            ) {
+                Text(
+                    text = "Color",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                ColorPicker(
+                    colors = colors,
+                    editingColor = state.editingColor,
+                    onEvent = onEvent
+                )
+                Spacer(modifier = Modifier.height(48.dp))
+            }
         }
     }
 }

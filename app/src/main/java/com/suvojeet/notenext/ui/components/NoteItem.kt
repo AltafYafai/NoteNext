@@ -1,9 +1,14 @@
-@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 package com.suvojeet.notenext.ui.components
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -45,7 +50,9 @@ fun NoteItem(
     onNoteClick: () -> Unit,
     onNoteLongClick: () -> Unit,
     binnedDaysRemaining: Int? = null,
-    isDarkTheme: Boolean = isSystemInDarkTheme()
+    isDarkTheme: Boolean = isSystemInDarkTheme(),
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope
 ) {
     val adaptiveColor = NoteGradients.getAdaptiveColor(note.note.color, isDarkTheme)
     val isDefaultColor = adaptiveColor == 0
@@ -97,272 +104,205 @@ fun NoteItem(
         null
     }
 
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .springPress()
-            .combinedClickable(
-                onClick = onNoteClick,
-                onLongClick = onNoteLongClick
+    with(sharedTransitionScope) {
+        Card(
+            modifier = modifier
+                .fillMaxWidth()
+                .sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = "note-${note.note.id}"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds()
+                )
+                .combinedClickable(
+                    onClick = onNoteClick,
+                    onLongClick = onNoteLongClick,
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = LocalIndication.current
+                ),
+            shape = cardShape,
+            colors = CardDefaults.cardColors(
+                containerColor = if (isDefaultColor) {
+                    MaterialTheme.colorScheme.surfaceContainerLow
+                } else {
+                    Color(adaptiveColor)
+                },
+                contentColor = contentColor
             ),
-        shape = cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color(adaptiveColor),
-            contentColor = contentColor
-        ),
-        border = borderStroke,
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
+            elevation = CardDefaults.cardElevation(defaultElevation = elevation),
+            border = borderStroke
         ) {
             Column(
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .padding(16.dp)
+                    .animateContentSize()
             ) {
-                if (note.note.isPinned) {
-                    Icon(
-                        imageVector = Icons.Outlined.PushPin,
-                        contentDescription = stringResource(id = R.string.pinned_note_description),
-                        modifier = Modifier
-                            .size(18.dp)
-                            .align(Alignment.End),
-                        tint = tintColor
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-
-                if (decryptedNote.title.isNotEmpty()) {
-                    val titleText = if (searchQuery.isNotEmpty()) {
-                        buildAnnotatedString {
-                            val text = decryptedNote.title
-                            append(text)
-                            val lowerText = text.lowercase()
-                            val lowerQuery = searchQuery.lowercase()
-                            var index = lowerText.indexOf(lowerQuery)
-                            while (index >= 0) {
-                                addStyle(
-                                    style = SpanStyle(
-                                        background = MaterialTheme.colorScheme.primaryContainer,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    ),
-                                    start = index,
-                                    end = index + searchQuery.length
-                                )
-                                index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                            }
-                        }
-                    } else {
-                        androidx.compose.ui.text.AnnotatedString(decryptedNote.title)
-                    }
-
+                if (decryptedNote.title.isNotBlank()) {
                     Text(
-                        text = titleText,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = contentColor,
+                        text = buildAnnotatedString {
+                            val title = decryptedNote.title
+                            if (searchQuery.isNotBlank() && title.contains(searchQuery, ignoreCase = true)) {
+                                var startIndex = 0
+                                while (startIndex < title.length) {
+                                    val index = title.indexOf(searchQuery, startIndex, ignoreCase = true)
+                                    if (index == -1) {
+                                        append(title.substring(startIndex))
+                                        break
+                                    }
+                                    append(title.substring(startIndex, index))
+                                    withStyle(SpanStyle(background = MaterialTheme.colorScheme.primaryContainer)) {
+                                        append(title.substring(index, index + searchQuery.length))
+                                    }
+                                    startIndex = index + searchQuery.length
+                                }
+                            } else {
+                                append(title)
+                            }
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        color = contentColor
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                if (decryptedNote.isLocked) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Lock,
-                            contentDescription = "Locked Content",
-                            modifier = Modifier.size(24.dp),
-                            tint = tintColor
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Content is locked",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = contentColor.copy(alpha = 0.7f)
-                        )
-                    }
-                } else {
-                    if ((decryptedNote.noteType == NoteType.TEXT && decryptedNote.content.isNotEmpty()) || (decryptedNote.noteType == NoteType.CHECKLIST && note.checklistItems.isNotEmpty())) {
-                        if (decryptedNote.noteType == NoteType.TEXT) {
-                            val rawContentLength = decryptedNote.content.length
-                            
-                            val (textStyle, maxLines) = when {
-                                rawContentLength < 100 -> MaterialTheme.typography.headlineSmall to 6
-                                rawContentLength < 250 -> MaterialTheme.typography.bodyLarge to 8
-                                else -> MaterialTheme.typography.bodyMedium to 10
-                            }
-    
-                            val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
-    
-                            val annotatedContent = remember(decryptedNote.content) {
-                                // Strip HTML tags for preview to avoid layout jumping and improve performance
-                                val plainText = decryptedNote.content.replace(Regex("<[^>]*>"), "")
-                                androidx.compose.ui.text.AnnotatedString(plainText)
-                            }
-
-                            val highlightedContent = if (searchQuery.isNotEmpty()) {
-                                buildAnnotatedString {
-                                    append(annotatedContent)
-                                    val lowerText = annotatedContent.text.lowercase()
-                                    val lowerQuery = searchQuery.lowercase()
-                                    var index = lowerText.indexOf(lowerQuery)
-                                    while (index >= 0) {
-                                        addStyle(
-                                            style = SpanStyle(
-                                                background = MaterialTheme.colorScheme.primaryContainer,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            ),
-                                            start = index,
-                                            end = index + searchQuery.length
-                                        )
-                                        index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                                    }
-                                }
-                            } else {
-                                annotatedContent
-                            }
-    
-                            val uriHandler = LocalUriHandler.current
-                            var textLayoutResult by remember { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
-
-                            Text(
-                                text = highlightedContent,
-                                style = textStyle.copy(
-                                    fontWeight = fontWeight,
-                                    color = if (isDefaultColor) MaterialTheme.colorScheme.onSurfaceVariant else contentColor.copy(alpha = 0.9f)
-                                ),
-                                maxLines = maxLines,
-                                overflow = TextOverflow.Ellipsis,
-                                onTextLayout = { textLayoutResult = it },
-                                modifier = Modifier.pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onLongPress = {
-                                            onNoteLongClick()
-                                        },
-                                        onTap = { pos ->
-                                            val layoutResult = textLayoutResult ?: return@detectTapGestures
-                                            val offset = layoutResult.getOffsetForPosition(pos)
-                                            
-                                            var isLink = false
-                                            highlightedContent.getStringAnnotations(tag = "URL", start = offset, end = offset).firstOrNull()?.let { annotation ->
-                                                isLink = true
-                                                try { uriHandler.openUri(annotation.item) } catch (e: Exception) { e.printStackTrace() }
-                                            }
-                                            if (!isLink) {
-                                                highlightedContent.getStringAnnotations(tag = "EMAIL", start = offset, end = offset).firstOrNull()?.let { annotation ->
-                                                    isLink = true
-                                                    try { uriHandler.openUri(annotation.item) } catch (e: Exception) { e.printStackTrace() }
-                                                }
-                                            }
-                                            if (!isLink) {
-                                                highlightedContent.getStringAnnotations(tag = "PHONE", start = offset, end = offset).firstOrNull()?.let { annotation ->
-                                                    isLink = true
-                                                    try { uriHandler.openUri(annotation.item) } catch (e: Exception) { e.printStackTrace() }
-                                                }
-                                            }
-                                            
-                                            if (!isLink) {
-                                                onNoteClick()
-                                            }
-                                        }
-                                    )
-                                }
-                            )
-                        } else {
-                            ChecklistPreview(note.checklistItems, if (isDefaultColor) MaterialTheme.colorScheme.onSurface else contentColor, searchQuery)
+                if (note.note.noteType == NoteType.CHECKLIST) {
+                    val checklistItems = remember(decryptedNote.content) {
+                        try {
+                            val type = object : com.google.gson.reflect.TypeToken<List<ChecklistItem>>() {}.type
+                            com.google.gson.Gson().fromJson<List<ChecklistItem>>(decryptedNote.content, type)
+                        } catch (e: Exception) {
+                            emptyList()
                         }
                     }
-
-                    if (note.note.linkPreviews.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        LinkPreviewDisplay(
-                            linkPreview = note.note.linkPreviews.first(),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    if (note.attachments.isNotEmpty() || !note.note.label.isNullOrEmpty() || note.note.reminderTime != null || binnedDaysRemaining != null) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                    checklistItems.take(5).forEach { item ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            modifier = Modifier.padding(vertical = 2.dp)
                         ) {
-                            if (note.attachments.isNotEmpty()) {
-                                Icon(
-                                    imageVector = Icons.Default.Attachment,
-                                    contentDescription = stringResource(id = R.string.attachment_icon_description),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = tintColor
-                                )
-                            }
-
-                            note.note.reminderTime?.let {
-                                Icon(
-                                    imageVector = Icons.Default.Alarm,
-                                    contentDescription = stringResource(id = R.string.reminder_icon_description),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = tintColor
-                                )
-                            }
-
-                            val label = note.note.label
-                            if (!label.isNullOrEmpty()) {
-                                Surface(
-                                    shape = MaterialTheme.shapes.small,
-                                    color = if (isDefaultColor) MaterialTheme.colorScheme.secondaryContainer else contentColor.copy(alpha = 0.15f)
-                                ) {
-                                    val labelText = if (searchQuery.isNotEmpty()) {
-                                        buildAnnotatedString {
-                                            append(label)
-                                            val lowerText = label.lowercase()
-                                            val lowerQuery = searchQuery.lowercase()
-                                            var index = lowerText.indexOf(lowerQuery)
-                                            while (index >= 0) {
-                                                addStyle(
-                                                    style = SpanStyle(
-                                                        background = MaterialTheme.colorScheme.primaryContainer,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                    ),
-                                                    start = index,
-                                                    end = index + searchQuery.length
-                                                )
-                                                index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                                            }
-                                        }
-                                    } else {
-                                        androidx.compose.ui.text.AnnotatedString(label)
+                            Icon(
+                                imageVector = if (item.isChecked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = tintColor
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = item.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = if (item.isChecked) contentColor.copy(alpha = 0.5f) else contentColor
+                            )
+                        }
+                    }
+                    if (checklistItems.size > 5) {
+                        Text(
+                            text = "+ ${checklistItems.size - 5} more",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(top = 4.dp),
+                            color = tintColor
+                        )
+                    }
+                } else if (decryptedNote.content.isNotBlank()) {
+                    val plainText = remember(decryptedNote.content) {
+                        HtmlConverter.fromHtml(decryptedNote.content)
+                    }
+                    Text(
+                        text = buildAnnotatedString {
+                            if (searchQuery.isNotBlank() && plainText.contains(searchQuery, ignoreCase = true)) {
+                                var startIndex = 0
+                                while (startIndex < plainText.length) {
+                                    val index = plainText.indexOf(searchQuery, startIndex, ignoreCase = true)
+                                    if (index == -1) {
+                                        append(plainText.substring(startIndex))
+                                        break
                                     }
-
-                                    Text(
-                                        text = labelText,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = if (isDefaultColor) MaterialTheme.colorScheme.onSecondaryContainer else contentColor,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
+                                    append(plainText.substring(startIndex, index))
+                                    withStyle(SpanStyle(background = MaterialTheme.colorScheme.primaryContainer)) {
+                                        append(plainText.substring(index, index + searchQuery.length))
+                                    }
+                                    startIndex = index + searchQuery.length
                                 }
+                            } else {
+                                append(plainText)
                             }
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 10,
+                        overflow = TextOverflow.Ellipsis,
+                        color = contentColor.copy(alpha = 0.8f)
+                    )
+                }
 
-                            if (binnedDaysRemaining != null) {
-                                Surface(
-                                    shape = MaterialTheme.shapes.small,
-                                    color = MaterialTheme.colorScheme.errorContainer
-                                ) {
-                                    Text(
-                                        text = stringResource(id = R.string.days_left, binnedDaysRemaining),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
+                if (note.attachments.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    NoteItemAttachments(
+                        attachments = note.attachments,
+                        tintColor = tintColor
+                    )
+                }
+
+                if (note.note.isLocked || note.note.reminderTime != null || note.note.isEncrypted || note.note.labelIds.isNotEmpty() || binnedDaysRemaining != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (note.note.isPinned) {
+                             Icon(
+                                imageVector = Icons.Outlined.PushPin,
+                                contentDescription = "Pinned",
+                                modifier = Modifier.size(14.dp),
+                                tint = tintColor
+                            )
+                        }
+                        if (note.note.isLocked) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Locked",
+                                modifier = Modifier.size(14.dp),
+                                tint = tintColor
+                            )
+                        }
+                        if (note.note.isEncrypted && !note.note.isLocked) {
+                            Icon(
+                                imageVector = Icons.Default.EnhancedEncryption,
+                                contentDescription = "Encrypted",
+                                modifier = Modifier.size(14.dp),
+                                tint = tintColor
+                            )
+                        }
+                        if (note.note.reminderTime != null) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = "Reminder",
+                                modifier = Modifier.size(14.dp),
+                                tint = tintColor
+                            )
+                        }
+                        
+                        if (note.note.labelIds.isNotEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.Label,
+                                contentDescription = "Labels",
+                                modifier = Modifier.size(14.dp),
+                                tint = tintColor
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        if (binnedDaysRemaining != null) {
+                            Text(
+                                text = "$binnedDaysRemaining days",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                 }
@@ -372,56 +312,49 @@ fun NoteItem(
 }
 
 @Composable
-private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: Color, searchQuery: String = "") {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        checklistItems.take(5).forEach { item ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if (item.isChecked) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = contentColor.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                
-                val itemText = if (searchQuery.isNotEmpty()) {
-                    buildAnnotatedString {
-                        val text = item.text
-                        append(text)
-                        val lowerText = text.lowercase()
-                        val lowerQuery = searchQuery.lowercase()
-                        var index = lowerText.indexOf(lowerQuery)
-                        while (index >= 0) {
-                            addStyle(
-                                style = SpanStyle(
-                                    background = MaterialTheme.colorScheme.primaryContainer,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                ),
-                                start = index,
-                                end = index + searchQuery.length
-                            )
-                            index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                        }
-                    }
-                } else {
-                    androidx.compose.ui.text.AnnotatedString(item.text)
-                }
+private fun NoteItemAttachments(
+    attachments: List<com.suvojeet.notenext.data.entity.Attachment>,
+    tintColor: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        val imageCount = attachments.count { it.type == "IMAGE" }
+        val audioCount = attachments.count { it.type == "AUDIO" }
+        val fileCount = attachments.count { it.type == "FILE" }
 
-                Text(
-                    text = itemText,
-                    fontSize = 14.sp,
-                    color = contentColor.copy(alpha = 0.9f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = if (item.isChecked) androidx.compose.ui.text.TextStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough) else androidx.compose.ui.text.TextStyle()
-                )
-            }
+        if (imageCount > 0) {
+            AttachmentBadge(icon = Icons.Default.Image, count = imageCount, tintColor = tintColor)
         }
-        if (checklistItems.size > 5) {
+        if (audioCount > 0) {
+            AttachmentBadge(icon = Icons.Default.Mic, count = audioCount, tintColor = tintColor)
+        }
+        if (fileCount > 0) {
+            AttachmentBadge(icon = Icons.Default.AttachFile, count = fileCount, tintColor = tintColor)
+        }
+    }
+}
+
+@Composable
+private fun AttachmentBadge(
+    imageVector: androidx.compose.ui.graphics.vector.ImageVector,
+    count: Int,
+    tintColor: Color
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = imageVector,
+            contentDescription = null,
+            modifier = Modifier.size(12.dp),
+            tint = tintColor
+        )
+        if (count > 1) {
+            Spacer(modifier = Modifier.width(2.dp))
             Text(
-                text = "...",
-                fontSize = 14.sp,
-                color = contentColor.copy(alpha = 0.7f)
+                text = count.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = tintColor
             )
         }
     }
