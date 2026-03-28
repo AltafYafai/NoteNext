@@ -296,11 +296,11 @@ fun AddEditNoteScreen(
             modifier = modifier
                 .fillMaxSize()
                 .sharedBounds(
-                    sharedContentState = rememberSharedContentState(key = "note-${state.expandedNoteId}"),
+                    sharedContentState = rememberSharedContentState(key = "note-${state.expandedNoteId ?: -1}"),
                     animatedVisibilityScope = animatedVisibilityScope,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
         ) {
             Scaffold(
