@@ -229,7 +229,6 @@ class RichTextController @Inject constructor() {
         }
 
         return content.copy(
-            text = newText,
             annotatedString = parseMarkdownToAnnotatedString(newText),
             selection = TextRange(
                 newSelection.start.coerceIn(0, newText.length),
