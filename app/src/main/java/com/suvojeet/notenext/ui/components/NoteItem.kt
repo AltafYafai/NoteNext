@@ -119,7 +119,7 @@ fun NoteItem(
                     animatedVisibilityScope = animatedVisibilityScope,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
                 .combinedClickable(
                     onClick = onNoteClick,

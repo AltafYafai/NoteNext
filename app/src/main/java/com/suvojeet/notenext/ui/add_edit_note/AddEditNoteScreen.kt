@@ -300,7 +300,7 @@ fun AddEditNoteScreen(
                     animatedVisibilityScope = animatedVisibilityScope,
                     enter = fadeIn(),
                     exit = fadeOut(),
-                    resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
         ) {
             Scaffold(
