@@ -1,57 +1,27 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.add_edit_note.components
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.ui.notes.SaveStatus
 import kotlinx.coroutines.delay
 
 @Composable
 fun SavedStatusIndicator(
-    status: SaveStatus, 
+    status: SaveStatus,
     contentColor: Color
 ) {
-    // Determine icon and tint based on status
-    // We want a subtle indicator.
-    // SAVING -> Circular Progress (Small)
-    // SAVED -> Cloud Done (Fade out)
-    // ERROR -> Cloud Off (Red) - Assuming SaveStatus might have error, or just handle basic states for now. Since SaveStatus wasn't shown fully, I'll stick to SAVING/SAVED.
-    
-    // We'll keep the logic of showing "Saved" state for a moment, but since it's an icon, we can just keep it visible or fade it out.
-    // Let's make it always visible if SAVING, and briefly visible if SAVED.
-
     var showSavedIcon by remember { mutableStateOf(false) }
 
     LaunchedEffect(status) {
@@ -59,43 +29,65 @@ fun SavedStatusIndicator(
             showSavedIcon = true
             delay(2000)
             showSavedIcon = false
+        } else if (status == SaveStatus.SAVING) {
+            showSavedIcon = false
         }
     }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(end = 4.dp)
+    Box(
+        modifier = Modifier
+            .padding(end = 4.dp)
+            .size(24.dp),
+        contentAlignment = Alignment.Center
     ) {
-        AnimatedVisibility(
-            visible = status == SaveStatus.SAVING,
-            enter = fadeIn() + androidx.compose.animation.scaleIn(),
-            exit = fadeOut() + androidx.compose.animation.scaleOut()
-        ) {
-             LoadingIndicator(
-                modifier = Modifier.size(20.dp),
-                color = contentColor
-            )
-        }
-
-        AnimatedVisibility(
-            visible = status == SaveStatus.SAVED && showSavedIcon,
-            enter = fadeIn() + androidx.compose.animation.scaleIn(),
-            exit = fadeOut() + androidx.compose.animation.scaleOut()
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = MaterialTheme.shapes.small,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Saved",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+        AnimatedContent(
+            targetState = if (status == SaveStatus.SAVING) SaveStatus.SAVING 
+                         else if (status == SaveStatus.SAVED && showSavedIcon) SaveStatus.SAVED
+                         else if (status == SaveStatus.ERROR) SaveStatus.ERROR
+                         else null,
+            transitionSpec = {
+                (fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)))
+                    .togetherWith(fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300)))
+            },
+            label = "SaveStatusIndicator"
+        ) { targetStatus ->
+            when (targetStatus) {
+                SaveStatus.SAVING -> {
+                    LoadingIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = contentColor
                     )
                 }
+                SaveStatus.SAVED -> {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(6.dp),
+                        modifier = Modifier.size(22.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Saved",
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+                SaveStatus.ERROR -> {
+                    Icon(
+                        imageVector = Icons.Default.ErrorOutline,
+                        contentDescription = "Error",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+                null -> {
+                    Spacer(modifier = Modifier.size(24.dp))
+                }
+                else -> {}
             }
         }
     }
 }
+

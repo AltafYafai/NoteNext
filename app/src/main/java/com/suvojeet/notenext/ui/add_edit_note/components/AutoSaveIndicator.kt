@@ -61,18 +61,27 @@ fun AutoSaveIndicator(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
-                if (isSaving) {
-                    LoadingIndicator(
-                        modifier = Modifier.size(16.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.CloudDone,
-                        contentDescription = "Saved",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                AnimatedContent(
+                    targetState = isSaving,
+                    transitionSpec = {
+                        (fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)))
+                            .togetherWith(fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300)))
+                    },
+                    label = "AutoSaveIndicator"
+                ) { saving ->
+                    if (saving) {
+                        LoadingIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.CloudDone,
+                            contentDescription = "Saved",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
