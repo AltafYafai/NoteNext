@@ -206,40 +206,82 @@ fun NoteContentChunkEditor(
 
     var chunkLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
+    // Calculate startOffset for this chunk to handle global indices
+    val startOffset = remember(index, state.editingContent.text) {
+        val globalText = state.editingContent.text
+        var offset = 0
+        var currentChunk = 0
+        var lineCount = 0
+        for (i in globalText.indices) {
+            if (currentChunk == index) break
+            if (globalText[i] == '\n') lineCount++
+            if (lineCount >= 50 || (i - offset) >= 5000) {
+                offset = i + 1
+                lineCount = 0
+                currentChunk++
+            }
+        }
+        offset
+    }
+
+    // Apply search highlighting
+    val highlightedChunk = remember(chunk, state.noteSearchQuery, state.searchResultIndices, state.currentSearchResultIndex, startOffset) {
+        if (state.isSearchingInNote && state.noteSearchQuery.isNotBlank()) {
+            val annotatedString = chunk.annotatedString
+            val builder = androidx.compose.ui.text.AnnotatedString.Builder(annotatedString)
+            
+            val query = state.noteSearchQuery
+            val chunkText = chunk.text
+            val chunkEndOffset = startOffset + chunkText.length
+            
+            state.searchResultIndices.forEachIndexed { resultIndex, globalIndex ->
+                if (globalIndex >= startOffset && globalIndex < chunkEndOffset) {
+                    val localIndex = globalIndex - startOffset
+                    val isCurrent = resultIndex == state.currentSearchResultIndex
+                    
+                    builder.addStyle(
+                        style = androidx.compose.ui.text.SpanStyle(
+                            background = if (isCurrent) 
+                                Color(0xFFFFD54F) // Brighter yellow for current
+                            else 
+                                Color(0xFFFFD54F).copy(alpha = 0.4f),
+                            color = Color.Black
+                        ),
+                        start = localIndex,
+                        end = (localIndex + query.length).coerceAtMost(chunkText.length)
+                    )
+                }
+            }
+            chunk.copy(annotatedString = builder.toAnnotatedString())
+        } else {
+            chunk
+        }
+    }
+
     Box(modifier = Modifier.padding(horizontal = 24.dp)) {
         BasicTextField(
-            value = chunk,
-            onValueChange = { newChunk ->
-                val globalText = state.editingContent.text
-                var startOffset = 0
-                var currentChunk = 0
-                var lineCount = 0
-                for (i in globalText.indices) {
-                    if (currentChunk == index) break
-                    if (globalText[i] == '\n') lineCount++
-                    if (lineCount >= 50 || (i - startOffset) >= 5000) {
-                        startOffset = i + 1
-                        lineCount = 0
-                        currentChunk++
-                    }
-                }
+            value = highlightedChunk,
+            onValueChange = { newHighlightedChunk ->
+                // Strip highlighting styles before saving back to state
+                val newChunkText = newHighlightedChunk.text
+                val newAnnotatedString = newHighlightedChunk.annotatedString
                 
-                val globalSelection = newChunk.selection.let { selection ->
+                val globalText = state.editingContent.text
+                val globalSelection = newHighlightedChunk.selection.let { selection ->
                     androidx.compose.ui.text.TextRange(selection.start + startOffset, selection.end + startOffset)
                 }
                 
                 val original = state.editingContent.annotatedString
-                val newAnnotatedString = try {
+                val updatedAnnotatedString = try {
                     original.subSequence(0, startOffset) + 
-                    newChunk.annotatedString + 
+                    newAnnotatedString + 
                     original.subSequence(startOffset + chunk.text.length, original.length)
                 } catch (e: Exception) {
-                    // Fallback if re-calculation mismatch
                     return@BasicTextField
                 }
                 
-                onEvent(NotesEvent.OnContentChange(newChunk.copy(
-                    annotatedString = newAnnotatedString,
+                onEvent(NotesEvent.OnContentChange(newHighlightedChunk.copy(
+                    annotatedString = updatedAnnotatedString,
                     selection = globalSelection
                 )))
             },
@@ -248,20 +290,6 @@ fun NoteContentChunkEditor(
                 .drawBehind {
                     chunkLayoutResult?.let { layout ->
                         val globalCursor = state.editingContent.selection.start
-                        var startOffset = 0
-                        var currentChunk = 0
-                        var lineCount = 0
-                        val globalText = state.editingContent.text
-                        for (i in globalText.indices) {
-                            if (currentChunk == index) break
-                            if (globalText[i] == '\n') lineCount++
-                            if (lineCount >= 50 || (i - startOffset) >= 5000) {
-                                startOffset = i + 1
-                                lineCount = 0
-                                currentChunk++
-                            }
-                        }
-
                         val localCursor = globalCursor - startOffset
                         if (localCursor >= 0 && localCursor <= chunk.text.length && layout.layoutInput.text.isNotEmpty()) {
                             try {

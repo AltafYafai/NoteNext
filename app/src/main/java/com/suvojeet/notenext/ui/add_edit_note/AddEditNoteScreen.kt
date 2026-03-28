@@ -363,7 +363,11 @@ fun AddEditNoteScreen(
                         .padding(padding)
                         .then(if (isFocusMode) Modifier.imePadding() else Modifier)
                 ) {
-                    AnimatedVisibility(visible = state.isSearchingInNote) {
+                    AnimatedVisibility(
+                        visible = state.isSearchingInNote,
+                        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut()
+                    ) {
                         NoteSearchBar(
                             query = state.noteSearchQuery,
                             onQueryChange = { onEvent(NotesEvent.OnNoteSearchQueryChange(it)) },

@@ -100,6 +100,8 @@ fun LazyListScope.ChecklistEditor(
             inputValue = state.checklistInputValues[item.id],
             onEvent = onEvent,
             isChecked = false,
+            isSearchingInNote = state.isSearchingInNote,
+            noteSearchQuery = state.noteSearchQuery,
             isNewlyAdded = state.newlyAddedChecklistItemId == item.id,
             backgroundColor = backgroundColor,
             modifier = Modifier
@@ -184,6 +186,8 @@ fun LazyListScope.ChecklistEditor(
                     inputValue = state.checklistInputValues[item.id],
                     onEvent = onEvent,
                     isChecked = true,
+                    isSearchingInNote = state.isSearchingInNote,
+                    noteSearchQuery = state.noteSearchQuery,
                     backgroundColor = backgroundColor,
                     modifier = Modifier.animateItem()
                 )
@@ -198,6 +202,8 @@ fun ChecklistItemRow(
     inputValue: TextFieldValue?,
     onEvent: (NotesEvent) -> Unit,
     isChecked: Boolean,
+    isSearchingInNote: Boolean = false,
+    noteSearchQuery: String = "",
     isNewlyAdded: Boolean = false,
     backgroundColor: Color = Color.Transparent,
     modifier: Modifier = Modifier,
@@ -291,8 +297,33 @@ fun ChecklistItemRow(
                 )
             }
             
+            val highlightedValue = remember(inputValue, item.text, isSearchingInNote, noteSearchQuery) {
+                val baseValue = inputValue ?: TextFieldValue(item.text)
+                if (isSearchingInNote && noteSearchQuery.isNotBlank()) {
+                    val query = noteSearchQuery
+                    val text = baseValue.text
+                    val builder = androidx.compose.ui.text.AnnotatedString.Builder(baseValue.annotatedString)
+                    
+                    var index = text.indexOf(query, ignoreCase = true)
+                    while (index >= 0) {
+                        builder.addStyle(
+                            style = androidx.compose.ui.text.SpanStyle(
+                                background = Color(0xFFFFD54F).copy(alpha = 0.4f),
+                                color = Color.Black
+                            ),
+                            start = index,
+                            end = index + query.length
+                        )
+                        index = text.indexOf(query, index + 1, ignoreCase = true)
+                    }
+                    baseValue.copy(annotatedString = builder.toAnnotatedString())
+                } else {
+                    baseValue
+                }
+            }
+
             BasicTextField(
-                value = inputValue ?: TextFieldValue(item.text),
+                value = highlightedValue,
                 onValueChange = { textFieldValue: TextFieldValue ->
                      onEvent(NotesEvent.OnChecklistItemValueChange(item.id, textFieldValue))
                 },
