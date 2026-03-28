@@ -3,7 +3,6 @@ package com.suvojeet.notenext.ui.project
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -411,7 +410,7 @@ fun ProjectNotesScreen(
                             val pinnedNotes = filteredNotes.filter { it.note.isPinned }
                             val otherNotes = filteredNotes.filter { !it.note.isPinned }
 
-                            AnimatedVisibility(visible = true) {
+                            androidx.compose.animation.AnimatedVisibility(visible = true) {
                                 Box {
                                     when (state.layoutType) {
                                         LayoutType.GRID -> {
@@ -582,7 +581,7 @@ fun ProjectNotesScreen(
                 }
             }
 
-            AnimatedVisibility(
+            androidx.compose.animation.AnimatedVisibility(
                 visible = state.expandedNoteId != null,
                 enter = scaleIn(initialScale = 0.85f, animationSpec = spring()) + fadeIn(animationSpec = spring()),
                 exit = scaleOut(targetScale = 0.85f, animationSpec = spring()) + fadeOut(animationSpec = spring())

@@ -16,6 +16,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.suvojeet.notenext.navigation.NavGraph
 import com.suvojeet.notenext.ui.theme.NoteNextTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,6 +55,12 @@ class MainActivity : FragmentActivity() {
     @Inject
     lateinit var settingsRepository: SettingsRepository
 
+    @Inject
+    lateinit var updateChecker: UpdateChecker
+
+    @Inject
+    lateinit var reviewManager: ReviewManager
+
     private val _startNoteIdFlow = MutableStateFlow(-1)
     private val _startAddNoteFlow = MutableStateFlow(false)
     private val _sharedTextFlow = MutableStateFlow<String?>(null)
@@ -61,95 +68,47 @@ class MainActivity : FragmentActivity() {
     private val _searchQueryFlow = MutableStateFlow<String?>(null)
     private val _externalUriFlow = MutableStateFlow<android.net.Uri?>(null)
 
-    private val _isSetupCompleteLoaded = MutableStateFlow<Boolean?>(null)
     private val _enableAppLockLoaded = MutableStateFlow<Boolean?>(null)
-    private val _lockTrigger = MutableStateFlow(0L)
+    private val _isSetupCompleteLoaded = MutableStateFlow<Boolean?>(null)
+    private val _lockTrigger = MutableStateFlow(0)
 
     private var unlocked = false
-    private var lastPauseTime: Long = 0
-    
-    private lateinit var updateChecker: UpdateChecker
-    private lateinit var reviewManager: ReviewManager
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splashScreen = installSplashScreen()
-        
-        splashScreen.setKeepOnScreenCondition {
-            _isSetupCompleteLoaded.value == null || _enableAppLockLoaded.value == null
-        }
-        
-        splashScreen.setOnExitAnimationListener { splashScreenView ->
-            val splashView = splashScreenView.view
-            splashView.animate()
-                .alpha(0f)
-                .scaleX(1.3f)
-                .scaleY(1.3f)
-                .setDuration(400L)
-                .setInterpolator(android.view.animation.AnticipateInterpolator())
-                .withEndAction {
-                    // Safety check to ensure activity is still alive and view is attached
-                    if (!isFinishing && !isDestroyed) {
-                        splashScreenView.remove()
-                    }
-                }
-                .start()
-        }
-
-        enableEdgeToEdge()
+        installSplashScreen()
         super.onCreate(savedInstanceState)
-
-        updateChecker = UpdateChecker(this)
-        reviewManager = ReviewManager(this)
-        
-        // Trigger review check
-        reviewManager.checkAndRequestReview(this)
+        enableEdgeToEdge()
 
         handleIntent(intent)
 
         lifecycleScope.launch {
-            settingsRepository.isSetupComplete.collect { _isSetupCompleteLoaded.value = it }
-        }
-        lifecycleScope.launch {
-            settingsRepository.enableAppLock.collect { _enableAppLockLoaded.value = it }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                settingsRepository.disallowScreenshots.collect { disallow ->
-                    if (disallow) {
-                        window.setFlags(
-                            android.view.WindowManager.LayoutParams.FLAG_SECURE,
-                            android.view.WindowManager.LayoutParams.FLAG_SECURE
-                        )
-                    } else {
-                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
-                    }
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsRepository.enableAppLock.collect {
+                    _enableAppLockLoaded.value = it
                 }
             }
         }
 
         lifecycleScope.launch {
-            settingsRepository.language.collect { languageCode ->
-                val appLocales = LocaleListCompat.forLanguageTags(languageCode)
-                if (AppCompatDelegate.getApplicationLocales() != appLocales) {
-                    AppCompatDelegate.setApplicationLocales(appLocales)
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsRepository.isSetupComplete.collect {
+                    _isSetupCompleteLoaded.value = it
                 }
             }
         }
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            )
-            if (permissionCheck != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                androidx.core.app.ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
-                    1
-                )
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsRepository.language.collect { languageCode ->
+                    val appLocale: LocaleListCompat = LocaleListCompat.forLanguageTags(languageCode)
+                    AppCompatDelegate.setApplicationLocales(appLocale)
+                }
             }
+        }
+
+        if (savedInstanceState != null) {
+            unlocked = savedInstanceState.getBoolean("unlocked", false)
         }
 
         setContent {
@@ -234,6 +193,7 @@ class MainActivity : FragmentActivity() {
                                 LockScreen(onUnlock = { 
                                     unlocked = true
                                     unlockedByAuth = true 
+                                    _lockTrigger.value += 1
                                 })
                             } else {
                                 val notesViewModel: com.suvojeet.notenext.ui.notes.NotesViewModel = hiltViewModel()
@@ -270,102 +230,50 @@ class MainActivity : FragmentActivity() {
 
         // Extract Assistant related actions
         val isCreateNoteAction = intent.action == "android.intent.action.CREATE_NOTE"
-        _startAddNoteFlow.value = intent.getBooleanExtra("START_ADD_NOTE", false) || isCreateNoteAction
-        
-        _initialTitleFlow.value = intent.getStringExtra("TITLE") ?: intent.getStringExtra(Intent.EXTRA_SUBJECT)
-        _searchQueryFlow.value = intent.getStringExtra("QUERY")
-        
-        if (intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_EDIT) {
-            _externalUriFlow.value = intent.data
-        } else {
-            _externalUriFlow.value = null
+        if (isCreateNoteAction) {
+            _startAddNoteFlow.value = true
+            _sharedTextFlow.value = intent.getStringExtra(Intent.EXTRA_TEXT)
+            _initialTitleFlow.value = intent.getStringExtra(Intent.EXTRA_SUBJECT)
         }
 
-        val sharedText = when {
-            intent.action == Intent.ACTION_SEND && "text/plain" == intent.type -> {
-                intent.getStringExtra(Intent.EXTRA_TEXT)
-            }
-            intent.hasExtra(Intent.EXTRA_TEXT) -> {
-                intent.getStringExtra(Intent.EXTRA_TEXT)
-            }
-            else -> null
-        }
-        _sharedTextFlow.value = sharedText
-    }
-
-    override fun onStart() {
-        super.onStart()
-        // If app was in background for more than 2 minutes, re-lock
-        if (_enableAppLockLoaded.value == true && lastPauseTime > 0) {
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastPauseTime > 120_000) { // 2 minutes
-                unlocked = false
-                _lockTrigger.value = currentTime
+        // Standard SHARE intent
+        if (intent.action == Intent.ACTION_SEND) {
+            if (intent.type == "text/plain") {
+                _sharedTextFlow.value = intent.getStringExtra(Intent.EXTRA_TEXT)
+                _initialTitleFlow.value = intent.getStringExtra(Intent.EXTRA_SUBJECT)
+                _startAddNoteFlow.value = true
+            } else if (intent.type?.startsWith("image/") == true) {
+                (intent.getParcelableExtra<android.os.Parcelable>(Intent.EXTRA_STREAM) as? android.net.Uri)?.let {
+                    _externalUriFlow.value = it
+                    _startAddNoteFlow.value = true
+                }
             }
         }
-    }
 
-    override fun onStop() {
-        super.onStop()
-        lastPauseTime = System.currentTimeMillis()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        updateChecker.resumeUpdateCheck(this)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        updateChecker.unregisterListener()
+        // Search intent
+        if (intent.action == Intent.ACTION_SEARCH || intent.action == "com.google.android.gms.actions.SEARCH_ACTION") {
+            _searchQueryFlow.value = intent.getStringExtra("query")
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        setIntent(intent)
         handleIntent(intent)
     }
 
-    override fun onActionModeStarted(mode: android.view.ActionMode?) {
-        val menu = mode?.menu
-        if (menu != null) {
-            menu.add("Bold").setOnMenuItemClickListener {
-                lifecycleScope.launch {
-                    com.suvojeet.notenext.ui.notes.NoteSelectionManager.onAction(
-                        androidx.compose.ui.text.SpanStyle(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
-                    )
-                }
-                mode.finish() 
-                true
-            }
-            menu.add("Italic").setOnMenuItemClickListener {
-                lifecycleScope.launch {
-                    com.suvojeet.notenext.ui.notes.NoteSelectionManager.onAction(
-                        androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                    )
-                }
-                mode.finish()
-                true
-            }
-            menu.add("Underline").setOnMenuItemClickListener {
-                lifecycleScope.launch {
-                    com.suvojeet.notenext.ui.notes.NoteSelectionManager.onAction(
-                        androidx.compose.ui.text.SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)
-                    )
-                }
-                mode.finish()
-                true
-            }
-            menu.add("Strike").setOnMenuItemClickListener {
-                lifecycleScope.launch {
-                    com.suvojeet.notenext.ui.notes.NoteSelectionManager.onAction(
-                        androidx.compose.ui.text.SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough)
-                    )
-                }
-                mode.finish()
-                true
-            }
-        }
-        super.onActionModeStarted(mode)
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("unlocked", unlocked)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // If app lock is enabled, we might want to re-lock when app goes to background
+        // but typically it's better to do it on stop or after a timeout.
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Optional: unlocked = false if you want to lock every time app stops
     }
 }

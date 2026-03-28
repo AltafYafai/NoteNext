@@ -301,8 +301,7 @@ fun AddEditNoteScreen(
                     enter = fadeIn(),
                     exit = fadeOut(),
                     resizeMode = SharedTransitionScope.ResizeMode.ScaleToBounds
-                    )
-
+                )
         ) {
             Scaffold(
                 containerColor = backgroundColor,
