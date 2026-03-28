@@ -51,13 +51,13 @@ fun AddEditNoteBottomAppBar(
 
     BottomAppBar(
         containerColor = backgroundColor,
-        windowInsets = BottomAppBarDefaults.windowInsets
+        windowInsets = BottomAppBarDefaults.windowInsets,
+        modifier = Modifier.height(64.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+                .padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {

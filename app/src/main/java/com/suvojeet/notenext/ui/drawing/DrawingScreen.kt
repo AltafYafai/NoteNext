@@ -237,10 +237,10 @@ private fun DrawingBottomBar(
         shadowElevation = 12.dp,
         shape = MaterialTheme.shapes.extraLarge,
         modifier = Modifier
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .navigationBarsPadding()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             // Settings Row (Slider)
             AnimatedVisibility(
                 visible = state.showBrushSettings,
