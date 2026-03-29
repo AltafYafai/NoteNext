@@ -1,6 +1,42 @@
 {
   "releases": [
     {
+      "version": "1.3.5",
+      "date": "March 29, 2026",
+      "items": [
+        {
+          "title": "Interactive Widgets & Lists",
+          "description": "Introduced interactive Jetpack Glance widgets for pinned notes and checklists. Added bulleted list support, link auto-detection, and project notes parity.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Search & Find Integration",
+          "description": "Added native in-note search with result highlighting and a new 'Find in Note' functionality for faster navigation.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "High-Performance Editor",
+          "description": "Optimized the editor with text chunking for smoother handling of long notes. Resolved cursor jumping, keyboard layout issues, and stabilized state management.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Polished & Responsive UI",
+          "description": "Refined the UI with thinner bottom toolbars, reduced padding, and animated sync indicators for a more modern feel.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Fast Startup & Metadata",
+          "description": "Enhanced app startup and note list scrolling by optimizing metadata fetching and implementing lifecycle-aware async initialization.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Database & Serialization Fixes",
+          "description": "Fixed SQL errors in note sorting, resolved serialization crashes in minified builds, and added database indices for performance.",
+          "type": "FIX"
+        }
+      ]
+    },
+    {
       "version": "1.3.4",
       "date": "March 21, 2026",
       "items": [
