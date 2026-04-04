@@ -1,6 +1,37 @@
 {
   "releases": [
     {
+      "version": "1.3.6",
+      "date": "April 05, 2026",
+      "items": [
+        {
+          "title": "Advanced Todo & Productivity",
+          "description": "Enhanced Todo feature with subtasks, reminders, and a productivity dashboard for daily progress tracking.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "Nested Project Hierarchy",
+          "description": "Organize your notes with unlimited project nesting, indentation support, and hierarchical traversal.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "AI Provider Model Selection",
+          "description": "Select specific models for OpenAI, Anthropic, and Groq. Includes support for GPT-4.5 and Claude 3.5 Sonnet.",
+          "type": "FEATURE"
+        },
+        {
+          "title": "More Options Responsiveness",
+          "description": "Fixed responsiveness issues in the More Options sheet when fully expanded and improved gesture handling.",
+          "type": "FIX"
+        },
+        {
+          "title": "Infrastructure & Modularization",
+          "description": "Modularized the Todo feature and improved AI provider infrastructure for better scalability.",
+          "type": "IMPROVEMENT"
+        }
+      ]
+    },
+    {
       "version": "1.3.5",
       "date": "March 29, 2026",
       "items": [
