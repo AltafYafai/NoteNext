@@ -34,6 +34,18 @@ class AIProviderSettingsViewModel @Inject constructor(
     private val _anthropicApiKey = MutableStateFlow("")
     val anthropicApiKey: StateFlow<String> = _anthropicApiKey.asStateFlow()
 
+    private val _openaiModels = MutableStateFlow<List<String>>(emptyList())
+    val openaiModels: StateFlow<List<String>> = _openaiModels.asStateFlow()
+
+    private val _anthropicModels = MutableStateFlow<List<String>>(emptyList())
+    val anthropicModels: StateFlow<List<String>> = _anthropicModels.asStateFlow()
+
+    private val _isLoadingModels = MutableStateFlow(false)
+    val isLoadingModels: StateFlow<Boolean> = _isLoadingModels.asStateFlow()
+
+    val selectedOpenAIModel = settingsRepository.openAIModel
+    val selectedAnthropicModel = settingsRepository.anthropicModel
+
     init {
         viewModelScope.launch {
             _selectedProvider.value = aiProviderManager.getActiveProvider()
@@ -41,6 +53,40 @@ class AIProviderSettingsViewModel @Inject constructor(
             _openaiApiKey.value = settingsRepository.openAIApiKey.first()
             _openaiBaseUrl.value = settingsRepository.openAIBaseUrl.first()
             _anthropicApiKey.value = settingsRepository.anthropicApiKey.first()
+            
+            refreshModels()
+        }
+    }
+
+    fun refreshModels() {
+        viewModelScope.launch {
+            _isLoadingModels.value = true
+            
+            // Refresh OpenAI models
+            val openaiProvider = aiProviderManager.getProviderService(AIProvider.OPENAI)
+            if (openaiProvider != null) {
+                _openaiModels.value = openaiProvider.getAvailableModels()
+            }
+
+            // Refresh Anthropic models
+            val anthropicProvider = aiProviderManager.getProviderService(AIProvider.ANTHROPIC)
+            if (anthropicProvider != null) {
+                _anthropicModels.value = anthropicProvider.getAvailableModels()
+            }
+            
+            _isLoadingModels.value = false
+        }
+    }
+
+    fun selectOpenAIModel(model: String) {
+        viewModelScope.launch {
+            settingsRepository.saveOpenAIModel(model)
+        }
+    }
+
+    fun selectAnthropicModel(model: String) {
+        viewModelScope.launch {
+            settingsRepository.saveAnthropicModel(model)
         }
     }
 
@@ -66,6 +112,7 @@ class AIProviderSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _openaiApiKey.value = key
             settingsRepository.saveOpenAIApiKey(key)
+            refreshModels()
         }
     }
 
@@ -73,6 +120,7 @@ class AIProviderSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _openaiBaseUrl.value = url
             settingsRepository.saveOpenAIBaseUrl(url)
+            refreshModels()
         }
     }
 
@@ -80,6 +128,7 @@ class AIProviderSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _anthropicApiKey.value = key
             settingsRepository.saveAnthropicApiKey(key)
+            refreshModels()
         }
     }
 }

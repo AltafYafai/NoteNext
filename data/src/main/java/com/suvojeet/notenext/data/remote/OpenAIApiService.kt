@@ -1,6 +1,8 @@
 package com.suvojeet.notenext.data.remote
 
+import kotlinx.serialization.Serializable
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.POST
@@ -12,8 +14,14 @@ interface OpenAIApiService {
         @Header("Authorization") auth: String,
         @Body request: OpenAIChatRequest
     ): OpenAIChatResponse
+
+    @GET("v1/models")
+    suspend fun getModels(
+        @Header("Authorization") auth: String
+    ): OpenAIModelListResponse
 }
 
+@Serializable
 data class OpenAIChatRequest(
     val model: String,
     val messages: List<Message>,
@@ -21,30 +29,46 @@ data class OpenAIChatRequest(
     val max_tokens: Int? = null
 )
 
+@Serializable
 data class OpenAIChatResponse(
-    val id: String?,
-    val `object`: String?,
-    val created: Long?,
-    val model: String?,
-    val choices: List<OpenAIChoice>?,
-    val usage: OpenAIUsage?,
-    val error: OpenAIError?
+    val id: String? = null,
+    val `object`: String? = null,
+    val created: Long? = null,
+    val model: String? = null,
+    val choices: List<OpenAIChoice>? = null,
+    val usage: OpenAIUsage? = null,
+    val error: OpenAIError? = null
 )
 
+@Serializable
 data class OpenAIChoice(
-    val index: Int?,
-    val message: Message?,
-    val finish_reason: String?
+    val index: Int? = null,
+    val message: Message? = null,
+    val finish_reason: String? = null
 )
 
+@Serializable
 data class OpenAIUsage(
-    val prompt_tokens: Int?,
-    val completion_tokens: Int?,
-    val total_tokens: Int?
+    val prompt_tokens: Int? = null,
+    val completion_tokens: Int? = null,
+    val total_tokens: Int? = null
 )
 
+@Serializable
 data class OpenAIError(
-    val message: String?,
-    val type: String?,
-    val code: String?
+    val message: String? = null,
+    val type: String? = null,
+    val code: String? = null
+)
+
+@Serializable
+data class OpenAIModelListResponse(
+    val data: List<OpenAIModel>
+)
+
+@Serializable
+data class OpenAIModel(
+    val id: String,
+    val created: Long,
+    val owned_by: String
 )
