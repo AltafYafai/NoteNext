@@ -17,7 +17,9 @@ import javax.inject.Inject
 sealed interface ProjectScreenEvent {
     data class CreateNewNote(val projectId: Int) : ProjectScreenEvent
     data class CreateNewChecklist(val projectId: Int) : ProjectScreenEvent
-    data class CreateProject(val name: String, val description: String?) : ProjectScreenEvent
+    data class CreateProject(val name: String, val description: String?, val parentId: Int? = null) : ProjectScreenEvent
+    data class MoveProject(val projectId: Int, val newParentId: Int?) : ProjectScreenEvent
+    data class ReorderProject(val projectId: Int, val newOrder: Int) : ProjectScreenEvent
 }
 
 @HiltViewModel
@@ -32,7 +34,7 @@ class ProjectViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     init {
-        repository.getProjects().onEach { projects ->
+        repository.getProjectHierarchy().onEach { projects ->
             _state.value = _state.value.copy(projects = projects)
         }.launchIn(viewModelScope)
     }
@@ -52,8 +54,25 @@ class ProjectViewModel @Inject constructor(
             is ProjectScreenEvent.CreateProject -> {
                 viewModelScope.launch {
                     if (event.name.isNotBlank()) {
-                        repository.insertProject(Project(name = event.name, description = event.description))
+                        val maxOrder = repository.getRootProjects().onEach { }.let { 0 }
+                        val project = Project(
+                            name = event.name,
+                            description = event.description,
+                            parentId = event.parentId,
+                            orderIndex = maxOrder + 1
+                        )
+                        repository.insertProject(project)
                     }
+                }
+            }
+            is ProjectScreenEvent.MoveProject -> {
+                viewModelScope.launch {
+                    repository.moveProject(event.projectId, event.newParentId)
+                }
+            }
+            is ProjectScreenEvent.ReorderProject -> {
+                viewModelScope.launch {
+                    repository.reorderProject(event.projectId, event.newOrder)
                 }
             }
         }

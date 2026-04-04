@@ -15,12 +15,47 @@ interface ProjectDao {
     @Update
     suspend fun updateProject(project: Project)
 
-    @Query("SELECT * FROM projects ORDER BY createdAt DESC")
-    fun getProjects(): Flow<List<Project>>
+    @Query("SELECT * FROM projects WHERE parentId IS NULL ORDER BY orderIndex ASC, createdAt DESC")
+    fun getRootProjects(): Flow<List<Project>>
+
+    @Query("SELECT * FROM projects WHERE parentId = :parentId ORDER BY orderIndex ASC, createdAt DESC")
+    fun getSubProjects(parentId: Int): Flow<List<Project>>
+
+    @Query("SELECT * FROM projects ORDER BY orderIndex ASC, createdAt DESC")
+    fun getAllProjects(): Flow<List<Project>>
 
     @Query("DELETE FROM projects WHERE id = :projectId")
     suspend fun deleteProject(projectId: Int)
 
     @Query("SELECT * FROM projects WHERE id = :projectId")
     suspend fun getProjectById(projectId: Int): Project?
+
+    @Query("SELECT * FROM projects WHERE parentId IS NULL ORDER BY orderIndex ASC, createdAt DESC")
+    suspend fun getRootProjectsSync(): List<Project>
+
+    @Query("SELECT * FROM projects WHERE parentId = :parentId ORDER BY orderIndex ASC, createdAt DESC")
+    suspend fun getSubProjectsSync(parentId: Int): List<Project>
+
+    @Query("UPDATE projects SET orderIndex = :orderIndex WHERE id = :projectId")
+    suspend fun updateProjectOrder(projectId: Int, orderIndex: Int)
+
+    @Query("UPDATE projects SET parentId = :newParentId WHERE id = :projectId")
+    suspend fun moveProjectToParent(projectId: Int, newParentId: Int?)
+
+    @Query("""
+        WITH RECURSIVE project_tree(id, name, description, createdAt, parentId, orderIndex, color, depth, sortPath) AS (
+            SELECT id, name, description, createdAt, parentId, orderIndex, color, 0, 
+                   printf('%010d', orderIndex)
+            FROM projects 
+            WHERE parentId IS NULL
+            UNION ALL
+            SELECT p.id, p.name, p.description, p.createdAt, p.parentId, p.orderIndex, p.color, 
+                   pt.depth + 1,
+                   pt.sortPath || '/' || printf('%010d', p.orderIndex)
+            FROM projects p
+            INNER JOIN project_tree pt ON p.parentId = pt.id
+        )
+        SELECT * FROM project_tree ORDER BY sortPath ASC
+    """)
+    fun getProjectHierarchy(): Flow<List<Project>>
 }

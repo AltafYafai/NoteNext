@@ -78,7 +78,8 @@ object GroqRateLimitManager {
 @Singleton
 class GroqRepository @Inject constructor(
     private val apiService: GroqApiService,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val aiProviderManager: com.suvojeet.notenext.data.ai.AIProviderManager
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 

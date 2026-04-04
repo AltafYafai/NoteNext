@@ -18,7 +18,7 @@ import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.TodoItem
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 25, exportSchema = true)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 26, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -29,6 +29,37 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val cursor = db.query("PRAGMA table_info(projects)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("parentId" !in columns) {
+                    db.execSQL("ALTER TABLE projects ADD COLUMN parentId INTEGER")
+                }
+                if ("orderIndex" !in columns) {
+                    db.execSQL("ALTER TABLE projects ADD COLUMN orderIndex INTEGER NOT NULL DEFAULT 0")
+                }
+                if ("color" !in columns) {
+                    db.execSQL("ALTER TABLE projects ADD COLUMN color INTEGER")
+                }
+
+                // Set orderIndex based on createdAt for existing projects
+                db.execSQL("""
+                    UPDATE projects 
+                    SET orderIndex = (
+                        SELECT COUNT(*) 
+                        FROM projects p2 
+                        WHERE p2.createdAt <= projects.createdAt
+                    )
+                """)
+            }
+        }
+
         val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_lastEdited` ON `notes` (`lastEdited`)")
