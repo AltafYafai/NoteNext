@@ -42,6 +42,26 @@ fun ProjectScreen(
     var projectToDelete by remember { mutableStateOf<Int?>(null) }
     val expandedProjects = remember { mutableStateMapOf<Int, Boolean>() }
 
+    // Build hierarchical project list
+    val hierarchicalProjects = remember(state.projects) {
+        val projectMap = state.projects.associateBy { it.id }
+        val rootProjects = state.projects.filter { it.parentId == null }
+
+        fun buildHierarchy(project: com.suvojeet.notenext.data.Project, depth: Int): List<HierarchicalProjectEntry> {
+            val entry = HierarchicalProjectEntry(project, depth)
+            val isExpanded = expandedProjects[project.id] ?: false
+            val children = state.projects.filter { it.parentId == project.id }
+
+            return listOf(entry) + if (isExpanded) {
+                children.flatMap { child -> buildHierarchy(child, depth + 1) }
+            } else {
+                emptyList()
+            }
+        }
+
+        rootProjects.flatMap { buildHierarchy(it, 0) }
+    }
+
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     LaunchedEffect(Unit) {
@@ -155,21 +175,21 @@ fun ProjectScreen(
                         contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(state.projects, key = { it.id }) { project ->
-                            val isExpanded = expandedProjects[project.id] ?: false
+                        items(hierarchicalProjects, key = { it.project.id }) { entry ->
                             HierarchicalProjectItem(
-                                project = project,
-                                isExpanded = isExpanded,
+                                project = entry.project,
+                                isExpanded = expandedProjects[entry.project.id] ?: false,
                                 onToggleExpand = {
-                                    expandedProjects[project.id] = !isExpanded
+                                    expandedProjects[entry.project.id] = expandedProjects[entry.project.id] != true
                                 },
-                                onClick = { onProjectClick(project.id) },
+                                onClick = { onProjectClick(entry.project.id) },
                                 onLongClick = {
-                                    projectToDelete = project.id
+                                    projectToDelete = entry.project.id
                                 },
                                 onCreateSubProject = {
-                                    showCreateSubProjectDialog = project.id
-                                }
+                                    showCreateSubProjectDialog = entry.project.id
+                                },
+                                depth = entry.depth
                             )
                         }
                     }
@@ -236,3 +256,8 @@ private fun CreateProjectDialog(
         }
     )
 }
+
+data class HierarchicalProjectEntry(
+    val project: com.suvojeet.notenext.data.Project,
+    val depth: Int
+)
