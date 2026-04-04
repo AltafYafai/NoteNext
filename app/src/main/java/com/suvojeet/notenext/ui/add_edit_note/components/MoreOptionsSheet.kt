@@ -46,21 +46,31 @@ fun MoreOptionsSheet(
     val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState()
 
-    val lockLabel = if (state.editingIsLocked) "Unlock" else "Lock"
+    val lockLabel = stringResource(id = if (state.editingIsLocked) R.string.unlock else R.string.lock)
     val lockIcon = if (state.editingIsLocked) Icons.Default.LockOpen else Icons.Default.Lock
-    val convertLabel = if (state.editingNoteType == NoteType.TEXT) "Convert to List" else "Convert to Text"
+    val convertLabel = stringResource(id = if (state.editingNoteType == NoteType.TEXT) R.string.convert_to_list else R.string.convert_to_text)
     val convertIcon = Icons.Default.Check
+
+    val searchLabel = stringResource(id = R.string.search)
+    val deleteLabel = stringResource(id = R.string.delete)
+    val copyLabel = stringResource(id = R.string.make_a_copy)
+    val shareLabel = stringResource(id = R.string.share)
+    val labelsLabel = stringResource(id = R.string.labels)
+    val printLabel = stringResource(id = R.string.print)
+    val saveAsLabel = stringResource(id = R.string.save_as)
+    val historyLabel = stringResource(id = R.string.history)
+    val convertToTodoLabel = stringResource(id = R.string.convert_to_todo)
 
     data class OptionItem(val label: String, val icon: ImageVector, val action: () -> Unit)
     
-    val options = remember(state.editingIsLocked, state.editingNoteType, state.editingIsNewNote) {
+    val options = remember(state.editingIsLocked, state.editingNoteType, state.editingIsNewNote, lockLabel, convertLabel, searchLabel, deleteLabel, copyLabel, shareLabel, labelsLabel, printLabel, saveAsLabel, historyLabel, convertToTodoLabel) {
         mutableListOf<OptionItem>().apply {
             add(OptionItem(lockLabel, lockIcon) { onToggleLock() })
             add(OptionItem(convertLabel, convertIcon) { onEvent(NotesEvent.OnToggleNoteType) })
-            add(OptionItem(stringResource(id = R.string.search), Icons.Default.Search) { onEvent(NotesEvent.ToggleNoteSearch) })
-            add(OptionItem(stringResource(id = R.string.delete), Icons.Default.Delete) { showDeleteDialog(true) })
-            add(OptionItem(stringResource(id = R.string.make_a_copy), Icons.Default.ContentCopy) { onEvent(NotesEvent.OnCopyCurrentNoteClick) })
-            add(OptionItem(stringResource(id = R.string.share), Icons.Default.Share) {
+            add(OptionItem(searchLabel, Icons.Default.Search) { onEvent(NotesEvent.ToggleNoteSearch) })
+            add(OptionItem(deleteLabel, Icons.Default.Delete) { showDeleteDialog(true) })
+            add(OptionItem(copyLabel, Icons.Default.ContentCopy) { onEvent(NotesEvent.OnCopyCurrentNoteClick) })
+            add(OptionItem(shareLabel, Icons.Default.Share) {
                 val sendIntent: Intent = Intent().apply {
                     action = Intent.ACTION_SEND
                     putExtra(Intent.EXTRA_TEXT, state.editingTitle + "\n\n" + state.editingContent.text)
@@ -70,14 +80,14 @@ fun MoreOptionsSheet(
                 val shareIntent = Intent.createChooser(sendIntent, null)
                 context.startActivity(shareIntent)
             })
-            add(OptionItem(stringResource(id = R.string.labels), Icons.AutoMirrored.Filled.Label) { onEvent(NotesEvent.OnAddLabelsToCurrentNoteClick) })
-            add(OptionItem("Print", Icons.Default.Print) { onPrint() })
-            add(OptionItem(stringResource(id = R.string.save_as), Icons.Default.FileDownload) { showSaveAsDialog(true) })
+            add(OptionItem(labelsLabel, Icons.AutoMirrored.Filled.Label) { onEvent(NotesEvent.OnAddLabelsToCurrentNoteClick) })
+            add(OptionItem(printLabel, Icons.Default.Print) { onPrint() })
+            add(OptionItem(saveAsLabel, Icons.Default.FileDownload) { showSaveAsDialog(true) })
             
             if (!state.editingIsNewNote) {
-                add(OptionItem(stringResource(id = R.string.history), Icons.Default.History) { showHistoryDialog(true) })
+                add(OptionItem(historyLabel, Icons.Default.History) { showHistoryDialog(true) })
             }
-            add(OptionItem("Convert to Todo", Icons.Default.PlaylistAddCheck) { onEvent(NotesEvent.ConvertToTodo) })
+            add(OptionItem(convertToTodoLabel, Icons.Default.PlaylistAddCheck) { onEvent(NotesEvent.ConvertToTodo) })
         }
     }
 
