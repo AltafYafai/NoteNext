@@ -44,10 +44,15 @@ interface NoteRepository {
 
     // Project operations
     fun getProjects(): Flow<List<Project>>
+    fun getRootProjects(): Flow<List<Project>>
+    fun getSubProjects(parentId: Int): Flow<List<Project>>
+    fun getProjectHierarchy(): Flow<List<Project>>
     suspend fun insertProject(project: Project): Long
     suspend fun updateProject(project: Project)
     suspend fun deleteProject(projectId: Int)
     suspend fun getProjectById(projectId: Int): Project?
+    suspend fun moveProject(projectId: Int, newParentId: Int?)
+    suspend fun reorderProject(projectId: Int, newOrder: Int)
 
     // Reminder operations
     fun getNotesWithReminders(currentTime: Long): Flow<List<Note>>

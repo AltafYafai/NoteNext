@@ -38,6 +38,8 @@ fun ProjectScreen(
     val viewModel: ProjectViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showCreateProjectDialog by remember { mutableStateOf(false) }
+    var showCreateSubProjectDialog by remember { mutableStateOf<Int?>(null) }
+    val expandedProjects = remember { mutableStateMapOf<Int, Boolean>() }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -65,16 +67,27 @@ fun ProjectScreen(
         )
     }
 
+    if (showCreateSubProjectDialog != null) {
+        CreateProjectDialog(
+            onDismiss = { showCreateSubProjectDialog = null },
+            onConfirm = { projectName, projectDescription ->
+                viewModel.onEvent(ProjectScreenEvent.CreateProject(projectName, projectDescription, showCreateSubProjectDialog))
+                showCreateSubProjectDialog = null
+            },
+            title = "Create Sub-Project"
+        )
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { 
+                title = {
                     Text(
                         stringResource(id = R.string.projects),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Black
-                    ) 
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onMenuClick, modifier = Modifier.springPress()) {
@@ -92,7 +105,7 @@ fun ProjectScreen(
             FloatingActionButton(
                 onClick = { showCreateProjectDialog = true },
                 modifier = Modifier.springPress(),
-                shape = MaterialTheme.shapes.extraLarge,
+                shape = MaterialTheme.colorScheme.extraLarge,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
@@ -118,9 +131,17 @@ fun ProjectScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(state.projects, key = { it.id }) { project ->
-                            ProjectItem(
+                            val isExpanded = expandedProjects[project.id] ?: false
+                            HierarchicalProjectItem(
                                 project = project,
-                                onClick = { onProjectClick(project.id) }
+                                isExpanded = isExpanded,
+                                onToggleExpand = {
+                                    expandedProjects[project.id] = !isExpanded
+                                },
+                                onClick = { onProjectClick(project.id) },
+                                onCreateSubProject = {
+                                    showCreateSubProjectDialog = project.id
+                                }
                             )
                         }
                     }

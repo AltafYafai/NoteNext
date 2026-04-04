@@ -10,5 +10,8 @@ data class Project(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
     val description: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val parentId: Int? = null,
+    val orderIndex: Int = 0,
+    val color: Int? = null
 )

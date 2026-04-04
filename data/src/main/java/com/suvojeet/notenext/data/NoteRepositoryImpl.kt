@@ -228,7 +228,13 @@ class NoteRepositoryImpl @Inject constructor(
     override suspend fun removeLabelFromNotes(labelName: String) = 
         noteDao.removeLabelFromNotes(labelName)
 
-    override fun getProjects(): Flow<List<Project>> = projectDao.getProjects()
+    override fun getProjects(): Flow<List<Project>> = projectDao.getAllProjects()
+
+    override fun getRootProjects(): Flow<List<Project>> = projectDao.getRootProjects()
+
+    override fun getSubProjects(parentId: Int): Flow<List<Project>> = projectDao.getSubProjects(parentId)
+
+    override fun getProjectHierarchy(): Flow<List<Project>> = projectDao.getProjectHierarchy()
 
     override suspend fun insertProject(project: Project): Long = projectDao.insertProject(project)
 
@@ -237,6 +243,14 @@ class NoteRepositoryImpl @Inject constructor(
     override suspend fun deleteProject(projectId: Int) = projectDao.deleteProject(projectId)
 
     override suspend fun getProjectById(projectId: Int): Project? = projectDao.getProjectById(projectId)
+
+    override suspend fun moveProject(projectId: Int, newParentId: Int?) {
+        projectDao.moveProjectToParent(projectId, newParentId)
+    }
+
+    override suspend fun reorderProject(projectId: Int, newOrder: Int) {
+        projectDao.updateProjectOrder(projectId, newOrder)
+    }
 
     override fun getNotesWithReminders(currentTime: Long): Flow<List<Note>> = 
         noteDao.getNotesWithReminders(currentTime)

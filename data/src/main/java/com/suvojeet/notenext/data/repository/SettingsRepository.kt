@@ -30,6 +30,12 @@ object PreferencesKeys {
     val CUSTOM_GROQ_KEY = stringPreferencesKey("custom_groq_key")
     val CUSTOM_FAST_MODEL = stringPreferencesKey("custom_fast_model")
     val CUSTOM_LARGE_MODEL = stringPreferencesKey("custom_large_model")
+    
+    // AI Provider Settings
+    val PREFERRED_AI_PROVIDER = stringPreferencesKey("preferred_ai_provider")
+    val OPENAI_API_KEY = stringPreferencesKey("openai_api_key")
+    val OPENAI_BASE_URL = stringPreferencesKey("openai_base_url")
+    val ANTHROPIC_API_KEY = stringPreferencesKey("anthropic_api_key")
 }
 
 class SettingsRepository(private val context: Context) {
@@ -166,5 +172,34 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.DISALLOW_SCREENSHOTS] = disallow
         }
+    }
+
+    // AI Provider Settings
+    val preferredAIProvider: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.PREFERRED_AI_PROVIDER] ?: "GROQ" }
+
+    suspend fun savePreferredAIProvider(provider: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.PREFERRED_AI_PROVIDER] = provider }
+    }
+
+    val openAIApiKey: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.OPENAI_API_KEY] ?: "" }
+
+    suspend fun saveOpenAIApiKey(key: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.OPENAI_API_KEY] = key }
+    }
+
+    val openAIBaseUrl: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.OPENAI_BASE_URL] ?: "https://api.openai.com/" }
+
+    suspend fun saveOpenAIBaseUrl(url: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.OPENAI_BASE_URL] = url }
+    }
+
+    val anthropicApiKey: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.ANTHROPIC_API_KEY] ?: "" }
+
+    suspend fun saveAnthropicApiKey(key: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.ANTHROPIC_API_KEY] = key }
     }
 }
