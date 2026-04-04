@@ -85,6 +85,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":credits"))
     implementation(project(":changelog"))
+    implementation(project(":feature:todo"))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)

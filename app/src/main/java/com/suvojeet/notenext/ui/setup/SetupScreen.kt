@@ -40,6 +40,7 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.setup.components.PermissionItem
 import com.suvojeet.notenext.ui.settings.BackupRestoreViewModel
 import com.suvojeet.notenext.ui.components.*
+import com.suvojeet.notenext.ui.components.*
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException

@@ -368,6 +368,10 @@ class ProjectNotesViewModel @Inject constructor(
                                 linkPreviews = note.linkPreviews,
                                 editingNoteType = note.noteType,
                                 editingChecklist = checklist,
+                                checklistInputValues = checklist.associate { item ->
+                                    item.id to TextFieldValue(richTextController.parseMarkdownToAnnotatedString(item.text))
+                                },
+                                focusedChecklistItemId = null,
                                 editingAttachments = noteWithAttachments.attachments.map { it.copy(tempId = java.util.UUID.randomUUID().toString()) },
                                 editingIsLocked = note.isLocked,
                                 editingReminderTime = note.reminderTime,
@@ -388,6 +392,11 @@ class ProjectNotesViewModel @Inject constructor(
                             linkPreviews = emptyList(),
                             editingNoteType = event.noteType,
                             editingChecklist = if (event.noteType == NoteType.CHECKLIST) listOf(ChecklistItem(text = "", isChecked = false)) else emptyList(),
+                            checklistInputValues = if (event.noteType == NoteType.CHECKLIST) {
+                                val id = java.util.UUID.randomUUID().toString()
+                                mapOf(id to TextFieldValue(""))
+                            } else emptyMap(),
+                            focusedChecklistItemId = null,
                             editingAttachments = emptyList(),
                             editingIsLocked = false,
                             editingNoteVersions = emptyList(),
@@ -401,60 +410,99 @@ class ProjectNotesViewModel @Inject constructor(
                 onEvent(ProjectNotesEvent.OnSaveNoteClick())
             }
             is ProjectNotesEvent.AddChecklistItem -> {
-                val newItem = ChecklistItem(text = "", isChecked = false, position = state.value.editingChecklist.size)
-                val updatedChecklist = state.value.editingChecklist + newItem
+                val (updatedChecklist, newItemId) = com.suvojeet.notenext.ui.notes.ChecklistManager.addChecklistItem(state.value.editingChecklist)
                 _state.value = state.value.copy(
                     editingChecklist = updatedChecklist,
-                    newlyAddedChecklistItemId = newItem.id
+                    newlyAddedChecklistItemId = newItemId,
+                    checklistInputValues = state.value.checklistInputValues + (newItemId to TextFieldValue(""))
                 )
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.SwapChecklistItems -> {
-                val list = state.value.editingChecklist.toMutableList()
-                val fromIndex = list.indexOfFirst { it.id == event.fromId }
-                val toIndex = list.indexOfFirst { it.id == event.toId }
-
-                if (fromIndex != -1 && toIndex != -1 && fromIndex != toIndex) {
-                    java.util.Collections.swap(list, fromIndex, toIndex)
-                    
-                    val updatedList = list.mapIndexed { index, item -> item.copy(position = index) }
+                val updatedList = com.suvojeet.notenext.ui.notes.ChecklistManager.swapItems(state.value.editingChecklist, event.fromId, event.toId)
+                if (updatedList != state.value.editingChecklist) {
                     _state.value = state.value.copy(editingChecklist = updatedList)
+                    scheduleAutoSave()
                 }
             }
             is ProjectNotesEvent.DeleteChecklistItem -> {
-                val updatedChecklist = state.value.editingChecklist.filterNot { it.id == event.itemId }
-                _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                val updatedChecklist = com.suvojeet.notenext.ui.notes.ChecklistManager.deleteItem(state.value.editingChecklist, event.itemId)
+                _state.value = state.value.copy(
+                    editingChecklist = updatedChecklist,
+                    checklistInputValues = state.value.checklistInputValues - event.itemId
+                )
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.IndentChecklistItem -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(level = kotlin.math.min(it.level + 1, 5)) else it
-                }
+                val updatedChecklist = com.suvojeet.notenext.ui.notes.ChecklistManager.indentItem(state.value.editingChecklist, event.itemId)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.OutdentChecklistItem -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(level = kotlin.math.max(it.level - 1, 0)) else it
-                }
+                val updatedChecklist = com.suvojeet.notenext.ui.notes.ChecklistManager.outdentItem(state.value.editingChecklist, event.itemId)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.OnChecklistItemCheckedChange -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(isChecked = event.isChecked) else it
-                }
+                val updatedChecklist = com.suvojeet.notenext.ui.notes.ChecklistManager.changeItemCheckedState(state.value.editingChecklist, event.itemId, event.isChecked)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.OnChecklistItemTextChange -> {
-                val updatedChecklist = state.value.editingChecklist.map {
-                    if (it.id == event.itemId) it.copy(text = event.text) else it
-                }
+                val updatedChecklist = com.suvojeet.notenext.ui.notes.ChecklistManager.changeItemText(state.value.editingChecklist, event.itemId, event.text)
                 _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.OnChecklistItemValueChange -> {
-                 // Simplified handling for Project notes. 
-                 // ProjectNotesState currently doesn't support rich text input values (checklistInputValues).
-                 // TODO: Implement rich text support for project notes.
+                val currentValues = state.value.checklistInputValues.toMutableMap()
+                val oldContent = currentValues[event.itemId] ?: TextFieldValue("")
+
+                val finalContent = richTextController.processContentChange(
+                    oldContent = oldContent,
+                    newContent = event.value,
+                    activeStyles = state.value.activeStyles,
+                    activeHeadingStyle = state.value.activeHeadingStyle
+                )
+                
+                currentValues[event.itemId] = finalContent
+                
+                // Sync styles with toolbar
+                val selection = finalContent.selection
+                val styles = if (selection.collapsed) {
+                    if (selection.start > 0) {
+                        finalContent.annotatedString.spanStyles.filter {
+                            it.start <= selection.start - 1 && it.end >= selection.start
+                        }
+                    } else {
+                        emptyList()
+                    }
+                } else {
+                    finalContent.annotatedString.spanStyles.filter {
+                        maxOf(selection.start, it.start) < minOf(selection.end, it.end)
+                    }
+                }
+
+                _state.value = state.value.copy(
+                    checklistInputValues = currentValues,
+                    isBoldActive = styles.any { style -> style.item.fontWeight == FontWeight.Bold },
+                    isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
+                    isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline }
+                )
+                
+                // Sync text with persistence model (Markdown)
+                viewModelScope.launch {
+                    val updatedText = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString).let {
+                        com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
+                    }
+                    val updatedChecklist = state.value.editingChecklist.map {
+                        if (it.id == event.itemId) it.copy(text = updatedText) else it
+                    }
+                    _state.value = state.value.copy(editingChecklist = updatedChecklist)
+                }
+                scheduleAutoSave()
             }
             is ProjectNotesEvent.OnChecklistItemFocus -> {
-                // Empty implementation for now to satisfy exhaustiveness
+                _state.value = state.value.copy(focusedChecklistItemId = event.itemId)
             }
             is ProjectNotesEvent.OnTitleChange -> {
                 val newHistory = state.value.editingHistory.take(state.value.editingHistoryIndex + 1) + (event.title to state.value.editingContent)

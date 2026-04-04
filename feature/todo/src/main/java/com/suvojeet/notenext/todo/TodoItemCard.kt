@@ -1,5 +1,5 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
-package com.suvojeet.notenext.ui.todo
+package com.suvojeet.notenext.todo
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -24,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.R
+import com.suvojeet.notenext.core.R
 import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.ui.components.springPress
 import java.text.SimpleDateFormat

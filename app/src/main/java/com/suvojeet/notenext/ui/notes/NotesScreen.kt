@@ -53,6 +53,7 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.components.*
+import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.core.model.NoteType

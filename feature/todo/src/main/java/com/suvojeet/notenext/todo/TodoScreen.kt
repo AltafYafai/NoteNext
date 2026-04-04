@@ -1,5 +1,5 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
-package com.suvojeet.notenext.ui.todo
+package com.suvojeet.notenext.todo
 
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -25,7 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import com.suvojeet.notenext.R
+import com.suvojeet.notenext.core.R
 import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.ExpressiveLoading
 import com.suvojeet.notenext.ui.components.ExpressiveSection

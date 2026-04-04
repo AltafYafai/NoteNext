@@ -1,4 +1,4 @@
-package com.suvojeet.notenext.ui.todo
+package com.suvojeet.notenext.todo
 
 sealed class TodoFilter {
     object All : TodoFilter()

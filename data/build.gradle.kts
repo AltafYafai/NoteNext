@@ -102,6 +102,13 @@ dependencies {
     // Security
     implementation(libs.androidx.security.crypto)
 
+    // Retrofit & OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.retrofit.kotlinx.serialization.json)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
     

@@ -1,4 +1,4 @@
-package com.suvojeet.notenext.ui.todo
+package com.suvojeet.notenext.todo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -76,7 +76,7 @@ import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.settings.BackupScreen
-import com.suvojeet.notenext.ui.todo.TodoScreen
+import com.suvojeet.notenext.todo.TodoScreen
 
 import com.suvojeet.notenext.ui.drawing.DrawingScreen
 

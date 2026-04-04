@@ -23,6 +23,7 @@
     <string name="pinned">PINNED</string>
     <string name="others">OTHERS</string>
     <string name="note">Note</string>
+    <string name="drawing">Drawing</string>
     <string name="checklist">Checklist</string>
     <string name="scan_qr">Scan QR</string>
     <string name="add_note">Add Note</string>

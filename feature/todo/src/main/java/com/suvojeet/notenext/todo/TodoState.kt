@@ -1,4 +1,4 @@
-package com.suvojeet.notenext.ui.todo
+package com.suvojeet.notenext.todo
 
 import com.suvojeet.notenext.data.TodoItem
 

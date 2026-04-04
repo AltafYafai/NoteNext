@@ -41,6 +41,8 @@ data class ProjectNotesState(
     val linkPreviews: List<LinkPreview> = emptyList(),
     val editingNoteType: NoteType = NoteType.TEXT,
     val editingChecklist: List<ChecklistItem> = emptyList(),
+    val checklistInputValues: Map<String, TextFieldValue> = emptyMap(),
+    val focusedChecklistItemId: String? = null,
     val isCheckedItemsExpanded: Boolean = true,
     val newlyAddedChecklistItemId: String? = null,
     val editingAttachments: List<com.suvojeet.notenext.data.Attachment> = emptyList(),

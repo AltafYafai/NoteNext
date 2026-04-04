@@ -27,7 +27,7 @@ import androidx.graphics.shapes.CornerRounding
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.toPath
-import com.suvojeet.notenext.R
+import com.suvojeet.notenext.core.R
 import kotlinx.coroutines.delay
 
 import androidx.compose.ui.graphics.vector.ImageVector
