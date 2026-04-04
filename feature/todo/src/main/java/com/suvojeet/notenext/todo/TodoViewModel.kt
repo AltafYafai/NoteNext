@@ -32,11 +32,15 @@ sealed class TodoUiEvent {
 @HiltViewModel
 class TodoViewModel @Inject constructor(
     private val repository: TodoRepository,
-    private val groqRepository: GroqRepository
+    private val noteRepository: com.suvojeet.notenext.data.NoteRepository,
+    private val groqRepository: GroqRepository,
+    private val alarmScheduler: com.suvojeet.notenext.data.AlarmScheduler
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(TodoState())
     val state: StateFlow<TodoState> = _state.asStateFlow()
+
+    val projects = noteRepository.getProjects()
 
     private val _filter = MutableStateFlow<TodoFilter>(TodoFilter.All)
 
@@ -60,12 +64,14 @@ class TodoViewModel @Inject constructor(
         combine(
             repository.getActiveCount(),
             repository.getCompletedCount(),
+            repository.getCompletedTodayCount(),
             _filter
-        ) { activeCount, completedCount, filter ->
+        ) { activeCount, completedCount, completedTodayCount, filter ->
             _state.value = _state.value.copy(
                 isLoading = false,
                 activeCount = activeCount,
                 completedCount = completedCount,
+                completedTodayCount = completedTodayCount,
                 filter = filter
             )
         }.launchIn(viewModelScope)
@@ -75,24 +81,36 @@ class TodoViewModel @Inject constructor(
         when (event) {
             is TodoEvent.AddTodo -> {
                 viewModelScope.launch {
+                    val maxPos = repository.getMaxPosition()
                     val todo = TodoItem(
                         title = event.title,
                         description = event.description,
                         priority = event.priority,
                         dueDate = event.dueDate,
+                        reminderTime = event.reminderTime,
+                        position = maxPos + 1,
                         createdAt = System.currentTimeMillis()
                     )
-                    repository.insertTodo(todo)
+                    val id = repository.insertTodo(todo)
+                    if (todo.reminderTime != null) {
+                        alarmScheduler.scheduleTodo(todo.copy(id = id.toInt()))
+                    }
                 }
             }
             is TodoEvent.UpdateTodo -> {
                 viewModelScope.launch {
                     repository.updateTodo(event.todo)
+                    if (event.todo.reminderTime != null && !event.todo.isCompleted) {
+                        alarmScheduler.scheduleTodo(event.todo)
+                    } else {
+                        alarmScheduler.cancelTodo(event.todo)
+                    }
                 }
             }
             is TodoEvent.DeleteTodo -> {
                 viewModelScope.launch {
                     repository.deleteTodo(event.todo)
+                    alarmScheduler.cancelTodo(event.todo)
                 }
             }
             is TodoEvent.ToggleComplete -> {
@@ -102,6 +120,11 @@ class TodoViewModel @Inject constructor(
                         completedAt = if (!event.todo.isCompleted) System.currentTimeMillis() else null
                     )
                     repository.updateTodo(updatedTodo)
+                    if (updatedTodo.isCompleted) {
+                        alarmScheduler.cancelTodo(updatedTodo)
+                    } else if (updatedTodo.reminderTime != null) {
+                        alarmScheduler.scheduleTodo(updatedTodo)
+                    }
                 }
             }
             is TodoEvent.SetFilter -> {
@@ -115,47 +138,79 @@ class TodoViewModel @Inject constructor(
             is TodoEvent.ShowAddDialog -> {
                 _state.value = _state.value.copy(
                     showAddEditDialog = true,
-                    editingTodo = null
+                    editingTodo = null,
+                    editingSubtasks = emptyList()
                 )
             }
             is TodoEvent.ShowEditDialog -> {
-                _state.value = _state.value.copy(
-                    showAddEditDialog = true,
-                    editingTodo = event.todo
-                )
+                viewModelScope.launch {
+                    val todoWithSubtasks = repository.getTodoById(event.todo.id)
+                    _state.value = _state.value.copy(
+                        showAddEditDialog = true,
+                        editingTodo = event.todo,
+                        editingSubtasks = todoWithSubtasks?.subtasks ?: emptyList()
+                    )
+                }
             }
             is TodoEvent.DismissDialog -> {
                 _state.value = _state.value.copy(
                     showAddEditDialog = false,
-                    editingTodo = null
+                    editingTodo = null,
+                    editingSubtasks = emptyList()
                 )
             }
             is TodoEvent.SaveTodo -> {
                 viewModelScope.launch {
                     val editingTodo = _state.value.editingTodo
-                    if (editingTodo != null) {
+                    val currentNoteId = if (editingTodo != null) {
                         // Update existing todo
                         val updatedTodo = editingTodo.copy(
                             title = event.title,
                             description = event.description,
                             priority = event.priority,
-                            dueDate = event.dueDate
+                            dueDate = event.dueDate,
+                            reminderTime = event.reminderTime,
+                            projectId = event.projectId
                         )
                         repository.updateTodo(updatedTodo)
+                        if (updatedTodo.reminderTime != null && !updatedTodo.isCompleted) {
+                            alarmScheduler.scheduleTodo(updatedTodo)
+                        } else {
+                            alarmScheduler.cancelTodo(updatedTodo)
+                        }
+                        
+                        // Handle Subtasks
+                        repository.deleteSubtasksForTodo(updatedTodo.id)
+                        repository.insertSubtasks(event.subtasks.map { it.copy(todoId = updatedTodo.id) })
+                        
+                        updatedTodo.id
                     } else {
                         // Create new todo
+                        val maxPos = repository.getMaxPosition()
                         val todo = TodoItem(
                             title = event.title,
                             description = event.description,
                             priority = event.priority,
                             dueDate = event.dueDate,
+                            reminderTime = event.reminderTime,
+                            projectId = event.projectId,
+                            position = maxPos + 1,
                             createdAt = System.currentTimeMillis()
                         )
-                        repository.insertTodo(todo)
+                        val id = repository.insertTodo(todo).toInt()
+                        if (todo.reminderTime != null) {
+                            alarmScheduler.scheduleTodo(todo.copy(id = id))
+                        }
+                        
+                        // Handle Subtasks for new todo
+                        repository.insertSubtasks(event.subtasks.map { it.copy(todoId = id) })
+                        
+                        id
                     }
                     _state.value = _state.value.copy(
                         showAddEditDialog = false,
-                        editingTodo = null
+                        editingTodo = null,
+                        editingSubtasks = emptyList()
                     )
                 }
             }
@@ -172,11 +227,13 @@ class TodoViewModel @Inject constructor(
                             .onStart { _state.value = _state.value.copy(isGenerating = true) }
                             .collect { result ->
                                 result.onSuccess { todos ->
-                                    todos.forEach { (title, description) ->
+                                    val maxPos = repository.getMaxPosition()
+                                    todos.forEachIndexed { index, (title, description) ->
                                         val todo = TodoItem(
                                             title = title,
                                             description = description,
                                             priority = 1,
+                                            position = maxPos + index + 1,
                                             createdAt = System.currentTimeMillis()
                                         )
                                         repository.insertTodo(todo)
@@ -203,6 +260,11 @@ class TodoViewModel @Inject constructor(
                         e.printStackTrace()
                         _state.value = _state.value.copy(isGenerating = false)
                     }
+                }
+            }
+            is TodoEvent.UpdatePositions -> {
+                viewModelScope.launch {
+                    repository.updatePositions(event.items)
                 }
             }
         }

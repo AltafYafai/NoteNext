@@ -124,7 +124,122 @@ fun TodoScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             )
 
+            if (!state.isLoading && state.filter is TodoFilter.All) {
+                ProductivityDashboard(
+                    activeCount = state.activeCount,
+                    completedTodayCount = state.completedTodayCount,
+                    modifier = Modifier.padding(horizontal = 16.dp, bottom = 16.dp)
+                )
+            }
+
             if (state.isLoading) {
+...
+@Composable
+fun ProductivityDashboard(
+    activeCount: Int,
+    completedTodayCount: Int,
+    modifier: Modifier = Modifier
+) {
+    val total = activeCount + completedTodayCount
+    val progress = if (total > 0) completedTodayCount.toFloat() / total else 0f
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Daily Progress",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (completedTodayCount > 0) "You've crushed $completedTodayCount tasks today!" else "Time to get started!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 6.dp,
+                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatItem(
+                    label = "Remaining",
+                    value = activeCount.toString(),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+                StatItem(
+                    label = "Done Today",
+                    value = completedTodayCount.toString(),
+                    color = Color(0xFF4CAF50),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun StatItem(
+    label: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        color = color.copy(alpha = 0.1f)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                color = color
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
                 ExpressiveLoading()
             } else if (pagedTodos.itemCount == 0) {
                 EmptyState(
@@ -155,15 +270,15 @@ fun TodoScreen(
                     ) {
                         items(
                             count = pagedTodos.itemCount,
-                            key = pagedTodos.itemKey { it.id },
+                            key = pagedTodos.itemKey { it.todo.id },
                             contentType = pagedTodos.itemContentType { "todo" }
                         ) { index ->
-                            pagedTodos[index]?.let { todo ->
+                            pagedTodos[index]?.let { todoWithSubtasks ->
                                 TodoItemCard(
-                                    todo = todo,
-                                    onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todo)) },
-                                    onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todo)) },
-                                    onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todo)) }
+                                    todoWithSubtasks = todoWithSubtasks,
+                                    onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todoWithSubtasks.todo)) },
+                                    onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todoWithSubtasks.todo)) },
+                                    onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todoWithSubtasks.todo)) }
                                 )
                             }
                         }
@@ -174,11 +289,14 @@ fun TodoScreen(
     }
 
     if (state.showAddEditDialog) {
+        val projects by viewModel.projects.collectAsStateWithLifecycle(initialValue = emptyList())
         AddEditTodoDialog(
             editingTodo = state.editingTodo,
+            initialSubtasks = state.editingSubtasks,
+            projects = projects,
             onDismiss = { viewModel.onEvent(TodoEvent.DismissDialog) },
-            onSave = { title, description, priority, dueDate ->
-                viewModel.onEvent(TodoEvent.SaveTodo(title, description, priority, dueDate))
+            onSave = { title, description, priority, dueDate, reminderTime, projectId, subtasks ->
+                viewModel.onEvent(TodoEvent.SaveTodo(title, description, priority, dueDate, reminderTime, projectId, subtasks))
             }
         )
     }

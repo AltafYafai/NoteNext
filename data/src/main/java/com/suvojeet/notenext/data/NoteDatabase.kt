@@ -1,4 +1,3 @@
-
 package com.suvojeet.notenext.data
 
 import android.content.Context
@@ -16,9 +15,10 @@ import com.suvojeet.notenext.data.NoteFts
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.TodoItem
+import com.suvojeet.notenext.data.TodoSubtask
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class], version = 26, exportSchema = true)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class, TodoSubtask::class], version = 27, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -29,6 +29,42 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create todo_subtasks table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `todo_subtasks` (
+                        `id` TEXT NOT NULL,
+                        `todoId` INTEGER NOT NULL,
+                        `text` TEXT NOT NULL,
+                        `isChecked` INTEGER NOT NULL DEFAULT 0,
+                        `position` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`todoId`) REFERENCES `todos`(`id`) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_todo_subtasks_todoId` ON `todo_subtasks` (`todoId`)")
+
+                // Update todos table
+                val cursor = db.query("PRAGMA table_info(todos)")
+                val columns = mutableSetOf<String>()
+                while (cursor.moveToNext()) {
+                    columns.add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                cursor.close()
+
+                if ("reminderTime" !in columns) {
+                    db.execSQL("ALTER TABLE todos ADD COLUMN reminderTime INTEGER")
+                }
+                if ("position" !in columns) {
+                    db.execSQL("ALTER TABLE todos ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
+                }
+                if ("projectId" !in columns) {
+                    db.execSQL("ALTER TABLE todos ADD COLUMN projectId INTEGER")
+                }
+            }
+        }
+
         val MIGRATION_25_26 = object : Migration(25, 26) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 val cursor = db.query("PRAGMA table_info(projects)")

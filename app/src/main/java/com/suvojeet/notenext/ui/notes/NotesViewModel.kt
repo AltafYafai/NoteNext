@@ -70,6 +70,7 @@ import javax.inject.Inject
 @HiltViewModel
 class NotesViewModel @Inject constructor(
     private val repository: com.suvojeet.notenext.data.NoteRepository,
+    private val todoRepository: com.suvojeet.notenext.data.TodoRepository,
     private val noteUseCases: NoteUseCases,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
@@ -1407,6 +1408,48 @@ class NotesViewModel @Inject constructor(
                         editingContent = TextFieldValue(textContent),
                         editingChecklist = emptyList()
                     )
+                }
+            }
+            is NotesEvent.ConvertToTodo -> {
+                viewModelScope.launch {
+                    val title = editState.value.editingTitle
+                    val content = editState.value.editingContent.text
+                    val noteType = editState.value.editingNoteType
+                    val projectId = editState.value.editingProjectId
+                    
+                    val maxPos = todoRepository.getMaxPosition()
+                    val todo = com.suvojeet.notenext.data.TodoItem(
+                        title = if (title.isBlank()) "Converted Note" else title,
+                        description = if (noteType == NoteType.TEXT) content else "",
+                        projectId = projectId,
+                        position = maxPos + 1,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    
+                    val todoId = todoRepository.insertTodo(todo).toInt()
+                    
+                    if (noteType == NoteType.CHECKLIST) {
+                        val subtasks = editState.value.editingChecklist.map { item ->
+                            com.suvojeet.notenext.data.TodoSubtask(
+                                todoId = todoId,
+                                text = item.text,
+                                isChecked = item.isChecked,
+                                position = item.position
+                            )
+                        }
+                        todoRepository.insertSubtasks(subtasks)
+                    }
+                    
+                    // Bin the note after conversion
+                    val currentNoteId = editState.value.expandedNoteId
+                    if (currentNoteId != null && currentNoteId != -1) {
+                        repository.getNoteById(currentNoteId)?.let { noteWithAttachments ->
+                            repository.updateNote(noteWithAttachments.note.copy(isBinned = true, binnedOn = System.currentTimeMillis()))
+                        }
+                    }
+                    
+                    onEvent(NotesEvent.CollapseNote)
+                    _events.emit(NotesUiEvent.ShowToast("Converted to Todo successfully"))
                 }
             }
             is NotesEvent.ToggleCheckedItemsExpanded -> {

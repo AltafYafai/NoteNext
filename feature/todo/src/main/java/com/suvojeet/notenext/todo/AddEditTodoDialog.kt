@@ -2,9 +2,10 @@
 package com.suvojeet.notenext.todo
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,8 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.core.R
 import com.suvojeet.notenext.data.TodoItem
+import com.suvojeet.notenext.data.Project
+import com.suvojeet.notenext.data.TodoSubtask
 import com.suvojeet.notenext.ui.components.springPress
 import java.text.SimpleDateFormat
 import java.util.*
@@ -22,15 +26,24 @@ import java.util.*
 @Composable
 fun AddEditTodoDialog(
     editingTodo: TodoItem?,
+    initialSubtasks: List<TodoSubtask>,
+    projects: List<Project>,
     onDismiss: () -> Unit,
-    onSave: (String, String, Int, Long?) -> Unit
+    onSave: (String, String, Int, Long?, Long?, Int?, List<TodoSubtask>) -> Unit
 ) {
     var title by remember { mutableStateOf(editingTodo?.title ?: "") }
     var description by remember { mutableStateOf(editingTodo?.description ?: "") }
     var priority by remember { mutableIntStateOf(editingTodo?.priority ?: 0) }
     var dueDate by remember { mutableStateOf(editingTodo?.dueDate) }
+    var reminderTime by remember { mutableStateOf(editingTodo?.reminderTime) }
+    var selectedProjectId by remember { mutableStateOf(editingTodo?.projectId) }
+    
+    var localSubtasks by remember { mutableStateOf(initialSubtasks) }
+    var newSubtaskText by remember { mutableStateOf("") }
     
     var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var showProjectPicker by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -46,6 +59,7 @@ fun AddEditTodoDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -54,7 +68,7 @@ fun AddEditTodoDialog(
                     onValueChange = { title = it },
                     label = { Text(stringResource(id = R.string.title)) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraSmall,
+                    shape = MaterialTheme.shapes.medium,
                     singleLine = true
                 )
                 
@@ -63,7 +77,7 @@ fun AddEditTodoDialog(
                     onValueChange = { description = it },
                     label = { Text("Description (Optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraSmall,
+                    shape = MaterialTheme.shapes.medium,
                     minLines = 2
                 )
                 
@@ -101,42 +115,156 @@ fun AddEditTodoDialog(
                         )
                     }
                 }
-                
-                OutlinedCard(
-                    onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth().springPress(),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.outlinedCardColors(
-                        containerColor = if (dueDate != null) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f) else Color.Transparent
+
+                // Subtasks Section
+                Column {
+                    Text(
+                        text = "Subtasks",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
                     )
-                ) {
+                    
+                    localSubtasks.forEachIndexed { index, subtask ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = subtask.isChecked,
+                                onCheckedChange = { checked ->
+                                    localSubtasks = localSubtasks.mapIndexed { i, s ->
+                                        if (i == index) s.copy(isChecked = checked) else s
+                                    }
+                                },
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = subtask.text,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(
+                                onClick = {
+                                    localSubtasks = localSubtasks.filterIndexed { i, _ -> i != index }
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(Icons.Default.Close, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                    
                     Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = dueDate?.let {
-                                SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(it))
-                            } ?: "Set due date",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        if (dueDate != null) {
-                            Spacer(modifier = Modifier.weight(1f))
-                            TextButton(
-                                onClick = { dueDate = null },
-                                modifier = Modifier.height(32.dp).springPress()
-                            ) {
-                                Text("Clear")
+                        OutlinedTextField(
+                            value = newSubtaskText,
+                            onValueChange = { newSubtaskText = it },
+                            placeholder = { Text("Add subtask...", fontSize = 14.sp) },
+                            modifier = Modifier.weight(1f),
+                            shape = MaterialTheme.shapes.medium,
+                            singleLine = true,
+                            trailingIcon = {
+                                if (newSubtaskText.isNotBlank()) {
+                                    IconButton(onClick = {
+                                        localSubtasks = localSubtasks + TodoSubtask(
+                                            text = newSubtaskText,
+                                            todoId = editingTodo?.id ?: 0,
+                                            position = localSubtasks.size
+                                        )
+                                        newSubtaskText = ""
+                                    }) {
+                                        Icon(Icons.Default.Add, null)
+                                    }
+                                }
                             }
+                        )
+                    }
+                }
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedCard(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.weight(1f).springPress(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = if (dueDate != null) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f) else Color.Transparent
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = dueDate?.let {
+                                    SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(it))
+                                } ?: "Due Date",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (dueDate != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    OutlinedCard(
+                        onClick = { showTimePicker = true },
+                        modifier = Modifier.weight(1f).springPress(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = if (reminderTime != null) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f) else Color.Transparent
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Icon(
+                                Icons.Default.Alarm,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = if (reminderTime != null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = reminderTime?.let {
+                                    SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(it))
+                                } ?: "Reminder",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (reminderTime != null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    OutlinedCard(
+                        onClick = { showProjectPicker = true },
+                        modifier = Modifier.weight(1f).springPress(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.outlinedCardColors(
+                            containerColor = if (selectedProjectId != null) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.1f) else Color.Transparent
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Icon(
+                                Icons.Default.Work,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = if (selectedProjectId != null) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = selectedProjectId?.let { id ->
+                                    projects.find { it.id == id }?.name ?: "Project"
+                                } ?: "Project",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                color = if (selectedProjectId != null) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -144,7 +272,11 @@ fun AddEditTodoDialog(
         },
         confirmButton = {
             Button(
-                onClick = { if (title.isNotBlank()) onSave(title, description, priority, dueDate) },
+                onClick = { 
+                    if (title.isNotBlank()) {
+                        onSave(title, description, priority, dueDate, reminderTime, selectedProjectId, localSubtasks) 
+                    }
+                },
                 enabled = title.isNotBlank(),
                 modifier = Modifier.springPress(),
                 shape = MaterialTheme.shapes.medium
@@ -171,19 +303,94 @@ fun AddEditTodoDialog(
                     onClick = {
                         dueDate = datePickerState.selectedDateMillis
                         showDatePicker = false
-                    },
-                    modifier = Modifier.springPress()
+                    }
                 ) { Text("OK") }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showDatePicker = false },
-                    modifier = Modifier.springPress()
+                    onClick = { showDatePicker = false }
                 ) { Text("Cancel") }
             }
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showTimePicker) {
+        val calendar = Calendar.getInstance().apply {
+            reminderTime?.let { timeInMillis = it }
+        }
+        val timePickerState = rememberTimePickerState(
+            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+            initialMinute = calendar.get(Calendar.MINUTE)
+        )
+        
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selCal = Calendar.getInstance()
+                        // Ensure it's for today or future by taking current date and applying selected time
+                        val now = Calendar.getInstance()
+                        selCal.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH), 
+                                   timePickerState.hour, timePickerState.minute, 0)
+                        selCal.set(Calendar.MILLISECOND, 0)
+                        
+                        // If selected time is in the past today, assume tomorrow
+                        if (selCal.timeInMillis <= System.currentTimeMillis()) {
+                            selCal.add(Calendar.DAY_OF_MONTH, 1)
+                        }
+                        
+                        reminderTime = selCal.timeInMillis
+                        showTimePicker = false
+                    }
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        reminderTime = null
+                        showTimePicker = false 
+                    }
+                ) { Text("Clear") }
+            },
+            text = {
+                TimePicker(state = timePickerState)
+            }
+        )
+    }
+
+    if (showProjectPicker) {
+        AlertDialog(
+            onDismissRequest = { showProjectPicker = false },
+            title = { Text("Select Project") },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    ListItem(
+                        headlineContent = { Text("No Project") },
+                        modifier = Modifier.clickable { 
+                            selectedProjectId = null
+                            showProjectPicker = false
+                        },
+                        trailingContent = { if (selectedProjectId == null) Icon(Icons.Default.Check, null) }
+                    )
+                    projects.forEach { project ->
+                        ListItem(
+                            headlineContent = { Text(project.name) },
+                            modifier = Modifier.clickable { 
+                                selectedProjectId = project.id
+                                showProjectPicker = false
+                            },
+                            trailingContent = { if (selectedProjectId == project.id) Icon(Icons.Default.Check, null) }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showProjectPicker = false }) { Text("Close") }
+            }
+        )
     }
 }
 

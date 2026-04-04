@@ -12,6 +12,18 @@ data class TodoItem(
     val isCompleted: Boolean = false,
     val priority: Int = 0, // 0 = Low, 1 = Medium, 2 = High
     val dueDate: Long? = null,
+    val reminderTime: Long? = null,
+    val position: Int = 0,
+    val projectId: Int? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val completedAt: Long? = null
+)
+
+data class TodoWithSubtasks(
+    @Embedded val todo: TodoItem,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "todoId"
+    )
+    val subtasks: List<TodoSubtask>
 )
