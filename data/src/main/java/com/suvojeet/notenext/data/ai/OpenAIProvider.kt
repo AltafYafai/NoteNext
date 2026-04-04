@@ -6,6 +6,9 @@ import com.suvojeet.notenext.data.remote.OpenAIChatRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -59,8 +62,8 @@ class OpenAIProvider @Inject constructor(
             val cleaned = content.replace("```json", "").replace("```", "").trim()
             if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
                 try {
-                    kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString(
-                        kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.String.serializer()),
+                    Json { ignoreUnknownKeys = true }.decodeFromString(
+                        ListSerializer(String.serializer()),
                         cleaned
                     )
                 } catch (e: Exception) {

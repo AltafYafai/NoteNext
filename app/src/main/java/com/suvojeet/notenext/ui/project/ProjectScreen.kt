@@ -73,8 +73,7 @@ fun ProjectScreen(
             onConfirm = { projectName, projectDescription ->
                 viewModel.onEvent(ProjectScreenEvent.CreateProject(projectName, projectDescription, showCreateSubProjectDialog))
                 showCreateSubProjectDialog = null
-            },
-            title = "Create Sub-Project"
+            }
         )
     }
 
@@ -105,7 +104,7 @@ fun ProjectScreen(
             FloatingActionButton(
                 onClick = { showCreateProjectDialog = true },
                 modifier = Modifier.springPress(),
-                shape = MaterialTheme.colorScheme.extraLarge,
+                shape = MaterialTheme.shapes.extraLarge,
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             ) {
