@@ -2,6 +2,8 @@ package com.suvojeet.notenext.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.Embedded
+import androidx.room.Relation
 
 @Entity(tableName = "todos")
 data class TodoItem(

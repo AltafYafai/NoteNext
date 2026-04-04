@@ -59,7 +59,6 @@ interface TodoDao {
 
     @Query("DELETE FROM todos WHERE isCompleted = 1")
     suspend fun deleteAllCompleted()
-...
 
     @Query("SELECT COUNT(*) FROM todos WHERE isCompleted = 0")
     fun getActiveCount(): Flow<Int>

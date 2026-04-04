@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 package com.suvojeet.notenext.todo
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -331,13 +332,11 @@ fun AddEditTodoDialog(
                 TextButton(
                     onClick = {
                         val selCal = Calendar.getInstance()
-                        // Ensure it's for today or future by taking current date and applying selected time
                         val now = Calendar.getInstance()
                         selCal.set(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH), 
                                    timePickerState.hour, timePickerState.minute, 0)
                         selCal.set(Calendar.MILLISECOND, 0)
                         
-                        // If selected time is in the past today, assume tomorrow
                         if (selCal.timeInMillis <= System.currentTimeMillis()) {
                             selCal.add(Calendar.DAY_OF_MONTH, 1)
                         }

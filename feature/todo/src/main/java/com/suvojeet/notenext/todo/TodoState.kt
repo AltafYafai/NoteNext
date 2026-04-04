@@ -1,4 +1,5 @@
 package com.suvojeet.notenext.todo
+
 import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.data.TodoSubtask
 
@@ -9,8 +10,6 @@ data class TodoState(
     val editingTodo: TodoItem? = null,
     val editingSubtasks: List<TodoSubtask> = emptyList(),
     val activeCount: Int = 0,
-...
-
     val completedCount: Int = 0,
     val completedTodayCount: Int = 0,
     val projectId: Int? = null,
