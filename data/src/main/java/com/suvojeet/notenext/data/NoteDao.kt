@@ -86,7 +86,7 @@ interface NoteDao {
 
     // 1. DATE_MODIFIED
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY isPinned DESC, lastEdited DESC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (projectId IS :projectId) ORDER BY isPinned DESC, lastEdited DESC")
     fun getNotesOrderedByDateModified(projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     @Transaction
@@ -94,14 +94,14 @@ interface NoteDao {
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (notes.projectId IS :projectId)
         ORDER BY notes.isPinned DESC, notes.lastEdited DESC
     """)
     fun searchNotesOrderedByDateModified(query: String, projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     // 2. DATE_CREATED
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY isPinned DESC, createdAt DESC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (projectId IS :projectId) ORDER BY isPinned DESC, createdAt DESC")
     fun getNotesOrderedByDateCreated(projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     @Transaction
@@ -109,14 +109,14 @@ interface NoteDao {
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (notes.projectId IS :projectId)
         ORDER BY notes.isPinned DESC, notes.createdAt DESC
     """)
     fun searchNotesOrderedByDateCreated(query: String, projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     // 3. TITLE
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY isPinned DESC, title ASC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (projectId IS :projectId) ORDER BY isPinned DESC, title ASC")
     fun getNotesOrderedByTitle(projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     @Transaction
@@ -124,14 +124,14 @@ interface NoteDao {
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (notes.projectId IS :projectId)
         ORDER BY notes.isPinned DESC, notes.title ASC
     """)
     fun searchNotesOrderedByTitle(query: String, projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     // 4. CUSTOM (Position)
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY isPinned DESC, position ASC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND (projectId IS :projectId) ORDER BY isPinned DESC, position ASC")
     fun getNotesOrderedByPosition(projectId: Int? = null): Flow<List<NoteWithAttachments>>
 
     @Transaction
@@ -139,7 +139,7 @@ interface NoteDao {
         SELECT notes.* FROM notes
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
-        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND notes.isArchived = 0 AND notes.isBinned = 0 AND (notes.projectId IS :projectId)
         ORDER BY notes.isPinned DESC, notes.position ASC
     """)
     fun searchNotesOrderedByPosition(query: String, projectId: Int? = null): Flow<List<NoteWithAttachments>>
@@ -148,7 +148,7 @@ interface NoteDao {
     @Query("""
         SELECT notes.* FROM notes
         WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 1
-        AND (:projectId IS NULL OR projectId = :projectId)
+        AND (projectId IS :projectId)
         ORDER BY lastEdited DESC
     """)
     fun getPinnedNotes(projectId: Int? = null): Flow<List<NoteWithAttachments>>
@@ -159,7 +159,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND notes.isPinned = 1
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.lastEdited DESC
     """)
     fun searchPinnedNotes(query: String, projectId: Int? = null): Flow<List<NoteWithAttachments>>
@@ -168,7 +168,7 @@ interface NoteDao {
 
     // 1. DATE_MODIFIED
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY lastEdited DESC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (projectId IS :projectId) ORDER BY lastEdited DESC")
     fun getOtherNotesPagedOrderedByDateModified(projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
@@ -177,14 +177,14 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.lastEdited DESC
     """)
     fun searchOtherNotesPagedOrderedByDateModified(query: String, projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     // 2. DATE_CREATED
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY createdAt DESC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (projectId IS :projectId) ORDER BY createdAt DESC")
     fun getOtherNotesPagedOrderedByDateCreated(projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
@@ -193,14 +193,14 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.createdAt DESC
     """)
     fun searchOtherNotesPagedOrderedByDateCreated(query: String, projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     // 3. TITLE
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY title ASC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (projectId IS :projectId) ORDER BY title ASC")
     fun getOtherNotesPagedOrderedByTitle(projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
@@ -209,14 +209,14 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.title ASC
     """)
     fun searchOtherNotesPagedOrderedByTitle(query: String, projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     // 4. CUSTOM (Position)
     @Transaction
-    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (:projectId IS NULL OR projectId = :projectId) ORDER BY position ASC")
+    @Query("SELECT * FROM notes WHERE isArchived = 0 AND isBinned = 0 AND isPinned = 0 AND (projectId IS :projectId) ORDER BY position ASC")
     fun getOtherNotesPagedOrderedByPosition(projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
 
     @Transaction
@@ -225,7 +225,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.position ASC
     """)
     fun searchOtherNotesPagedOrderedByPosition(query: String, projectId: Int? = null): PagingSource<Int, NoteWithAttachments>
@@ -270,7 +270,7 @@ interface NoteDao {
         notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
         FROM notes WHERE
  isArchived = 0 AND isBinned = 0 AND isPinned = 1
-        AND (:projectId IS NULL OR projectId = :projectId)
+        AND (projectId IS :projectId)
         ORDER BY lastEdited DESC
     """)
     fun getPinnedNoteSummaries(projectId: Int? = null): Flow<List<NoteSummaryWithAttachments>>
@@ -284,7 +284,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND notes.isPinned = 1
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.lastEdited DESC
     """)
     fun searchPinnedNoteSummaries(query: String, projectId: Int? = null): Flow<List<NoteSummaryWithAttachments>>
@@ -296,7 +296,7 @@ interface NoteDao {
         notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
         FROM notes WHERE
  isArchived = 0 AND isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR projectId = :projectId) 
+        AND (projectId IS :projectId) 
         ORDER BY lastEdited DESC
     """)
     fun getOtherNoteSummariesPagedOrderedByDateModified(projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -310,7 +310,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.lastEdited DESC
     """)
     fun searchOtherNoteSummariesPagedOrderedByDateModified(query: String, projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -322,7 +322,7 @@ interface NoteDao {
         notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
         FROM notes WHERE
  isArchived = 0 AND isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR projectId = :projectId) 
+        AND (projectId IS :projectId) 
         ORDER BY createdAt DESC
     """)
     fun getOtherNoteSummariesPagedOrderedByDateCreated(projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -336,7 +336,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.createdAt DESC
     """)
     fun searchOtherNoteSummariesPagedOrderedByDateCreated(query: String, projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -348,7 +348,7 @@ interface NoteDao {
         notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
         FROM notes WHERE
  isArchived = 0 AND isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR projectId = :projectId) 
+        AND (projectId IS :projectId) 
         ORDER BY title ASC
     """)
     fun getOtherNoteSummariesPagedOrderedByTitle(projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -362,7 +362,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.title ASC
     """)
     fun searchOtherNoteSummariesPagedOrderedByTitle(query: String, projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -374,7 +374,7 @@ interface NoteDao {
         notes.createdAt AS createdAt, notes.lastEdited AS lastEdited, notes.color AS color, notes.isPinned AS isPinned, notes.isArchived AS isArchived, notes.reminderTime AS reminderTime, notes.label AS label, notes.isBinned AS isBinned, notes.binnedOn AS binnedOn, notes.isImportant AS isImportant, notes.noteType AS noteType, notes.projectId AS projectId, notes.isLocked AS isLocked, notes.position AS position, notes.aiSummary AS aiSummary, notes.iv AS iv, notes.isEncrypted AS isEncrypted, notes.repeatOption AS repeatOption, notes.linkPreviews AS linkPreviews
         FROM notes WHERE
  isArchived = 0 AND isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR projectId = :projectId) 
+        AND (projectId IS :projectId) 
         ORDER BY position ASC
     """)
     fun getOtherNoteSummariesPagedOrderedByPosition(projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
@@ -388,7 +388,7 @@ interface NoteDao {
         JOIN notes_fts ON notes.id = notes_fts.rowid
         WHERE notes_fts MATCH :query
         AND notes.isArchived = 0 AND notes.isBinned = 0 AND isPinned = 0 
-        AND (:projectId IS NULL OR notes.projectId = :projectId)
+        AND (notes.projectId IS :projectId)
         ORDER BY notes.position ASC
     """)
     fun searchOtherNoteSummariesPagedOrderedByPosition(query: String, projectId: Int? = null): PagingSource<Int, NoteSummaryWithAttachments>
