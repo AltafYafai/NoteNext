@@ -5,7 +5,11 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.*
@@ -40,45 +44,24 @@ fun MoreOptionsSheet(
 ) {
     val dateFormat = remember { SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault()) }
     val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState()
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        shape = MaterialTheme.shapes.extraLarge,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            if (!state.editingIsNewNote && state.editingLastEdited != null && state.editingLastEdited != 0L) {
-                Text(
-                    text = stringResource(id = R.string.last_edited, dateFormat.format(Date(state.editingLastEdited ?: 0L))),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            }
+    val lockLabel = if (state.editingIsLocked) "Unlock" else "Lock"
+    val lockIcon = if (state.editingIsLocked) Icons.Default.LockOpen else Icons.Default.Lock
+    val convertLabel = if (state.editingNoteType == NoteType.TEXT) "Convert to List" else "Convert to Text"
+    val convertIcon = Icons.Default.Check
 
-            val lockLabel = if (state.editingIsLocked) "Unlock" else "Lock"
-            val lockIcon = if (state.editingIsLocked) Icons.Default.LockOpen else Icons.Default.Lock
-            val convertLabel = if (state.editingNoteType == NoteType.TEXT) "Convert to List" else "Convert to Text"
-            val convertIcon = Icons.Default.Check
-
-            data class OptionItem(val label: String, val icon: ImageVector, val action: () -> Unit)
-            val options = mutableListOf<OptionItem>()
-            
-            options.add(OptionItem(lockLabel, lockIcon) { onToggleLock() })
-            options.add(OptionItem(convertLabel, convertIcon) { onEvent(NotesEvent.OnToggleNoteType) })
-            options.add(OptionItem(stringResource(id = R.string.search), Icons.Default.Search) { onEvent(NotesEvent.ToggleNoteSearch) })
-            options.add(OptionItem(stringResource(id = R.string.delete), Icons.Default.Delete) { showDeleteDialog(true) })
-            options.add(OptionItem(stringResource(id = R.string.make_a_copy), Icons.Default.ContentCopy) { onEvent(NotesEvent.OnCopyCurrentNoteClick) })
-            options.add(OptionItem(stringResource(id = R.string.share), Icons.Default.Share) {
-                 val sendIntent: Intent = Intent().apply {
+    data class OptionItem(val label: String, val icon: ImageVector, val action: () -> Unit)
+    
+    val options = remember(state.editingIsLocked, state.editingNoteType, state.editingIsNewNote) {
+        mutableListOf<OptionItem>().apply {
+            add(OptionItem(lockLabel, lockIcon) { onToggleLock() })
+            add(OptionItem(convertLabel, convertIcon) { onEvent(NotesEvent.OnToggleNoteType) })
+            add(OptionItem(stringResource(id = R.string.search), Icons.Default.Search) { onEvent(NotesEvent.ToggleNoteSearch) })
+            add(OptionItem(stringResource(id = R.string.delete), Icons.Default.Delete) { showDeleteDialog(true) })
+            add(OptionItem(stringResource(id = R.string.make_a_copy), Icons.Default.ContentCopy) { onEvent(NotesEvent.OnCopyCurrentNoteClick) })
+            add(OptionItem(stringResource(id = R.string.share), Icons.Default.Share) {
+                val sendIntent: Intent = Intent().apply {
                     action = Intent.ACTION_SEND
                     putExtra(Intent.EXTRA_TEXT, state.editingTitle + "\n\n" + state.editingContent.text)
                     putExtra(Intent.EXTRA_SUBJECT, state.editingTitle)
@@ -87,26 +70,52 @@ fun MoreOptionsSheet(
                 val shareIntent = Intent.createChooser(sendIntent, null)
                 context.startActivity(shareIntent)
             })
-            options.add(OptionItem(stringResource(id = R.string.labels), Icons.AutoMirrored.Filled.Label) { onEvent(NotesEvent.OnAddLabelsToCurrentNoteClick) })
-            options.add(OptionItem("Print", Icons.Default.Print) { onPrint() })
-            options.add(OptionItem(stringResource(id = R.string.save_as), Icons.Default.FileDownload) { showSaveAsDialog(true) })
+            add(OptionItem(stringResource(id = R.string.labels), Icons.AutoMirrored.Filled.Label) { onEvent(NotesEvent.OnAddLabelsToCurrentNoteClick) })
+            add(OptionItem("Print", Icons.Default.Print) { onPrint() })
+            add(OptionItem(stringResource(id = R.string.save_as), Icons.Default.FileDownload) { showSaveAsDialog(true) })
             
             if (!state.editingIsNewNote) {
-                options.add(OptionItem(stringResource(id = R.string.history), Icons.Default.History) { showHistoryDialog(true) })
+                add(OptionItem(stringResource(id = R.string.history), Icons.Default.History) { showHistoryDialog(true) })
             }
-            options.add(OptionItem("Convert to Todo", Icons.Default.PlaylistAddCheck) { onEvent(NotesEvent.ConvertToTodo) })
+            add(OptionItem("Convert to Todo", Icons.Default.PlaylistAddCheck) { onEvent(NotesEvent.ConvertToTodo) })
+        }
+    }
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                options.forEach { option ->
-                    MoreOptionsItem(
-                        icon = option.icon,
-                        label = option.label,
-                        onClick = {
-                            onDismiss()
-                            option.action()
-                        }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.extraLarge,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (!state.editingIsNewNote && state.editingLastEdited != null && state.editingLastEdited != 0L) {
+                item {
+                    Text(
+                        text = stringResource(id = R.string.last_edited, dateFormat.format(Date(state.editingLastEdited ?: 0L))),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }
+            }
+
+            items(options) { option ->
+                MoreOptionsItem(
+                    icon = option.icon,
+                    label = option.label,
+                    onClick = {
+                        onDismiss()
+                        option.action()
+                    }
+                )
             }
         }
     }
@@ -122,8 +131,8 @@ private fun MoreOptionsItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .springPress()
             .clickable(onClick = onClick)
+            .springPress()
             .padding(vertical = 12.dp, horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
