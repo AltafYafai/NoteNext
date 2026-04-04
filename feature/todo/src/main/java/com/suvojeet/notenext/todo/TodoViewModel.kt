@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.suvojeet.notenext.data.TodoItem
+import com.suvojeet.notenext.data.TodoWithSubtasks
 import com.suvojeet.notenext.data.TodoRepository
 import com.suvojeet.notenext.data.repository.GroqRepository
 import com.suvojeet.notenext.data.repository.GroqResult
@@ -45,7 +46,7 @@ class TodoViewModel @Inject constructor(
     private val _filter = MutableStateFlow<TodoFilter>(TodoFilter.All)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val pagedTodos: Flow<PagingData<TodoItem>> = _filter.flatMapLatest { filter ->
+    val pagedTodos: Flow<PagingData<TodoWithSubtasks>> = _filter.flatMapLatest { filter ->
         when (filter) {
             is TodoFilter.All -> repository.getPagedTodos()
             is TodoFilter.Active -> repository.getPagedActiveTodos()

@@ -5,116 +5,85 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import com.suvojeet.notenext.core.R
-import com.suvojeet.notenext.ui.components.EmptyState
 import com.suvojeet.notenext.ui.components.ExpressiveLoading
-import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.springPress
-
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun TodoScreen(
     onBackClick: () -> Unit,
     viewModel: TodoViewModel = hiltViewModel()
 ) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pagedTodos = viewModel.pagedTodos.collectAsLazyPagingItems()
-    val context = LocalContext.current
-
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            when (event) {
-                is TodoUiEvent.ShowToast -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = stringResource(id = R.string.todos),
+                        text = "Todos",
                         style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Black
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-1.0).sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick, modifier = Modifier.springPress()) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { viewModel.onEvent(TodoEvent.ShowAiTodoDialog) },
-                        modifier = Modifier.springPress()
-                    ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            contentDescription = "AI Todo",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    IconButton(onClick = { viewModel.onEvent(TodoEvent.ShowAiTodoDialog) }, modifier = Modifier.springPress()) {
+                        Icon(Icons.Rounded.AutoAwesome, contentDescription = "AI Todo")
                     }
-                    if (state.completedCount > 0) {
+                    if (state.filter == TodoFilter.Completed) {
                         IconButton(onClick = { viewModel.onEvent(TodoEvent.DeleteAllCompleted) }, modifier = Modifier.springPress()) {
-                            Icon(
-                                Icons.Default.DeleteSweep,
-                                contentDescription = stringResource(id = R.string.delete_completed),
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            Icon(Icons.Rounded.DeleteSweep, contentDescription = "Clear Completed")
                         }
                     }
                 },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            FloatingActionButton(
                 onClick = { viewModel.onEvent(TodoEvent.ShowAddDialog) },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(id = R.string.add_todo), fontWeight = FontWeight.Bold) },
-                shape = MaterialTheme.shapes.extraLarge,
-                modifier = Modifier.springPress(),
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.springPress()
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = "Add Todo")
+            }
         }
-    ) { padding ->
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(paddingValues)
         ) {
             FilterChipRow(
                 selectedFilter = state.filter,
@@ -128,12 +97,69 @@ fun TodoScreen(
                 ProductivityDashboard(
                     activeCount = state.activeCount,
                     completedTodayCount = state.completedTodayCount,
-                    modifier = Modifier.padding(horizontal = 16.dp, bottom = 16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp)
                 )
             }
 
             if (state.isLoading) {
-...
+                ExpressiveLoading()
+            } else if (pagedTodos.itemCount == 0) {
+                EmptyState(
+                    icon = Icons.Default.CheckCircle,
+                    message = when (state.filter) {
+                        is TodoFilter.All -> "All clear! No tasks for now."
+                        is TodoFilter.Active -> "You've finished everything! Great job."
+                        is TodoFilter.Completed -> "No completed tasks yet. Go get 'em!"
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(
+                        count = pagedTodos.itemCount,
+                        key = pagedTodos.itemKey { it.todo.id },
+                        contentType = pagedTodos.itemContentType { "todo" }
+                    ) { index ->
+                        pagedTodos[index]?.let { todoWithSubtasks ->
+                            TodoItemCard(
+                                todoWithSubtasks = todoWithSubtasks,
+                                onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todoWithSubtasks.todo)) },
+                                onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todoWithSubtasks.todo)) },
+                                onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todoWithSubtasks.todo)) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (state.showAddEditDialog) {
+        val projects by viewModel.projects.collectAsStateWithLifecycle(initialValue = emptyList())
+        AddEditTodoDialog(
+            editingTodo = state.editingTodo,
+            initialSubtasks = state.editingSubtasks,
+            projects = projects,
+            onDismiss = { viewModel.onEvent(TodoEvent.DismissDialog) },
+            onSave = { title, description, priority, dueDate, reminderTime, projectId, subtasks ->
+                viewModel.onEvent(TodoEvent.SaveTodo(title, description, priority, dueDate, reminderTime, projectId, subtasks))
+            }
+        )
+    }
+
+    if (state.showAiTodoDialog) {
+        AiTodoDialog(
+            isGenerating = state.isGenerating,
+            onDismiss = { viewModel.onEvent(TodoEvent.DismissAiTodoDialog) },
+            onGenerate = { viewModel.onEvent(TodoEvent.GenerateAiTodos(it)) }
+        )
+    }
+}
+
 @Composable
 fun ProductivityDashboard(
     activeCount: Int,
@@ -240,74 +266,81 @@ fun StatItem(
         }
     }
 }
-                ExpressiveLoading()
-            } else if (pagedTodos.itemCount == 0) {
-                EmptyState(
-                    icon = Icons.Default.CheckCircle,
-                    message = when (state.filter) {
-                        is TodoFilter.All -> stringResource(id = R.string.no_todos_yet)
-                        is TodoFilter.Active -> stringResource(id = R.string.active_todos)
-                        is TodoFilter.Completed -> stringResource(id = R.string.completed_todos)
-                    },
-                    description = when (state.filter) {
-                        is TodoFilter.All -> stringResource(id = R.string.create_first_todo)
-                        else -> null
-                    }
-                )
-            } else {
-                ExpressiveSection(
-                    title = when(state.filter) {
-                        is TodoFilter.All -> "Tasks"
-                        is TodoFilter.Active -> "Active Tasks"
-                        is TodoFilter.Completed -> "Completed"
-                    },
-                    description = if (state.activeCount > 0) "${state.activeCount} tasks remaining to crush it" else "All caught up!"
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 80.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(
-                            count = pagedTodos.itemCount,
-                            key = pagedTodos.itemKey { it.todo.id },
-                            contentType = pagedTodos.itemContentType { "todo" }
-                        ) { index ->
-                            pagedTodos[index]?.let { todoWithSubtasks ->
-                                TodoItemCard(
-                                    todoWithSubtasks = todoWithSubtasks,
-                                    onToggleComplete = { viewModel.onEvent(TodoEvent.ToggleComplete(todoWithSubtasks.todo)) },
-                                    onClick = { viewModel.onEvent(TodoEvent.ShowEditDialog(todoWithSubtasks.todo)) },
-                                    onDelete = { viewModel.onEvent(TodoEvent.DeleteTodo(todoWithSubtasks.todo)) }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
-    if (state.showAddEditDialog) {
-        val projects by viewModel.projects.collectAsStateWithLifecycle(initialValue = emptyList())
-        AddEditTodoDialog(
-            editingTodo = state.editingTodo,
-            initialSubtasks = state.editingSubtasks,
-            projects = projects,
-            onDismiss = { viewModel.onEvent(TodoEvent.DismissDialog) },
-            onSave = { title, description, priority, dueDate, reminderTime, projectId, subtasks ->
-                viewModel.onEvent(TodoEvent.SaveTodo(title, description, priority, dueDate, reminderTime, projectId, subtasks))
-            }
+@Composable
+private fun FilterChipRow(
+    selectedFilter: TodoFilter,
+    onFilterSelected: (TodoFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        TodoFilterItem(
+            filter = TodoFilter.All,
+            label = "All",
+            isSelected = selectedFilter is TodoFilter.All,
+            onClick = { onFilterSelected(TodoFilter.All) }
+        )
+        TodoFilterItem(
+            filter = TodoFilter.Active,
+            label = "Active",
+            isSelected = selectedFilter is TodoFilter.Active,
+            onClick = { onFilterSelected(TodoFilter.Active) }
+        )
+        TodoFilterItem(
+            filter = TodoFilter.Completed,
+            label = "Done",
+            isSelected = selectedFilter is TodoFilter.Completed,
+            onClick = { onFilterSelected(TodoFilter.Completed) }
         )
     }
+}
 
-    if (state.showAiTodoDialog) {
-        AiTodoDialog(
-            isGenerating = state.isGenerating,
-            onDismiss = { viewModel.onEvent(TodoEvent.DismissAiTodoDialog) },
-            onGenerate = { input ->
-                viewModel.onEvent(TodoEvent.GenerateAiTodos(input))
-            }
+@Composable
+private fun TodoFilterItem(
+    filter: TodoFilter,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = { Text(label) },
+        modifier = Modifier.springPress(),
+        shape = MaterialTheme.shapes.medium,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    )
+}
+
+@Composable
+fun EmptyState(
+    icon: ImageVector,
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.padding(horizontal = 32.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }
@@ -321,102 +354,40 @@ fun AiTodoDialog(
     var input by remember { mutableStateOf("") }
 
     AlertDialog(
-        onDismissRequest = if (isGenerating) ({}) else onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("AI Todo Generator")
-            }
-        },
+        onDismissRequest = onDismiss,
+        title = { Text("Generate Todos with AI") },
         text = {
             Column {
-                Text(
-                    "Paste a paragraph or messy notes, and AI will convert them into point-by-point tasks.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                Text("Describe your task or paste a messy note, and AI will split it into clear todos.", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it },
                     label = { Text("Enter text...") },
-                    modifier = Modifier.fillMaxWidth().height(150.dp),
-                    enabled = !isGenerating,
-                    shape = MaterialTheme.shapes.large
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    minLines = 3
                 )
-                if (isGenerating) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        LoadingIndicator(modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Thinking...", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
             }
         },
         confirmButton = {
             Button(
                 onClick = { onGenerate(input) },
-                enabled = input.isNotBlank() && !isGenerating,
-                shape = MaterialTheme.shapes.medium
+                enabled = input.isNotBlank() && !isGenerating
             ) {
-                Text("Generate")
+                if (isGenerating) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Thinking...", style = MaterialTheme.typography.labelMedium)
+                } else {
+                    Text("Generate")
+                }
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = !isGenerating
-            ) {
+            TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
         }
     )
-}
-
-@Composable
-private fun FilterChipRow(
-    selectedFilter: TodoFilter,
-    onFilterSelected: (TodoFilter) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        FilterChip(
-            selected = selectedFilter is TodoFilter.All,
-            onClick = { onFilterSelected(TodoFilter.All) },
-            label = { Text(stringResource(id = R.string.all_todos)) },
-            modifier = Modifier.springPress(),
-            shape = MaterialTheme.shapes.medium,
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
-        FilterChip(
-            selected = selectedFilter is TodoFilter.Active,
-            onClick = { onFilterSelected(TodoFilter.Active) },
-            label = { Text(stringResource(id = R.string.active_todos)) },
-            modifier = Modifier.springPress(),
-            shape = MaterialTheme.shapes.medium,
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
-        FilterChip(
-            selected = selectedFilter is TodoFilter.Completed,
-            onClick = { onFilterSelected(TodoFilter.Completed) },
-            label = { Text(stringResource(id = R.string.completed_todos)) },
-            modifier = Modifier.springPress(),
-            shape = MaterialTheme.shapes.medium,
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
-    }
 }
