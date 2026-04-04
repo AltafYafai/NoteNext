@@ -22,6 +22,7 @@ interface AIProviderService {
     suspend fun generateCustomPrompt(systemPrompt: String, userPrompt: String): AIResult<String>
     suspend fun isProviderAvailable(): Boolean
     suspend fun getProviderName(): String
+    suspend fun getAvailableModels(): List<String>
 }
 
 /**

@@ -42,6 +42,12 @@ fun AIProviderSettingsScreen(
     val openaiKey by viewModel.openaiApiKey.collectAsStateWithLifecycle(initialValue = "")
     val openaiBaseUrl by viewModel.openaiBaseUrl.collectAsStateWithLifecycle(initialValue = "https://api.openai.com/")
     val anthropicKey by viewModel.anthropicApiKey.collectAsStateWithLifecycle(initialValue = "")
+    
+    val openaiModels by viewModel.openaiModels.collectAsStateWithLifecycle()
+    val anthropicModels by viewModel.anthropicModels.collectAsStateWithLifecycle()
+    val selectedOpenAIModel by viewModel.selectedOpenAIModel.collectAsStateWithLifecycle(initialValue = "gpt-4o-mini")
+    val selectedAnthropicModel by viewModel.selectedAnthropicModel.collectAsStateWithLifecycle(initialValue = "claude-3-5-sonnet-20241022")
+    val isLoadingModels by viewModel.isLoadingModels.collectAsStateWithLifecycle()
 
     var showGroqKeyVisible by remember { mutableStateOf(false) }
     var showOpenaiKeyVisible by remember { mutableStateOf(false) }
@@ -156,6 +162,17 @@ fun AIProviderSettingsScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { onBackClick() }, // Redirect to Groq settings or add model selection here too
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Icon(Icons.Rounded.Settings, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Advanced Groq Settings")
+                                }
                             }
                         }
                     }
@@ -207,7 +224,39 @@ fun AIProviderSettingsScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                
+                                if (openaiKey.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Button(
+                                        onClick = { viewModel.refreshModels() },
+                                        enabled = !isLoadingModels,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.medium
+                                    ) {
+                                        if (isLoadingModels) {
+                                            CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Fetching Models...")
+                                        } else {
+                                            Icon(Icons.Rounded.Refresh, contentDescription = null)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Refresh Models")
+                                        }
+                                    }
+                                }
                             }
+                            
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                            ModelSelector(
+                                title = "Select OpenAI Model",
+                                subtitle = "Choose which model to use for AI tasks",
+                                selectedModel = selectedOpenAIModel,
+                                availableModels = openaiModels,
+                                onModelSelected = { viewModel.selectOpenAIModel(it) },
+                                icon = Icons.Rounded.AutoAwesome,
+                                iconColor = Color(0xFF10A37A)
+                            )
                         }
                     }
                 }
@@ -248,6 +297,19 @@ fun AIProviderSettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                            ModelSelector(
+                                title = "Select Anthropic Model",
+                                subtitle = "Choose which model to use for AI tasks",
+                                selectedModel = selectedAnthropicModel,
+                                availableModels = anthropicModels,
+                                onModelSelected = { viewModel.selectAnthropicModel(it) },
+                                icon = Icons.Rounded.Psychology,
+                                iconColor = Color(0xFFFF5722)
+                            )
+
                         }
                     }
                 }

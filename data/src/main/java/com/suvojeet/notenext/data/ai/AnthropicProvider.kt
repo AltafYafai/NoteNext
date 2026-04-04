@@ -4,6 +4,7 @@ import com.suvojeet.notenext.data.remote.AnthropicApiService
 import com.suvojeet.notenext.data.remote.AnthropicMessage
 import com.suvojeet.notenext.data.remote.AnthropicMessageRequest
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -15,18 +16,27 @@ import javax.inject.Singleton
 
 @Singleton
 class AnthropicProvider @Inject constructor(
-    private val apiService: AnthropicApiService
+    private val apiService: AnthropicApiService,
+    private val settingsRepository: com.suvojeet.notenext.data.repository.SettingsRepository
 ) : AIProviderService {
 
     private val mutex = Mutex()
     private var isInitialized = false
     private var apiKey: String = ""
 
-    private val models = listOf(
-        "claude-3-5-sonnet-20241022",
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-        "claude-3-haiku-20240307"
+    private val defaultModels = listOf(
+        "claude-4.6-opus",
+        "claude-4.6-sonnet",
+        "claude-4.6-haiku",
+        "claude-4.5-opus",
+        "claude-4.5-sonnet",
+        "claude-4.5-haiku",
+        "claude-4.1-opus",
+        "claude-4-sonnet",
+        "claude-4-haiku",
+        "claude-3.7-sonnet",
+        "claude-3-opus",
+        "claude-2.1"
     )
 
     suspend fun initialize(apiKey: String) {
@@ -37,6 +47,8 @@ class AnthropicProvider @Inject constructor(
     }
 
     override suspend fun getProviderName(): String = "Anthropic (Claude)"
+
+    override suspend fun getAvailableModels(): List<String> = defaultModels
 
     override suspend fun isProviderAvailable(): Boolean {
         return isInitialized && apiKey.isNotBlank()
@@ -110,9 +122,16 @@ class AnthropicProvider @Inject constructor(
             return AIResult.AuthError("Anthropic not configured")
         }
 
+        val selectedModel = settingsRepository.anthropicModel.first()
+        val modelsToTry = if (selectedModel.isNotBlank()) {
+            listOf(selectedModel) + defaultModels.filter { it != selectedModel }
+        } else {
+            defaultModels
+        }
+
         var lastException: Exception? = null
 
-        for (model in models) {
+        for (model in modelsToTry) {
             var currentRetry = 0
             while (currentRetry <= 2) {
                 try {

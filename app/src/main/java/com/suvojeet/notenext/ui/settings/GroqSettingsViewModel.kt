@@ -2,13 +2,11 @@ package com.suvojeet.notenext.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.suvojeet.notenext.data.remote.GroqModel
 import com.suvojeet.notenext.data.repository.GroqRepository
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,7 +21,7 @@ class GroqSettingsViewModel @Inject constructor(
     val customFastModel = settingsRepository.customFastModel
     val customLargeModel = settingsRepository.customLargeModel
 
-    private val _availableModels = MutableStateFlow<List<GroqModel>>(emptyList())
+    private val _availableModels = MutableStateFlow<List<String>>(emptyList())
     val availableModels = _availableModels.asStateFlow()
 
     private val _isLoadingModels = MutableStateFlow(false)
@@ -42,7 +40,7 @@ class GroqSettingsViewModel @Inject constructor(
             _error.value = null
             groqRepository.fetchAvailableModels()
                 .onSuccess { models ->
-                    _availableModels.value = models.sortedBy { it.id }
+                    _availableModels.value = models.map { it.id }.sorted()
                 }
                 .onFailure { e ->
                     _error.value = e.message ?: "Failed to fetch models"

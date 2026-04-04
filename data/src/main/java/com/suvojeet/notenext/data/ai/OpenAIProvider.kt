@@ -4,6 +4,7 @@ import com.suvojeet.notenext.data.remote.Message
 import com.suvojeet.notenext.data.remote.OpenAIApiService
 import com.suvojeet.notenext.data.remote.OpenAIChatRequest
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 
 @Singleton
 class OpenAIProvider @Inject constructor(
-    private val apiService: com.suvojeet.notenext.data.remote.OpenAIApiService
+    private val apiService: com.suvojeet.notenext.data.remote.OpenAIApiService,
+    private val settingsRepository: com.suvojeet.notenext.data.repository.SettingsRepository
 ) : AIProviderService {
 
     private val mutex = Mutex()
@@ -23,11 +25,23 @@ class OpenAIProvider @Inject constructor(
     private var apiKey: String = ""
     private var baseUrl: String = "https://api.openai.com/"
 
-    private val models = listOf(
+    private val defaultModels = listOf(
+        "gpt-5.4",
+        "gpt-5.4-mini",
+        "gpt-5.4-nano",
+        "gpt-5.3",
+        "gpt-5.3-mini",
+        "gpt-5.3-nano",
+        "gpt-5.2",
+        "gpt-5.2-mini",
+        "gpt-5.2-nano",
+        "gpt-5.2-pro",
+        "gpt-5.3-codex",
+        "gpt-5.2-codex",
+        "gpt-4.1",
+        "gpt-4.1-mini",
         "gpt-4o",
-        "gpt-4o-mini",
-        "gpt-4-turbo",
-        "gpt-3.5-turbo"
+        "gpt-4o-mini"
     )
 
     suspend fun initialize(apiKey: String, baseUrl: String = "https://api.openai.com/") {
@@ -39,6 +53,16 @@ class OpenAIProvider @Inject constructor(
     }
 
     override suspend fun getProviderName(): String = "OpenAI"
+
+    override suspend fun getAvailableModels(): List<String> {
+        if (!isProviderAvailable()) return defaultModels
+        return try {
+            val response = apiService.getModels("Bearer $apiKey")
+            response.data.map { it.id }.filter { it.contains("gpt") }
+        } catch (e: Exception) {
+            defaultModels
+        }
+    }
 
     override suspend fun isProviderAvailable(): Boolean {
         return isInitialized && apiKey.isNotBlank()
@@ -120,9 +144,16 @@ class OpenAIProvider @Inject constructor(
             return AIResult.AuthError("OpenAI not configured")
         }
 
+        val selectedModel = settingsRepository.openAIModel.first()
+        val modelsToTry = if (selectedModel.isNotBlank()) {
+            listOf(selectedModel) + defaultModels.filter { it != selectedModel }
+        } else {
+            defaultModels
+        }
+
         var lastException: Exception? = null
 
-        for (model in models) {
+        for (model in modelsToTry) {
             var currentRetry = 0
             while (currentRetry <= 2) {
                 try {

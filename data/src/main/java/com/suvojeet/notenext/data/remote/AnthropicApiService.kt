@@ -1,5 +1,6 @@
 package com.suvojeet.notenext.data.remote
 
+import kotlinx.serialization.Serializable
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.Headers
@@ -15,6 +16,7 @@ interface AnthropicApiService {
     ): AnthropicMessageResponse
 }
 
+@Serializable
 data class AnthropicMessageRequest(
     val model: String,
     val messages: List<AnthropicMessage>,
@@ -23,27 +25,31 @@ data class AnthropicMessageRequest(
     val temperature: Double = 0.7
 )
 
+@Serializable
 data class AnthropicMessage(
     val role: String,
     val content: String
 )
 
+@Serializable
 data class AnthropicMessageResponse(
-    val id: String?,
-    val type: String?,
-    val role: String?,
-    val content: List<AnthropicContentBlock>?,
-    val model: String?,
-    val stop_reason: String?,
-    val error: AnthropicError?
+    val id: String? = null,
+    val type: String? = null,
+    val role: String? = null,
+    val content: List<AnthropicContentBlock>? = null,
+    val model: String? = null,
+    val stop_reason: String? = null,
+    val error: AnthropicError? = null
 )
 
+@Serializable
 data class AnthropicContentBlock(
-    val type: String?,
-    val text: String?
+    val type: String? = null,
+    val text: String? = null
 )
 
+@Serializable
 data class AnthropicError(
-    val type: String?,
-    val message: String?
+    val type: String? = null,
+    val message: String? = null
 )

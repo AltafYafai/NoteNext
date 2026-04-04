@@ -35,7 +35,9 @@ object PreferencesKeys {
     val PREFERRED_AI_PROVIDER = stringPreferencesKey("preferred_ai_provider")
     val OPENAI_API_KEY = stringPreferencesKey("openai_api_key")
     val OPENAI_BASE_URL = stringPreferencesKey("openai_base_url")
+    val OPENAI_MODEL = stringPreferencesKey("openai_model")
     val ANTHROPIC_API_KEY = stringPreferencesKey("anthropic_api_key")
+    val ANTHROPIC_MODEL = stringPreferencesKey("anthropic_model")
 }
 
 class SettingsRepository(private val context: Context) {
@@ -196,10 +198,24 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { preferences -> preferences[PreferencesKeys.OPENAI_BASE_URL] = url }
     }
 
+    val openAIModel: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.OPENAI_MODEL] ?: "gpt-4o-mini" }
+
+    suspend fun saveOpenAIModel(model: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.OPENAI_MODEL] = model }
+    }
+
     val anthropicApiKey: Flow<String> = context.dataStore.data
         .map { preferences -> preferences[PreferencesKeys.ANTHROPIC_API_KEY] ?: "" }
 
     suspend fun saveAnthropicApiKey(key: String) {
         context.dataStore.edit { preferences -> preferences[PreferencesKeys.ANTHROPIC_API_KEY] = key }
+    }
+
+    val anthropicModel: Flow<String> = context.dataStore.data
+        .map { preferences -> preferences[PreferencesKeys.ANTHROPIC_MODEL] ?: "claude-3-5-sonnet-20241022" }
+
+    suspend fun saveAnthropicModel(model: String) {
+        context.dataStore.edit { preferences -> preferences[PreferencesKeys.ANTHROPIC_MODEL] = model }
     }
 }

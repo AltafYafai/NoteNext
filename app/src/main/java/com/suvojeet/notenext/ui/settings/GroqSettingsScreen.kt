@@ -5,14 +5,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -20,8 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -38,7 +32,6 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.ExpressiveSection
 import com.suvojeet.notenext.ui.components.SettingsGroupCard
 import com.suvojeet.notenext.ui.components.springPress
-import kotlinx.coroutines.launch
 
 @Composable
 fun GroqSettingsScreen(
@@ -46,7 +39,6 @@ fun GroqSettingsScreen(
     viewModel: GroqSettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val useCustomKey by viewModel.useCustomKey.collectAsStateWithLifecycle(initialValue = false)
@@ -234,74 +226,6 @@ fun GroqSettingsScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ModelSelector(
-    title: String,
-    subtitle: String,
-    selectedModel: String,
-    availableModels: List<com.suvojeet.notenext.data.remote.GroqModel>,
-    onModelSelected: (String) -> Unit,
-    icon: ImageVector,
-    iconColor: Color
-) {
-    var showDialog by remember { mutableStateOf(false) }
-
-    ListItem(
-        modifier = Modifier.clickable { showDialog = true },
-        headlineContent = { Text(title, fontWeight = FontWeight.Bold) },
-        supportingContent = { Text(selectedModel, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) },
-        leadingContent = {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(iconColor.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
-            }
-        },
-        trailingContent = {
-            Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
-        }
-    )
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(title) },
-            text = {
-                if (availableModels.isEmpty()) {
-                    Text("No models available. Please fetch models first.")
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(availableModels) { model ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { 
-                                        onModelSelected(model.id)
-                                        showDialog = false 
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(selected = model.id == selectedModel, onClick = null)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(model.id)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Close")
-                }
-            }
-        )
     }
 }
 

@@ -59,6 +59,17 @@ class GroqProvider @Inject constructor(
 
     override suspend fun getProviderName(): String = "Groq"
 
+    override suspend fun getAvailableModels(): List<String> {
+        ensureInitialized()
+        if (apiKey.isBlank()) return fastModels
+        return try {
+            val response = groqApiService.getModels()
+            response.data.map { it.id }
+        } catch (e: Exception) {
+            fastModels
+        }
+    }
+
     override suspend fun isProviderAvailable(): Boolean {
         ensureInitialized()
         return apiKey.isNotBlank()
@@ -143,7 +154,19 @@ class GroqProvider @Inject constructor(
             return AIResult.AuthError("API key not configured")
         }
 
-        val models = if (isFast) fastModels else largeModels
+        val customModel = if (isFast) {
+            settingsRepository.customFastModel.first()
+        } else {
+            settingsRepository.customLargeModel.first()
+        }
+
+        val baseModels = if (isFast) fastModels else largeModels
+        val models = if (customModel.isNotBlank()) {
+            listOf(customModel) + baseModels.filter { it != customModel }
+        } else {
+            baseModels
+        }
+
         var lastException: Exception? = null
 
         for (model in models) {
