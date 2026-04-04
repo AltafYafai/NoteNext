@@ -44,8 +44,8 @@ interface ProjectDao {
 
     @Query("""
         WITH RECURSIVE project_tree(id, name, description, createdAt, parentId, orderIndex, color, depth, sortPath) AS (
-            SELECT id, name, description, createdAt, parentId, orderIndex, color, 0, 
-                   printf('%010d', orderIndex)
+            SELECT id, name, description, createdAt, parentId, orderIndex, color, 0 as depth, 
+                   printf('%010d', orderIndex) as sortPath
             FROM projects 
             WHERE parentId IS NULL
             UNION ALL
@@ -55,7 +55,8 @@ interface ProjectDao {
             FROM projects p
             INNER JOIN project_tree pt ON p.parentId = pt.id
         )
-        SELECT * FROM project_tree ORDER BY sortPath ASC
+        SELECT id, name, description, createdAt, parentId, orderIndex, color FROM project_tree ORDER BY sortPath ASC
     """)
+    @Suppress("RoomWarnings.QUERY_MISMATCH")
     fun getProjectHierarchy(): Flow<List<Project>>
 }

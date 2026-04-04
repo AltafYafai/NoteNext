@@ -3,9 +3,13 @@ package com.suvojeet.notenext.data.ai
 import com.suvojeet.notenext.data.remote.ChatCompletionRequest
 import com.suvojeet.notenext.data.remote.GroqApiService
 import com.suvojeet.notenext.data.remote.Message
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.delay
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,24 +43,15 @@ class GroqProvider @Inject constructor(
         mutex.withLock {
             if (isInitialized) return@withLock
             
-            val useCustom = settingsRepository.useCustomGroqKey
-            val key = settingsRepository.customGroqKey
+            val useCustom = settingsRepository.useCustomGroqKey.first()
+            val key = settingsRepository.customGroqKey.first()
             
             if (useCustom && key.isNotBlank()) {
                 apiKey = key
             } else {
-                val encryptedKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY_ENC
-                val xorKey = com.suvojeet.notenext.BuildConfig.GROQ_XOR_KEY
-                
-                if (encryptedKey.isNotBlank()) {
-                    try {
-                        val decoded = android.util.Base64.decode(encryptedKey, android.util.Base64.DEFAULT)
-                        val decrypted = decoded.map { (it.toInt() xor xorKey.toInt()).toByte() }.toByteArray()
-                        apiKey = String(decrypted)
-                    } catch (e: Exception) {
-                        apiKey = ""
-                    }
-                }
+                // Access BuildConfig from app module via reflection or pass as parameter
+                // For now, use empty - will fall back to custom key requirement
+                apiKey = ""
             }
             isInitialized = true
         }
@@ -87,8 +82,8 @@ class GroqProvider @Inject constructor(
             val cleaned = content.replace("```json", "").replace("```", "").trim()
             if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
                 try {
-                    kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString(
-                        kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.String.serializer()), 
+                    Json { ignoreUnknownKeys = true }.decodeFromString(
+                        ListSerializer(String.serializer()),
                         cleaned
                     )
                 } catch (e: Exception) {
