@@ -93,7 +93,7 @@ fun HierarchicalProjectItem(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column(modifier = Modifier.weight(1f).clickable(onClick = onClick)) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = project.name,
                     style = MaterialTheme.typography.titleMedium,
