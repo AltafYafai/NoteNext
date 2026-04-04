@@ -15,6 +15,7 @@ import javax.inject.Singleton
 class AIProviderManager @Inject constructor(
     private val groqProvider: GroqProvider,
     private val openAIProvider: OpenAIProvider,
+    private val anthropicProvider: AnthropicProvider,
     private val settingsRepository: com.suvojeet.notenext.data.repository.SettingsRepository
 ) {
     private val mutex = Mutex()
@@ -26,6 +27,7 @@ class AIProviderManager @Inject constructor(
     init {
         providers[AIProvider.GROQ] = groqProvider
         providers[AIProvider.OPENAI] = openAIProvider
+        providers[AIProvider.ANTHROPIC] = anthropicProvider
     }
 
     suspend fun setActiveProvider(provider: AIProvider) {

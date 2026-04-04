@@ -50,9 +50,10 @@ sealed interface Destination {
     
     @Serializable
     data object GroqSettings : Destination
-    
 
-    
+    @Serializable
+    data object AIProviderSettings : Destination
+
     @Serializable
     data object Todo : Destination
     

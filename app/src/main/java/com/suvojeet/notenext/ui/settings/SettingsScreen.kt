@@ -238,6 +238,13 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = "Configure custom API key and models",
                         iconColor = primaryColor,
                         onClick = { onNavigate("groq") }
+                    ),
+                    SettingsItemData(
+                        icon = Icons.Rounded.Cloud,
+                        title = "AI Providers",
+                        subtitle = "Switch between Groq, OpenAI, and Anthropic",
+                        iconColor = Color(0xFF6200EE),
+                        onClick = { onNavigate("ai_provider") }
                     )
                 )
             ),

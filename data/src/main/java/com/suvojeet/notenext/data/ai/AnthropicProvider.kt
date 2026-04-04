@@ -1,8 +1,8 @@
 package com.suvojeet.notenext.data.ai
 
-import com.suvojeet.notenext.data.remote.Message
-import com.suvojeet.notenext.data.remote.OpenAIApiService
-import com.suvojeet.notenext.data.remote.OpenAIChatRequest
+import com.suvojeet.notenext.data.remote.AnthropicApiService
+import com.suvojeet.notenext.data.remote.AnthropicMessage
+import com.suvojeet.notenext.data.remote.AnthropicMessageRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -11,51 +11,46 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OpenAIProvider @Inject constructor(
-    private val apiService: com.suvojeet.notenext.data.remote.OpenAIApiService
+class AnthropicProvider @Inject constructor(
+    private val apiService: AnthropicApiService
 ) : AIProviderService {
 
     private val mutex = Mutex()
     private var isInitialized = false
     private var apiKey: String = ""
-    private var baseUrl: String = "https://api.openai.com/"
 
     private val models = listOf(
-        "gpt-4o",
-        "gpt-4o-mini",
-        "gpt-4-turbo",
-        "gpt-3.5-turbo"
+        "claude-3-5-sonnet-20241022",
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307"
     )
 
-    suspend fun initialize(apiKey: String, baseUrl: String = "https://api.openai.com/") {
+    suspend fun initialize(apiKey: String) {
         mutex.withLock {
             this.apiKey = apiKey
-            this.baseUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
             isInitialized = true
         }
     }
 
-    override suspend fun getProviderName(): String = "OpenAI"
+    override suspend fun getProviderName(): String = "Anthropic (Claude)"
 
     override suspend fun isProviderAvailable(): Boolean {
         return isInitialized && apiKey.isNotBlank()
     }
 
     override suspend fun summarizeNote(content: String): AIResult<String> {
-        return executeWithRetry(listOf(
-            Message(role = "system", content = "You are a helpful assistant that summarizes notes concisely."),
-            Message(role = "user", content = "Summarize the following note:\n\n$content")
-        )) { it.trim() }
+        return executeWithRetry(
+            systemPrompt = "You are a helpful assistant that summarizes notes concisely.",
+            userPrompt = "Summarize the following note:\n\n$content"
+        ) { it.trim() }
     }
 
     override suspend fun generateChecklist(topic: String): AIResult<List<String>> {
-        return executeWithRetry(listOf(
-            Message(
-                role = "system",
-                content = "You are a helpful assistant that generates checklists. Return ONLY a pure JSON array of strings, e.g. [\"Item 1\", \"Item 2\"]. Do not include markdown code blocks or any other text."
-            ),
-            Message(role = "user", content = "Create a checklist for: $topic")
-        )) { content ->
+        return executeWithRetry(
+            systemPrompt = "You are a helpful assistant that generates checklists. Return ONLY a pure JSON array of strings, e.g. [\"Item 1\", \"Item 2\"]. Do not include markdown code blocks or any other text.",
+            userPrompt = "Create a checklist for: $topic"
+        ) { content ->
             val cleaned = content.replace("```json", "").replace("```", "").trim()
             if (cleaned.startsWith("[") && cleaned.endsWith("]")) {
                 try {
@@ -73,13 +68,10 @@ class OpenAIProvider @Inject constructor(
     }
 
     override suspend fun generateTodos(input: String): AIResult<List<Pair<String, String>>> {
-        return executeWithRetry(listOf(
-            Message(
-                role = "system",
-                content = "You are a helpful assistant that converts paragraphs or messy notes into clear, point-by-point todo tasks. Return ONLY a pure JSON array of objects with 'title' and 'description' keys."
-            ),
-            Message(role = "user", content = "Convert this into a todo list:\n\n$input")
-        )) { content ->
+        return executeWithRetry(
+            systemPrompt = "You are a helpful assistant that converts paragraphs or messy notes into clear, point-by-point todo tasks. Return ONLY a pure JSON array of objects with 'title' and 'description' keys.",
+            userPrompt = "Convert this into a todo list:\n\n$input"
+        ) { content ->
             val cleaned = content.replace("```json", "").replace("```", "").trim()
             try {
                 val todoList = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString<List<Map<String, String>>>(cleaned)
@@ -93,28 +85,26 @@ class OpenAIProvider @Inject constructor(
     }
 
     override suspend fun fixGrammar(text: String): AIResult<String> {
-        return executeWithRetry(listOf(
-            Message(
-                role = "system",
-                content = "You are a grammar and spelling correction assistant. Fix typos, grammar errors, and improve punctuation. Keep the original meaning and tone intact. Return ONLY the corrected text without any explanations or additional comments."
-            ),
-            Message(role = "user", content = text)
-        )) { it.trim() }
+        return executeWithRetry(
+            systemPrompt = "You are a grammar and spelling correction assistant. Fix typos, grammar errors, and improve punctuation. Keep the original meaning and tone intact. Return ONLY the corrected text without any explanations or additional comments.",
+            userPrompt = text
+        ) { it.trim() }
     }
 
     override suspend fun generateCustomPrompt(systemPrompt: String, userPrompt: String): AIResult<String> {
-        return executeWithRetry(listOf(
-            Message(role = "system", content = systemPrompt),
-            Message(role = "user", content = userPrompt)
-        )) { it.trim() }
+        return executeWithRetry(
+            systemPrompt = systemPrompt,
+            userPrompt = userPrompt
+        ) { it.trim() }
     }
 
     private suspend fun <T> executeWithRetry(
-        messages: List<com.suvojeet.notenext.data.remote.Message>,
+        systemPrompt: String,
+        userPrompt: String,
         processor: (String) -> T
     ): AIResult<T> {
         if (!isProviderAvailable()) {
-            return AIResult.AuthError("OpenAI not configured")
+            return AIResult.AuthError("Anthropic not configured")
         }
 
         var lastException: Exception? = null
@@ -123,18 +113,23 @@ class OpenAIProvider @Inject constructor(
             var currentRetry = 0
             while (currentRetry <= 2) {
                 try {
-                    val request = com.suvojeet.notenext.data.remote.OpenAIChatRequest(
+                    val request = AnthropicMessageRequest(
                         model = model,
-                        messages = messages
+                        messages = listOf(
+                            AnthropicMessage(role = "user", content = userPrompt)
+                        ),
+                        system = systemPrompt,
+                        max_tokens = 4096
                     )
-                    val response = apiService.getChatCompletion("Bearer $apiKey", request)
+
+                    val response = apiService.createMessage(apiKey, "2023-06-01", request)
                     
                     if (response.error != null) {
-                        lastException = Exception(response.error.message ?: "OpenAI error")
+                        lastException = Exception(response.error.message ?: "Anthropic error")
                         break
                     }
 
-                    val content = response.choices?.firstOrNull()?.message?.content
+                    val content = response.content?.firstOrNull()?.text
                     if (content != null) {
                         return AIResult.Success(processor(content))
                     } else {
@@ -151,7 +146,7 @@ class OpenAIProvider @Inject constructor(
                     }
 
                     if (message.contains("401")) {
-                        return AIResult.AuthError("Invalid OpenAI API key")
+                        return AIResult.AuthError("Invalid Anthropic API key")
                     }
 
                     if (message.contains("503") || message.contains("502") || e is IOException) {
