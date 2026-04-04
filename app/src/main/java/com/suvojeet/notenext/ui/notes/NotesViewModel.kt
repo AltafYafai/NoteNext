@@ -1711,9 +1711,15 @@ class NotesViewModel @Inject constructor(
                 if (expandedId == -1 && lastCreatedNoteId == null) {
                     _editState.value = editState.value.copy(
                         editingIsNewNote = false,
-                        expandedNoteId = -1 // Keep it -1 to avoid triggering NoteTransition in NotesScreen
+                        expandedNoteId = -1, // Keep it -1 to avoid triggering NoteTransition in NotesScreen
+                        editingLastEdited = currentTime
                     )
                     lastCreatedNoteId = currentNoteId.toInt()
+                } else {
+                    // Update lastEdited time so UI (MoreOptionsSheet) shows it
+                    _editState.value = editState.value.copy(
+                        editingLastEdited = currentTime
+                    )
                 }
             }
         }
