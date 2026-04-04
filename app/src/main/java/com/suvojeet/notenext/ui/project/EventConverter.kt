@@ -69,6 +69,7 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
 
         is NotesEvent.OnSearchQueryChange -> throw IllegalArgumentException("OnSearchQueryChange event cannot be converted")
         is NotesEvent.OnToggleNoteType -> ProjectNotesEvent.OnToggleNoteType
+        is NotesEvent.ConvertToTodo -> ProjectNotesEvent.ConvertToTodo
         is NotesEvent.DeleteAllCheckedItems -> ProjectNotesEvent.DeleteAllCheckedItems
         is NotesEvent.ToggleCheckedItemsExpanded -> ProjectNotesEvent.ToggleCheckedItemsExpanded
         is NotesEvent.SummarizeNote -> ProjectNotesEvent.SummarizeNote

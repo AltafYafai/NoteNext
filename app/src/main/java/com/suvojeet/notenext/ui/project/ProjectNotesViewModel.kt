@@ -52,6 +52,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProjectNotesViewModel @Inject constructor(
     private val repository: com.suvojeet.notenext.data.NoteRepository,
+    private val todoRepository: com.suvojeet.notenext.data.TodoRepository,
     private val noteUseCases: com.suvojeet.notenext.domain.use_case.NoteUseCases,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
@@ -363,6 +364,7 @@ class ProjectNotesViewModel @Inject constructor(
                                 isPinned = note.isPinned,
                                 isArchived = note.isArchived,
                                 editingLabel = note.label,
+                                editingProjectId = note.projectId,
                                 editingHistory = listOf(note.title to TextFieldValue(content)),
                                 editingHistoryIndex = 0,
                                 linkPreviews = note.linkPreviews,
@@ -389,6 +391,7 @@ class ProjectNotesViewModel @Inject constructor(
                             editingHistory = listOf("" to TextFieldValue()),
                             editingHistoryIndex = 0,
                             editingLabel = null,
+                            editingProjectId = if (projectId != -1) projectId else null,
                             linkPreviews = emptyList(),
                             editingNoteType = event.noteType,
                             editingChecklist = if (event.noteType == NoteType.CHECKLIST) listOf(ChecklistItem(text = "", isChecked = false)) else emptyList(),
@@ -1058,6 +1061,7 @@ class ProjectNotesViewModel @Inject constructor(
                             isPinned = false,
                             isArchived = false,
                             editingLabel = null,
+                            editingProjectId = null,
                             isBoldActive = false,
                             isItalicActive = false,
                             isUnderlineActive = false,
@@ -1226,6 +1230,48 @@ class ProjectNotesViewModel @Inject constructor(
                         editingContent = TextFieldValue(textContent),
                         editingChecklist = emptyList()
                     )
+                }
+            }
+            is ProjectNotesEvent.ConvertToTodo -> {
+                viewModelScope.launch {
+                    val title = state.value.editingTitle
+                    val content = state.value.editingContent.text
+                    val noteType = state.value.editingNoteType
+                    val projectId = this@ProjectNotesViewModel.projectId
+                    
+                    val maxPos = todoRepository.getMaxPosition()
+                    val todo = com.suvojeet.notenext.data.TodoItem(
+                        title = if (title.isBlank()) "Converted Note" else title,
+                        description = if (noteType == NoteType.TEXT) content else "",
+                        projectId = if (projectId != -1) projectId else null,
+                        position = maxPos + 1,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    
+                    val todoId = todoRepository.insertTodo(todo).toInt()
+                    
+                    if (noteType == NoteType.CHECKLIST) {
+                        val subtasks = state.value.editingChecklist.map { item ->
+                            com.suvojeet.notenext.data.TodoSubtask(
+                                todoId = todoId,
+                                text = item.text,
+                                isChecked = item.isChecked,
+                                position = item.position
+                            )
+                        }
+                        todoRepository.insertSubtasks(subtasks)
+                    }
+                    
+                    // Bin the note after conversion
+                    val currentNoteId = state.value.expandedNoteId
+                    if (currentNoteId != null && currentNoteId != -1) {
+                        repository.getNoteById(currentNoteId)?.let { noteWithAttachments ->
+                            repository.updateNote(noteWithAttachments.note.copy(isBinned = true, binnedOn = System.currentTimeMillis()))
+                        }
+                    }
+                    
+                    onEvent(ProjectNotesEvent.CollapseNote)
+                    _events.emit(ProjectNotesUiEvent.ShowToast("Converted to Todo successfully"))
                 }
             }
             is ProjectNotesEvent.DeleteAllCheckedItems -> {
