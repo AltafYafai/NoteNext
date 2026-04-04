@@ -30,6 +30,7 @@ data class ProjectNotesState(
     val isPinned: Boolean = false,
     val isArchived: Boolean = false,
     val editingLabel: String? = null,
+    val editingProjectId: Int? = null,
     val labels: List<String> = emptyList(),
     val showLabelDialog: Boolean = false,
     val filteredLabel: String? = null,
