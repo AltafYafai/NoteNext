@@ -132,9 +132,12 @@ fun NoteItem(
                 }
 
                 if (decryptedNote.title.isNotEmpty()) {
+                    val unescapedTitle = remember(decryptedNote.title) {
+                        androidx.core.text.HtmlCompat.fromHtml(decryptedNote.title, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                    }
                     val titleText = if (searchQuery.isNotEmpty()) {
                         buildAnnotatedString {
-                            val text = decryptedNote.title
+                            val text = unescapedTitle
                             append(text)
                             val lowerText = text.lowercase()
                             val lowerQuery = searchQuery.lowercase()
@@ -152,7 +155,7 @@ fun NoteItem(
                             }
                         }
                     } else {
-                        androidx.compose.ui.text.AnnotatedString(decryptedNote.title)
+                        androidx.compose.ui.text.AnnotatedString(unescapedTitle)
                     }
 
                     Text(
@@ -201,9 +204,10 @@ fun NoteItem(
                             val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
                             val annotatedContent = remember(decryptedNote.content) {
-                                // Strip HTML tags for preview to avoid layout jumping and improve performance
+                                // Strip HTML tags for preview and unescape entities
                                 val plainText = decryptedNote.content.replace(Regex("<[^>]*>"), "")
-                                androidx.compose.ui.text.AnnotatedString(plainText)
+                                val unescaped = androidx.core.text.HtmlCompat.fromHtml(plainText, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                                androidx.compose.ui.text.AnnotatedString(unescaped)
                             }
 
                             val highlightedContent = if (searchQuery.isNotEmpty()) {
@@ -384,9 +388,13 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 
+                val unescapedItemText = remember(item.text) {
+                    androidx.core.text.HtmlCompat.fromHtml(item.text, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                }
+                
                 val itemText = if (searchQuery.isNotEmpty()) {
                     buildAnnotatedString {
-                        val text = item.text
+                        val text = unescapedItemText
                         append(text)
                         val lowerText = text.lowercase()
                         val lowerQuery = searchQuery.lowercase()
@@ -404,7 +412,7 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
                         }
                     }
                 } else {
-                    androidx.compose.ui.text.AnnotatedString(item.text)
+                    androidx.compose.ui.text.AnnotatedString(unescapedItemText)
                 }
 
                 Text(
