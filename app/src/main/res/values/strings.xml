@@ -89,9 +89,15 @@
     <string name="move_to_bin">Move to Bin</string>
     <string name="exact_alarm_permission">Exact Alarm Permission</string>
     <string name="exact_alarm_permission_description">This permission is required for reminders to work accurately</string>
-    <string name="last_edited">Last Edited</string>
+    <string name="last_edited">Last Edited: %s</string>
     <string name="make_a_copy">Make a Copy</string>
     <string name="save_as">Save As</string>
+    <string name="lock">Lock</string>
+    <string name="unlock">Unlock</string>
+    <string name="convert_to_list">Convert to List</string>
+    <string name="convert_to_text">Convert to Text</string>
+    <string name="convert_to_todo">Convert to Todo</string>
+    <string name="print">Print</string>
     <string name="move_to_project">Move to Project</string>
     <string name="add_label">Add Label</string>
     <string name="create_new_label">Create New Label</string>
