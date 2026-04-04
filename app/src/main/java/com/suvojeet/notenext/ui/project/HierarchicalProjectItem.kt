@@ -3,8 +3,9 @@ package com.suvojeet.notenext.ui.project
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,12 +30,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HierarchicalProjectItem(
     project: Project,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onCreateSubProject: () -> Unit,
     modifier: Modifier = Modifier,
     depth: Int = 0
@@ -54,6 +58,10 @@ fun HierarchicalProjectItem(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
     ) {
         Row(
             modifier = Modifier

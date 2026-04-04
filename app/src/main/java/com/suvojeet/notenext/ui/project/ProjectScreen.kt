@@ -39,6 +39,7 @@ fun ProjectScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showCreateProjectDialog by remember { mutableStateOf(false) }
     var showCreateSubProjectDialog by remember { mutableStateOf<Int?>(null) }
+    var projectToDelete by remember { mutableStateOf<Int?>(null) }
     val expandedProjects = remember { mutableStateMapOf<Int, Boolean>() }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -73,6 +74,31 @@ fun ProjectScreen(
             onConfirm = { projectName, projectDescription ->
                 viewModel.onEvent(ProjectScreenEvent.CreateProject(projectName, projectDescription, showCreateSubProjectDialog))
                 showCreateSubProjectDialog = null
+            }
+        )
+    }
+
+    if (projectToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { projectToDelete = null },
+            shape = MaterialTheme.shapes.extraLarge,
+            title = { Text("Delete Project", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete this project? This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        projectToDelete?.let { viewModel.onEvent(ProjectScreenEvent.DeleteProject(it)) }
+                        projectToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { projectToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -138,6 +164,9 @@ fun ProjectScreen(
                                     expandedProjects[project.id] = !isExpanded
                                 },
                                 onClick = { onProjectClick(project.id) },
+                                onLongClick = {
+                                    projectToDelete = project.id
+                                },
                                 onCreateSubProject = {
                                     showCreateSubProjectDialog = project.id
                                 }

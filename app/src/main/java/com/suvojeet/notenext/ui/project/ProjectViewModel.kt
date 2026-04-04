@@ -20,6 +20,7 @@ sealed interface ProjectScreenEvent {
     data class CreateProject(val name: String, val description: String?, val parentId: Int? = null) : ProjectScreenEvent
     data class MoveProject(val projectId: Int, val newParentId: Int?) : ProjectScreenEvent
     data class ReorderProject(val projectId: Int, val newOrder: Int) : ProjectScreenEvent
+    data class DeleteProject(val projectId: Int) : ProjectScreenEvent
 }
 
 @HiltViewModel
@@ -73,6 +74,11 @@ class ProjectViewModel @Inject constructor(
             is ProjectScreenEvent.ReorderProject -> {
                 viewModelScope.launch {
                     repository.reorderProject(event.projectId, event.newOrder)
+                }
+            }
+            is ProjectScreenEvent.DeleteProject -> {
+                viewModelScope.launch {
+                    repository.deleteProject(event.projectId)
                 }
             }
         }
