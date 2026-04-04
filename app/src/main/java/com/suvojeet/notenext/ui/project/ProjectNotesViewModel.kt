@@ -971,7 +971,8 @@ class ProjectNotesViewModel @Inject constructor(
                                 val newId = repository.insertNote(note).toInt()
                                 _state.value = state.value.copy(
                                     expandedNoteId = newId,
-                                    editingIsNewNote = false
+                                    editingIsNewNote = false,
+                                    editingLastEdited = currentTime
                                 )
                                 newId.toLong()
                             } else { // Existing note
@@ -993,6 +994,9 @@ class ProjectNotesViewModel @Inject constructor(
                                     }
                                 }
                                 repository.updateNote(note)
+                                _state.value = state.value.copy(
+                                    editingLastEdited = currentTime
+                                )
                                 noteId.toLong() // Convert Int to Long for consistency
                             }
 
