@@ -11,6 +11,8 @@ import java.util.Calendar
 interface AlarmScheduler {
     fun schedule(note: Note)
     fun cancel(note: Note)
+    fun scheduleTodo(todo: TodoItem)
+    fun cancelTodo(todo: TodoItem)
 }
 
 class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
@@ -59,6 +61,50 @@ class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             note.id,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        alarmManager.cancel(pendingIntent)
+    }
+
+    override fun scheduleTodo(todo: TodoItem) {
+        val reminderTime = todo.reminderTime ?: return
+        if (reminderTime <= System.currentTimeMillis()) return
+
+        val intent = Intent().apply {
+            component = ComponentName(context, "com.suvojeet.notenext.util.ReminderBroadcastReceiver")
+            putExtra("TODO_ID", todo.id)
+            putExtra("TODO_TITLE", todo.title)
+            putExtra("TODO_CONTENT", todo.description)
+            putExtra("TYPE", "TODO")
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            todo.id + 1000000, // Offset for Todos to avoid ID conflict with Notes
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
+            }
+        } else {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderTime, pendingIntent)
+        }
+    }
+
+    override fun cancelTodo(todo: TodoItem) {
+        val intent = Intent().apply {
+            component = ComponentName(context, "com.suvojeet.notenext.util.ReminderBroadcastReceiver")
+            putExtra("TODO_ID", todo.id)
+            putExtra("TYPE", "TODO")
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            todo.id + 1000000,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

@@ -10,8 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,8 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.suvojeet.notenext.core.R
 import com.suvojeet.notenext.data.TodoItem
+import com.suvojeet.notenext.data.TodoWithSubtasks
 import com.suvojeet.notenext.ui.components.springPress
 import java.text.SimpleDateFormat
 import java.util.*
@@ -38,12 +39,15 @@ object TodoPriorityColors {
 
 @Composable
 fun TodoItemCard(
-    todo: TodoItem,
+    todoWithSubtasks: TodoWithSubtasks,
     onToggleComplete: () -> Unit,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val todo = todoWithSubtasks.todo
+    val subtasks = todoWithSubtasks.subtasks
+    
     val priorityColor = when (todo.priority) {
         2 -> TodoPriorityColors.High
         1 -> TodoPriorityColors.Medium
@@ -135,7 +139,7 @@ fun TodoItemCard(
                 Box(
                     modifier = Modifier
                         .width(6.dp)
-                        .height(80.dp)
+                        .height(100.dp) // Slightly taller to accommodate more info
                         .background(priorityColor)
                 )
                 
@@ -179,25 +183,62 @@ fun TodoItemCard(
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
-                    
-                    todo.dueDate?.let { dueDate ->
-                        val isOverdue = dueDate < System.currentTimeMillis() && !todo.isCompleted
-                        val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+
+                    if (subtasks.isNotEmpty()) {
+                        val completedSubtasks = subtasks.count { it.isChecked }
+                        val progress = completedSubtasks.toFloat() / subtasks.size
                         
-                        Surface(
-                            shape = MaterialTheme.shapes.small,
-                            color = if (isOverdue) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
+                            LinearProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.width(60.dp).height(4.dp).clip(CircleShape),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isOverdue) "⚠️ Overdue: ${dateFormat.format(Date(dueDate))}" else "📅 ${dateFormat.format(Date(dueDate))}",
+                                text = "$completedSubtasks/${subtasks.size}",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = if (isOverdue) 
-                                    MaterialTheme.colorScheme.onErrorContainer 
-                                else 
-                                    MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        todo.dueDate?.let { dueDate ->
+                            val isOverdue = dueDate < System.currentTimeMillis() && !todo.isCompleted
+                            val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
+                            
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = if (isOverdue) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+                            ) {
+                                Text(
+                                    text = if (isOverdue) "⚠️ Overdue: ${dateFormat.format(Date(dueDate))}" else "📅 ${dateFormat.format(Date(dueDate))}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isOverdue) 
+                                        MaterialTheme.colorScheme.onErrorContainer 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        if (todo.reminderTime != null) {
+                            Icon(
+                                Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                             )
                         }
                     }

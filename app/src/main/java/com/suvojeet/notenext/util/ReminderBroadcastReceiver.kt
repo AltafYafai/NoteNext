@@ -40,38 +40,49 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         scope.launch {
             try {
                 if (context != null) {
-                    val noteId = intent?.getIntExtra("NOTE_ID", -1) ?: -1
-                    val noteTitle = intent?.getStringExtra("NOTE_TITLE") ?: "Reminder"
-                    val noteContent = intent?.getStringExtra("NOTE_CONTENT") ?: ""
-
-                    // Show Notification
-                    val plainTextContent = HtmlConverter.htmlToPlainText(noteContent)
-                    val truncatedContent = if (plainTextContent.length > 150) {
-                        plainTextContent.substring(0, 150) + "..."
+                    val type = intent?.getStringExtra("TYPE") ?: "NOTE"
+                    
+                    if (type == "TODO") {
+                        val todoId = intent?.getIntExtra("TODO_ID", -1) ?: -1
+                        val todoTitle = intent?.getStringExtra("TODO_TITLE") ?: "Todo Reminder"
+                        val todoContent = intent?.getStringExtra("TODO_CONTENT") ?: ""
+                        
+                        createNotificationChannel(context)
+                        showNotification(context, todoId, todoTitle, todoContent, isTodo = true)
                     } else {
-                        plainTextContent
-                    }
+                        val noteId = intent?.getIntExtra("NOTE_ID", -1) ?: -1
+                        val noteTitle = intent?.getStringExtra("NOTE_TITLE") ?: "Reminder"
+                        val noteContent = intent?.getStringExtra("NOTE_CONTENT") ?: ""
 
-                    createNotificationChannel(context)
-                    showNotification(context, noteId, noteTitle, truncatedContent)
+                        // Show Notification
+                        val plainTextContent = HtmlConverter.htmlToPlainText(noteContent)
+                        val truncatedContent = if (plainTextContent.length > 150) {
+                            plainTextContent.substring(0, 150) + "..."
+                        } else {
+                            plainTextContent
+                        }
 
-                    // Handle Repeat Logic
-                    if (noteId != -1) {
-                        val noteWithAttachments = repository.getNoteById(noteId)
-                        noteWithAttachments?.note?.let { note ->
-                            val repeatOptionStr = note.repeatOption
-                            if (repeatOptionStr != null && repeatOptionStr != RepeatOption.NEVER.name) {
-                                try {
-                                    val repeatOption = RepeatOption.valueOf(repeatOptionStr)
-                                    val nextTime = calculateNextReminderTime(note.reminderTime ?: System.currentTimeMillis(), repeatOption)
-                                    
-                                    if (nextTime > System.currentTimeMillis()) {
-                                        val updatedNote = note.copy(reminderTime = nextTime)
-                                        repository.updateNote(updatedNote)
-                                        alarmScheduler.schedule(updatedNote)
+                        createNotificationChannel(context)
+                        showNotification(context, noteId, noteTitle, truncatedContent, isTodo = false)
+
+                        // Handle Repeat Logic
+                        if (noteId != -1) {
+                            val noteWithAttachments = repository.getNoteById(noteId)
+                            noteWithAttachments?.note?.let { note ->
+                                val repeatOptionStr = note.repeatOption
+                                if (repeatOptionStr != null && repeatOptionStr != RepeatOption.NEVER.name) {
+                                    try {
+                                        val repeatOption = RepeatOption.valueOf(repeatOptionStr)
+                                        val nextTime = calculateNextReminderTime(note.reminderTime ?: System.currentTimeMillis(), repeatOption)
+                                        
+                                        if (nextTime > System.currentTimeMillis()) {
+                                            val updatedNote = note.copy(reminderTime = nextTime)
+                                            repository.updateNote(updatedNote)
+                                            alarmScheduler.schedule(updatedNote)
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
                                 }
                             }
                         }
@@ -101,7 +112,7 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Reminder Channel"
-            val descriptionText = "Channel for Note Reminders"
+            val descriptionText = "Channel for Note and Todo Reminders"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel("reminder_channel_id", name, importance).apply {
                 description = descriptionText
@@ -111,17 +122,24 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun showNotification(context: Context, noteId: Int, title: String, content: String) {
+    private fun showNotification(context: Context, id: Int, title: String, content: String, isTodo: Boolean) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("NOTE_ID", noteId)
+            if (isTodo) {
+                putExtra("TODO_ID", id)
+            } else {
+                putExtra("NOTE_ID", id)
+            }
         }
+        
+        val notificationId = if (isTodo) id + 1000000 else id
+        
         val pendingIntent: PendingIntent = PendingIntent.getActivity(
-            context, noteId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            context, notificationId, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val builder = NotificationCompat.Builder(context, "reminder_channel_id")
-            .setSmallIcon(R.mipmap.ic_launcher) // Try using app icon or fallback
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(content)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -134,11 +152,9 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
         }
 
         with(NotificationManagerCompat.from(context)) {
-            // Check permission for Android 13+
             try {
-                 notify(noteId, builder.build())
+                 notify(notificationId, builder.build())
             } catch (e: SecurityException) {
-                // Permission not granted
             }
         }
     }

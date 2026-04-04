@@ -94,6 +94,7 @@ fun MoreOptionsSheet(
             if (!state.editingIsNewNote) {
                 options.add(OptionItem(stringResource(id = R.string.history), Icons.Default.History) { showHistoryDialog(true) })
             }
+            options.add(OptionItem("Convert to Todo", Icons.Default.PlaylistAddCheck) { onEvent(NotesEvent.ConvertToTodo) })
 
             Column(modifier = Modifier.fillMaxWidth()) {
                 options.forEach { option ->

@@ -88,6 +88,7 @@ sealed class NotesEvent {
     data class OnRestoreVersion(val version: NoteVersion) : NotesEvent()
     data class NavigateToNoteByTitle(val title: String) : NotesEvent()
     object OnToggleNoteType : NotesEvent()
+    object ConvertToTodo : NotesEvent()
     object DeleteAllCheckedItems : NotesEvent()
     object ToggleCheckedItemsExpanded : NotesEvent()
     object SummarizeNote : NotesEvent()
