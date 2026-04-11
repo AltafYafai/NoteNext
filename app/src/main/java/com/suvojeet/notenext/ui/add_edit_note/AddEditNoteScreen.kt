@@ -478,7 +478,7 @@ fun AddEditNoteScreen(
                             } else if (state.editingNoteType == NoteType.MARKDOWN && state.isMarkdownPreviewMode) {
                                 item {
                                     MarkdownPreview(
-                                        content = state.editingContent.text,
+                                        content = state.serializedMarkdown,
                                         modifier = Modifier.padding(horizontal = 4.dp),
                                         onLinkClick = { url -> clickedUrl = url }
                                     )
@@ -508,7 +508,8 @@ fun AddEditNoteScreen(
         }
         
         AnimatedVisibility(
-            visible = showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.CHECKLIST),
+            visible = showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.MARKDOWN || state.editingNoteType == NoteType.CHECKLIST),
+
             enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = spring()),
             exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = spring()),
             modifier = Modifier
@@ -535,7 +536,8 @@ fun AddEditNoteScreen(
         }
         
         var showAiChecklistSheet by remember { mutableStateOf(false) }
-        val showAiButton = (state.editingNoteType == NoteType.TEXT && state.editingContent.text.isEmpty()) || 
+        val showAiButton = ((state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.MARKDOWN) && state.editingContent.text.isEmpty()) ||
+ 
                            (state.editingNoteType == NoteType.CHECKLIST && state.editingChecklist.isEmpty())
                            
         AnimatedVisibility(

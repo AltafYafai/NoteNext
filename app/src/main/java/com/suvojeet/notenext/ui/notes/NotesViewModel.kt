@@ -16,6 +16,7 @@ import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
+import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.core.util.ImageUtils
@@ -48,7 +49,8 @@ import kotlinx.coroutines.delay
 
 import com.suvojeet.notenext.core.model.AttachmentType
 import com.suvojeet.notenext.core.model.NoteType
-import com.suvojeet.notenext.data.Attachment
+import com.suvojeet.notenext.data.MarkdownExporter
+
 import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.data.repository.GroqRepository
 import com.suvojeet.notenext.data.repository.GroqResult
@@ -180,6 +182,16 @@ class NotesViewModel @Inject constructor(
     private var linkDetectionJob: Job? = null
 
     private var lastCreatedNoteId: Int? = null
+
+    private fun updateSerializedMarkdownAsync(annotatedString: AnnotatedString) {
+        if (editState.value.editingNoteType != NoteType.MARKDOWN) return
+        
+        viewModelScope.launch {
+            val html = HtmlConverter.annotatedStringToHtml(annotatedString)
+            val markdown = MarkdownExporter.convertHtmlToMarkdown(html)
+            _editState.value = editState.value.copy(serializedMarkdown = markdown)
+        }
+    }
 
     private fun scheduleAutoSave() {
         autoSaveJob?.cancel()
@@ -808,10 +820,10 @@ class NotesViewModel @Inject constructor(
                             } else {                                noteWithAttachments.note
                             }
 
-                            val content = if (note.noteType == NoteType.TEXT) {
-                                HtmlConverter.htmlToAnnotatedString(note.content)
-                            } else {
-                                AnnotatedString("")
+                            val content = when (note.noteType) {
+                                NoteType.TEXT -> HtmlConverter.htmlToAnnotatedString(note.content)
+                                NoteType.MARKDOWN -> richTextController.parseMarkdownToAnnotatedString(note.content)
+                                else -> AnnotatedString("")
                             }
                             
                             val checklist = if (note.noteType == NoteType.CHECKLIST) {
@@ -860,6 +872,7 @@ class NotesViewModel @Inject constructor(
                                 editingChecklist = checklist,
                                 editingAttachments = noteWithAttachments.attachments.map { it.copy(tempId = java.util.UUID.randomUUID().toString()) },
                                 editingIsLocked = note.isLocked,
+                                serializedMarkdown = if (note.noteType == NoteType.MARKDOWN) note.content else "",
                                 checklistInputValues = checklist.associate { item ->
                                     item.id to TextFieldValue(richTextController.parseMarkdownToAnnotatedString(item.text))
                                 },
@@ -977,7 +990,7 @@ class NotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is NotesEvent.OnContentChange -> {
-                if (editState.value.editingNoteType == NoteType.TEXT) {
+                if (editState.value.editingNoteType == NoteType.TEXT || editState.value.editingNoteType == NoteType.MARKDOWN) {
                     val newContent = event.content
                     val oldContent = editState.value.editingContent
 
@@ -1020,8 +1033,10 @@ class NotesViewModel @Inject constructor(
                     )
 
                     viewModelScope.launch {
-                        savedStateHandle[KEY_EDITING_CONTENT] = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
+                        val html = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
+                        savedStateHandle[KEY_EDITING_CONTENT] = html
                     }
+                    updateSerializedMarkdownAsync(finalContent.annotatedString)
 
                     if (textChanged) {
                         scheduleAutoSave()
@@ -1136,6 +1151,7 @@ class NotesViewModel @Inject constructor(
                         canUndo = undoRedoManager.canUndo.value,
                         canRedo = undoRedoManager.canRedo.value
                     )
+                    updateSerializedMarkdownAsync(result.updatedContent.annotatedString)
                 }
                 }
             }
@@ -1147,6 +1163,7 @@ class NotesViewModel @Inject constructor(
                     canUndo = undoRedoManager.canUndo.value,
                     canRedo = undoRedoManager.canRedo.value
                 )
+                updateSerializedMarkdownAsync(updatedContent.annotatedString)
                 scheduleAutoSave()
             }
             is NotesEvent.ApplyHeadingStyle -> {
@@ -1168,13 +1185,13 @@ class NotesViewModel @Inject constructor(
                 } else {
                     // Applied to selection
                     undoRedoManager.addState(editState.value.editingTitle to updatedContent)
-
                     _editState.value = editState.value.copy(
                         editingContent = updatedContent,
                         canUndo = undoRedoManager.canUndo.value,
-                        canRedo = undoRedoManager.canRedo.value,
-                        activeHeadingStyle = event.level
+                        canRedo = undoRedoManager.canRedo.value
                     )
+                    updateSerializedMarkdownAsync(updatedContent.annotatedString)
+                    scheduleAutoSave()
                 }
             }
             is NotesEvent.OnColorChange -> {
@@ -1387,8 +1404,8 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnToggleNoteType -> {
                 val currentType = editState.value.editingNoteType
-                if (currentType == NoteType.TEXT) {
-                    // Convert TEXT to CHECKLIST
+                if (currentType == NoteType.TEXT || currentType == NoteType.MARKDOWN) {
+                    // Convert TEXT/MARKDOWN to CHECKLIST
                     val lines = editState.value.editingContent.text.split("\n")
                     val checklistItems = lines.filter { it.isNotBlank() }.mapIndexed { index, text ->
                         ChecklistItem(text = text.trim(), isChecked = false, position = index)
@@ -1613,7 +1630,7 @@ class NotesViewModel @Inject constructor(
         if (externalUri != null) {
             viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 try {
-                    val content = if (editState.value.editingNoteType == NoteType.TEXT) {
+                    val content = if (editState.value.editingNoteType == NoteType.TEXT || editState.value.editingNoteType == NoteType.MARKDOWN) {
                          editState.value.editingContent.text
                     } else {
                         editState.value.editingChecklist.joinToString("\n") { (if (it.isChecked) "[x] " else "[ ] ") + it.text }
@@ -1641,13 +1658,24 @@ class NotesViewModel @Inject constructor(
         val noteId = if (expandedId == -1 && lastCreatedNoteId != null) lastCreatedNoteId!! else expandedId
 
         val title = editState.value.editingTitle
-        val content = if (editState.value.editingNoteType == NoteType.TEXT) {
-            HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
-        } else {
-            ""
+        val content = when (editState.value.editingNoteType) {
+            NoteType.TEXT -> {
+                HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
+            }
+            NoteType.MARKDOWN -> {
+                val html = HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
+                MarkdownExporter.convertHtmlToMarkdown(html)
+            }
+            else -> ""
         }
 
-        if (title.isBlank() && (editState.value.editingNoteType == NoteType.TEXT && content.isBlank() || editState.value.editingNoteType == NoteType.CHECKLIST && editState.value.editingChecklist.all { it.text.isBlank() })) {
+        val isNoteEmpty = title.isBlank() && (
+            (editState.value.editingNoteType == NoteType.TEXT && content.isBlank()) ||
+            (editState.value.editingNoteType == NoteType.MARKDOWN && content.isBlank()) ||
+            (editState.value.editingNoteType == NoteType.CHECKLIST && editState.value.editingChecklist.all { it.text.isBlank() })
+        )
+
+        if (isNoteEmpty) {
             if (noteId != -1) { // It's an existing note, so delete it
                 repository.getNoteById(noteId)?.let { repository.updateNote(it.note.copy(isBinned = true, binnedOn = System.currentTimeMillis())) }
             }

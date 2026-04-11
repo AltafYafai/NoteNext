@@ -17,6 +17,7 @@ import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
+import com.suvojeet.notenext.data.MarkdownExporter
 import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.ProjectDao
@@ -75,6 +76,16 @@ class ProjectNotesViewModel @Inject constructor(
     private val projectId: Int = savedStateHandle.get<Int>("projectId") ?: -1
 
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
+
+    private fun updateSerializedMarkdownAsync(annotatedString: AnnotatedString) {
+        if (state.value.editingNoteType != NoteType.MARKDOWN) return
+        
+        viewModelScope.launch {
+            val html = HtmlConverter.annotatedStringToHtml(annotatedString)
+            val markdown = MarkdownExporter.convertHtmlToMarkdown(html)
+            _state.value = _state.value.copy(serializedMarkdown = markdown)
+        }
+    }
 
     private fun scheduleAutoSave() {
         autoSaveJob?.cancel()
@@ -336,10 +347,10 @@ class ProjectNotesViewModel @Inject constructor(
                     if (event.noteId != -1) {
                         repository.getNoteById(event.noteId)?.let { noteWithAttachments ->
                             val note = noteWithAttachments.note
-                            val content = if (note.noteType == NoteType.TEXT) {
-                                HtmlConverter.htmlToAnnotatedString(note.content)
-                            } else {
-                                AnnotatedString("")
+                            val content = when (note.noteType) {
+                                NoteType.TEXT -> HtmlConverter.htmlToAnnotatedString(note.content)
+                                NoteType.MARKDOWN -> richTextController.parseMarkdownToAnnotatedString(note.content)
+                                else -> AnnotatedString("")
                             }
                             val checklist = if (note.noteType == NoteType.CHECKLIST) {
                                 noteWithAttachments.checklistItems.sortedBy { it.position }
@@ -369,6 +380,8 @@ class ProjectNotesViewModel @Inject constructor(
                                 editingHistoryIndex = 0,
                                 linkPreviews = note.linkPreviews,
                                 editingNoteType = note.noteType,
+                                isMarkdownPreviewMode = false,
+                                serializedMarkdown = if (note.noteType == NoteType.MARKDOWN) note.content else "",
                                 editingChecklist = checklist,
                                 checklistInputValues = checklist.associate { item ->
                                     item.id to TextFieldValue(richTextController.parseMarkdownToAnnotatedString(item.text))
@@ -394,6 +407,8 @@ class ProjectNotesViewModel @Inject constructor(
                             editingProjectId = if (projectId != -1) projectId else null,
                             linkPreviews = emptyList(),
                             editingNoteType = event.noteType,
+                            isMarkdownPreviewMode = false,
+                            serializedMarkdown = "",
                             editingChecklist = if (event.noteType == NoteType.CHECKLIST) listOf(ChecklistItem(text = "", isChecked = false)) else emptyList(),
                             checklistInputValues = if (event.noteType == NoteType.CHECKLIST) {
                                 val id = java.util.UUID.randomUUID().toString()
@@ -517,7 +532,7 @@ class ProjectNotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is ProjectNotesEvent.OnContentChange -> {
-                if (state.value.editingNoteType == NoteType.TEXT) {
+                if (state.value.editingNoteType == NoteType.TEXT || state.value.editingNoteType == NoteType.MARKDOWN) {
                     val newContent = event.content
                     val oldContent = state.value.editingContent
 
@@ -580,6 +595,8 @@ class ProjectNotesViewModel @Inject constructor(
                         isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                         isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline }
                     )
+
+                    updateSerializedMarkdownAsync(finalContent.annotatedString)
 
                     // Link detection
                     val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
@@ -653,6 +670,7 @@ class ProjectNotesViewModel @Inject constructor(
                         editingHistory = newHistory,
                         editingHistoryIndex = newHistory.lastIndex
                     )
+                    updateSerializedMarkdownAsync(newTextFieldValue.annotatedString)
                 }
             }
             is ProjectNotesEvent.ApplyBulletedList -> {
@@ -663,6 +681,7 @@ class ProjectNotesViewModel @Inject constructor(
                     editingHistory = updatedHistory,
                     editingHistoryIndex = updatedHistory.lastIndex
                 )
+                updateSerializedMarkdownAsync(updatedContent.annotatedString)
                 scheduleAutoSave()
             }
             is ProjectNotesEvent.ApplyHeadingStyle -> {
@@ -699,7 +718,7 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.SummarizeNote -> {
-                val content = if (state.value.editingNoteType == NoteType.TEXT) {
+                val content = if (state.value.editingNoteType == NoteType.TEXT || state.value.editingNoteType == NoteType.MARKDOWN) {
                     state.value.editingContent.text
                 } else {
                     state.value.editingChecklist.joinToString("\n") { it.text }
@@ -811,6 +830,7 @@ class ProjectNotesViewModel @Inject constructor(
                         fixedContentPreview = null,
                         originalContentBackup = null
                     )
+                    updateSerializedMarkdownAsync(newAnnotatedString)
                     scheduleAutoSave()
                 }
             }
@@ -823,7 +843,7 @@ class ProjectNotesViewModel @Inject constructor(
             is ProjectNotesEvent.ExportNote -> {
                 viewModelScope.launch {
                     try {
-                        val content = if (state.value.editingNoteType == NoteType.TEXT) {
+                        val content = if (state.value.editingNoteType == NoteType.TEXT || state.value.editingNoteType == NoteType.MARKDOWN) {
                             state.value.editingContent.text
                         } else {
                             state.value.editingChecklist.joinToString("\n") { if (it.isChecked) "[x] ${it.text}" else "[ ] ${it.text}" }
@@ -840,7 +860,7 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.ShareAsText -> {
-                val content = if (state.value.editingNoteType == NoteType.TEXT) {
+                val content = if (state.value.editingNoteType == NoteType.TEXT || state.value.editingNoteType == NoteType.MARKDOWN) {
                     state.value.editingContent.text
                 } else {
                     state.value.editingChecklist.joinToString("\n") { if (it.isChecked) "[x] ${it.text}" else "[ ] ${it.text}" }
@@ -897,6 +917,7 @@ class ProjectNotesViewModel @Inject constructor(
                         editingContent = content,
                         editingHistoryIndex = newIndex
                     )
+                    updateSerializedMarkdownAsync(content.annotatedString)
                 }
             }
             is ProjectNotesEvent.OnRedoClick -> {
@@ -908,6 +929,7 @@ class ProjectNotesViewModel @Inject constructor(
                         editingContent = content,
                         editingHistoryIndex = newIndex
                     )
+                    updateSerializedMarkdownAsync(content.annotatedString)
                 }
             }
             is ProjectNotesEvent.OnSaveNoteClick -> {
@@ -916,13 +938,24 @@ class ProjectNotesViewModel @Inject constructor(
                     if (noteId == null) return@launch
 
                     val title = state.value.editingTitle
-                    val content = if (state.value.editingNoteType == NoteType.TEXT) {
-                        HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString)
-                    } else {
-                        ""
+                    val content = when (state.value.editingNoteType) {
+                        NoteType.TEXT -> {
+                            HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString)
+                        }
+                        NoteType.MARKDOWN -> {
+                             val html = HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString)
+                             MarkdownExporter.convertHtmlToMarkdown(html)
+                        }
+                        else -> ""
                     }
 
-                    if (title.isBlank() && (state.value.editingNoteType == NoteType.TEXT && content.isBlank() || state.value.editingNoteType == NoteType.CHECKLIST && state.value.editingChecklist.all { it.text.isBlank() })) {
+                    val isNoteEmpty = title.isBlank() && (
+                        (state.value.editingNoteType == NoteType.TEXT && content.isBlank()) ||
+                        (state.value.editingNoteType == NoteType.MARKDOWN && content.isBlank()) ||
+                        (state.value.editingNoteType == NoteType.CHECKLIST && state.value.editingChecklist.all { it.text.isBlank() })
+                    )
+
+                    if (isNoteEmpty) {
                         if (noteId != -1) { // It's an existing note, so delete it
                             repository.getNoteById(noteId)?.let { repository.updateNote(it.note.copy(isBinned = true, binnedOn = System.currentTimeMillis())) }
                         }

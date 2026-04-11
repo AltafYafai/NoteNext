@@ -20,7 +20,7 @@ class SaveNoteUseCase @Inject constructor(
     ): SaveNoteResult {
         // Logic to check if the note is empty
         val isNoteEmpty = note.title.isBlank() && (
-            (note.noteType == NoteType.TEXT && note.content.isBlank()) ||
+            ((note.noteType == NoteType.TEXT || note.noteType == NoteType.MARKDOWN) && note.content.isBlank()) ||
             (note.noteType == NoteType.CHECKLIST && checklist.all { it.text.isBlank() })
         )
 

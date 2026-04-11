@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.suvojeet.notemark.compose.MarkdownPreview
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import kotlinx.coroutines.delay

@@ -42,6 +42,7 @@ data class ProjectNotesState(
     val linkPreviews: List<LinkPreview> = emptyList(),
     val editingNoteType: NoteType = NoteType.TEXT,
     val isMarkdownPreviewMode: Boolean = false,
+    val serializedMarkdown: String = "",
     val editingChecklist: List<ChecklistItem> = emptyList(),
     val checklistInputValues: Map<String, TextFieldValue> = emptyMap(),
     val focusedChecklistItemId: String? = null,
