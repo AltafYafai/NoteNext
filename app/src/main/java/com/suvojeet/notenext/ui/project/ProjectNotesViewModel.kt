@@ -603,68 +603,33 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.ApplyStyleToContent -> {
-                val selection = state.value.editingContent.selection
-                if (selection.collapsed) {
-                    val styleToAddOrRemove = event.style
-                    val activeStyles = state.value.activeStyles.toMutableSet()
+                val result = MarkdownConverter.toggleStyle(
+                    content = state.value.editingContent,
+                    styleToToggle = event.style,
+                    currentActiveStyles = state.value.activeStyles,
+                    isBoldActive = state.value.isBoldActive,
+                    isItalicActive = state.value.isItalicActive,
+                    isUnderlineActive = state.value.isUnderlineActive
+                )
 
-                    val isBold = styleToAddOrRemove.fontWeight == FontWeight.Bold
-                    val isItalic = styleToAddOrRemove.fontStyle == FontStyle.Italic
-                    val isUnderline = styleToAddOrRemove.textDecoration == TextDecoration.Underline
+                val updatedActiveStyles = result.updatedActiveStyles
+                val updatedContent = result.updatedContent
 
-                    val wasBold = activeStyles.any { it.fontWeight == FontWeight.Bold }
-                    val wasItalic = activeStyles.any { it.fontStyle == FontStyle.Italic }
-                    val wasUnderline = activeStyles.any { it.textDecoration == TextDecoration.Underline }
-
-                    if (isBold) {
-                        if (wasBold) activeStyles.removeAll { it.fontWeight == FontWeight.Bold }
-                        else activeStyles.add(SpanStyle(fontWeight = FontWeight.Bold))
-                    }
-                    if (isItalic) {
-                        if (wasItalic) activeStyles.removeAll { it.fontStyle == FontStyle.Italic }
-                        else activeStyles.add(SpanStyle(fontStyle = FontStyle.Italic))
-                    }
-                    if (isUnderline) {
-                        if (wasUnderline) activeStyles.removeAll { it.textDecoration == TextDecoration.Underline }
-                        else activeStyles.add(SpanStyle(textDecoration = TextDecoration.Underline))
-                    }
-
+                if (updatedActiveStyles != null) {
                     _state.value = state.value.copy(
-                        activeStyles = activeStyles,
-                        isBoldActive = activeStyles.any { it.fontWeight == FontWeight.Bold },
-                        isItalicActive = activeStyles.any { it.fontStyle == FontStyle.Italic },
-                        isUnderlineActive = activeStyles.any { it.textDecoration == TextDecoration.Underline }
+                        activeStyles = updatedActiveStyles,
+                        isBoldActive = updatedActiveStyles.any { it.fontWeight == FontWeight.Bold },
+                        isItalicActive = updatedActiveStyles.any { it.fontStyle == FontStyle.Italic },
+                        isUnderlineActive = updatedActiveStyles.any { it.textDecoration == TextDecoration.Underline }
                     )
-                } else {
-                    val selection = state.value.editingContent.selection
-                    val newAnnotatedString = AnnotatedString.Builder(state.value.editingContent.annotatedString).apply {
-                        val style = event.style
-                        val isApplyingBold = style.fontWeight == FontWeight.Bold
-                        val isApplyingItalic = style.fontStyle == FontStyle.Italic
-                        val isApplyingUnderline = style.textDecoration == TextDecoration.Underline
-
-                        val selectionIsAlreadyBold = state.value.isBoldActive
-                        val selectionIsAlreadyItalic = state.value.isItalicActive
-                        val selectionIsAlreadyUnderline = state.value.isUnderlineActive
-
-                        val styleToApply = when {
-                            isApplyingBold -> if (selectionIsAlreadyBold) SpanStyle(fontWeight = FontWeight.Normal) else SpanStyle(fontWeight = FontWeight.Bold)
-                            isApplyingItalic -> if (selectionIsAlreadyItalic) SpanStyle(fontStyle = FontStyle.Normal) else SpanStyle(fontStyle = FontStyle.Italic)
-                            isApplyingUnderline -> if (selectionIsAlreadyUnderline) SpanStyle(textDecoration = TextDecoration.None) else SpanStyle(textDecoration = TextDecoration.Underline)
-                            else -> style
-                        }
-                        addStyle(styleToApply, selection.start, selection.end)
-                    }.toAnnotatedString()
-
-                    val newTextFieldValue = state.value.editingContent.copy(annotatedString = newAnnotatedString)
-                    val newHistory = state.value.editingHistory.take(state.value.editingHistoryIndex + 1) + (state.value.editingTitle to newTextFieldValue)
-
+                } else if (updatedContent != null) {
+                    val newHistory = state.value.editingHistory.take(state.value.editingHistoryIndex + 1) + (state.value.editingTitle to updatedContent)
                     _state.value = state.value.copy(
-                        editingContent = newTextFieldValue,
+                        editingContent = updatedContent,
                         editingHistory = newHistory,
                         editingHistoryIndex = newHistory.lastIndex
                     )
-                    updateSerializedMarkdownAsync(newTextFieldValue.annotatedString)
+                    updateSerializedMarkdownAsync(updatedContent.annotatedString)
                 }
             }
             is ProjectNotesEvent.ApplyBulletedList -> {

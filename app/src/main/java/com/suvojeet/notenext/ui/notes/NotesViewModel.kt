@@ -1115,8 +1115,9 @@ class NotesViewModel @Inject constructor(
                                 editState.value.isItalicActive,
                                 editState.value.isUnderlineActive
                             )
-                            if (result.updatedContent != null) {
-                                onEvent(NotesEvent.OnChecklistItemValueChange(focusedId, result.updatedContent))
+                            val updatedContent = result.updatedContent
+                            if (updatedContent != null) {
+                                onEvent(NotesEvent.OnChecklistItemValueChange(focusedId, updatedContent))
                             }
                         }
                     }
@@ -1130,22 +1131,24 @@ class NotesViewModel @Inject constructor(
                     editState.value.isUnderlineActive
                 )
 
-                if (result.updatedActiveStyles != null) {
-                    val activeStyles = result.updatedActiveStyles
+                val updatedActiveStyles = result.updatedActiveStyles
+                val updatedContent = result.updatedContent
+
+                if (updatedActiveStyles != null) {
                     _editState.value = editState.value.copy(
-                        activeStyles = activeStyles,
-                        isBoldActive = activeStyles.any { it.fontWeight == FontWeight.Bold },
-                        isItalicActive = activeStyles.any { it.fontStyle == FontStyle.Italic },
-                        isUnderlineActive = activeStyles.any { it.textDecoration == TextDecoration.Underline }
+                        activeStyles = updatedActiveStyles,
+                        isBoldActive = updatedActiveStyles.any { it.fontWeight == FontWeight.Bold },
+                        isItalicActive = updatedActiveStyles.any { it.fontStyle == FontStyle.Italic },
+                        isUnderlineActive = updatedActiveStyles.any { it.textDecoration == TextDecoration.Underline }
                     )
-                } else if (result.updatedContent != null) {
-                    undoRedoManager.addState(editState.value.editingTitle to result.updatedContent)
+                } else if (updatedContent != null) {
+                    undoRedoManager.addState(editState.value.editingTitle to updatedContent)
                     _editState.value = editState.value.copy(
-                        editingContent = result.updatedContent,
+                        editingContent = updatedContent,
                         canUndo = undoRedoManager.canUndo.value,
                         canRedo = undoRedoManager.canRedo.value
                     )
-                    updateSerializedMarkdownAsync(result.updatedContent.annotatedString)
+                    updateSerializedMarkdownAsync(updatedContent.annotatedString)
                 }
                 }
             }
