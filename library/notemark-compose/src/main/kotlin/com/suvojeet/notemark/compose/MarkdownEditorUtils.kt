@@ -61,22 +61,31 @@ object MarkdownEditorUtils {
     }
 
     private fun appendInlineMarkdown(builder: AnnotatedString.Builder, text: String) {
-        val boldRegex = "(\\s|^)(\\*\\*|__)(.*?)\\2".toRegex()
-        val italicRegex = "(\\s|^)(\\*|_)(.*?)\\2".toRegex()
-        val underlineRegex = "__u__(.*?)__u__".toRegex()
-        val linkRegex = "\\[(.*?)\\]\\((.*?)\\)".toRegex()
-        val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
+        val boldRegex = "(\\s|^)(\\*\\*|__)(.+?)\\2".toRegex()
+        val italicRegex = "(\\s|^)(\\*|_)(.+?)\\2".toRegex()
+        val underlineRegex = "__u__(.+?)__u__".toRegex()
+        val linkRegex = "\\[(.+?)\\]\\((.+?)\\)".toRegex()
+        val wikiLinkRegex = "\\[\\[(.+?)\\]\\]".toRegex()
 
         var lastIndex = 0
-        val allMatches = (boldRegex.findAll(text) + italicRegex.findAll(text) + underlineRegex.findAll(text) + linkRegex.findAll(text) + wikiLinkRegex.findAll(text))
-            .sortedBy { it.range.first }
+        
+        // Tag each match with its type to avoid guessing from match.value
+        // Priority order: more specific patterns first for stable sorting ties
+        val underlineMatches = underlineRegex.findAll(text).map { it to "underline" }
+        val wikiLinkMatches = wikiLinkRegex.findAll(text).map { it to "wikilink" }
+        val linkMatches = linkRegex.findAll(text).map { it to "link" }
+        val boldMatches = boldRegex.findAll(text).map { it to "bold" }
+        val italicMatches = italicRegex.findAll(text).map { it to "italic" }
 
-        allMatches.forEach { match ->
+        val allMatches = (underlineMatches + wikiLinkMatches + linkMatches + boldMatches + italicMatches)
+            .sortedBy { it.first.range.first }
+
+        allMatches.forEach { (match, type) ->
             if (match.range.first >= lastIndex) {
                 builder.append(text.substring(lastIndex, match.range.first))
 
-                when {
-                    match.value.startsWith("**") || match.value.startsWith("__") || (match.value.trim().startsWith("**")) -> {
+                when (type) {
+                    "bold" -> {
                         val content = match.groupValues[3]
                         val prefix = match.groupValues[1]
                         builder.append(prefix)
@@ -84,7 +93,7 @@ object MarkdownEditorUtils {
                             appendInlineMarkdown(this, content)
                         }
                     }
-                    match.value.startsWith("*") || match.value.startsWith("_") || (match.value.trim().startsWith("*")) -> {
+                    "italic" -> {
                         val content = match.groupValues[3]
                         val prefix = match.groupValues[1]
                         builder.append(prefix)
@@ -92,13 +101,13 @@ object MarkdownEditorUtils {
                             appendInlineMarkdown(this, content)
                         }
                     }
-                    match.value.startsWith("__u__") -> {
+                    "underline" -> {
                         val content = match.groupValues[1]
                         builder.withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
                             appendInlineMarkdown(this, content)
                         }
                     }
-                    match.value.startsWith("[[") -> {
+                    "wikilink" -> {
                         val linkText = match.groupValues[1]
                         builder.pushStringAnnotation(tag = "NOTE_LINK", annotation = linkText)
                         builder.withStyle(WikiLinkStyle) {
@@ -106,7 +115,7 @@ object MarkdownEditorUtils {
                         }
                         builder.pop()
                     }
-                    match.value.startsWith("[") -> {
+                    "link" -> {
                         val linkText = match.groupValues[1]
                         val url = match.groupValues[2]
                         builder.pushStringAnnotation(tag = "URL", annotation = url)
@@ -215,15 +224,52 @@ object MarkdownEditorUtils {
             }
             return StyleToggleResult(updatedActiveStyles = activeStyles)
         } else {
-            val newAnnotatedString = AnnotatedString.Builder(content.annotatedString).apply {
-                val styleToApply = when {
-                    styleToToggle.fontWeight == FontWeight.Bold -> if (isBoldActive) SpanStyle(fontWeight = FontWeight.Normal) else SpanStyle(fontWeight = FontWeight.Bold)
-                    styleToToggle.fontStyle == FontStyle.Italic -> if (isItalicActive) SpanStyle(fontStyle = FontStyle.Normal) else SpanStyle(fontStyle = FontStyle.Italic)
-                    styleToToggle.textDecoration == TextDecoration.Underline -> if (isUnderlineActive) SpanStyle(textDecoration = TextDecoration.None) else SpanStyle(textDecoration = TextDecoration.Underline)
-                    else -> styleToToggle
+            val newAnnotatedString = buildAnnotatedString {
+                append(content.annotatedString.text)
+                
+                val styleToToggleIsBold = styleToToggle.fontWeight == FontWeight.Bold
+                val styleToToggleIsItalic = styleToToggle.fontStyle == FontStyle.Italic
+                val styleToToggleIsUnderline = styleToToggle.textDecoration == TextDecoration.Underline
+
+                // Copy all existing spans, but remove or split those we're toggling off
+                content.annotatedString.spanStyles.forEach { span ->
+                    val isBoldSpan = span.item.fontWeight == FontWeight.Bold
+                    val isItalicSpan = span.item.fontStyle == FontStyle.Italic
+                    val isUnderlineSpan = span.item.textDecoration == TextDecoration.Underline
+
+                    val togglingOff = (styleToToggleIsBold && isBoldActive && isBoldSpan) ||
+                                     (styleToToggleIsItalic && isItalicActive && isItalicSpan) ||
+                                     (styleToToggleIsUnderline && isUnderlineActive && isUnderlineSpan)
+
+                    if (togglingOff) {
+                        // Subtract selection from span range
+                        if (span.start < selection.min) {
+                            addStyle(span.item, span.start, selection.min)
+                        }
+                        if (span.end > selection.max) {
+                            addStyle(span.item, selection.max, span.end)
+                        }
+                    } else {
+                        addStyle(span.item, span.start, span.end)
+                    }
                 }
-                addStyle(styleToApply, selection.min, selection.max)
-            }.toAnnotatedString()
+
+                // If we're toggling ON, add the new style
+                val togglingOn = (styleToToggleIsBold && !isBoldActive) ||
+                                (styleToToggleIsItalic && !isItalicActive) ||
+                                (styleToToggleIsUnderline && !isUnderlineActive) ||
+                                (!styleToToggleIsBold && !styleToToggleIsItalic && !styleToToggleIsUnderline)
+
+                if (togglingOn) {
+                    addStyle(styleToToggle, selection.min, selection.max)
+                }
+
+                // Copy other attributes
+                content.annotatedString.paragraphStyles.forEach { addStyle(it.item, it.start, it.end) }
+                content.annotatedString.getStringAnnotations(0, content.text.length).forEach { 
+                    addStringAnnotation(it.tag, it.item, it.start, it.end)
+                }
+            }
             return StyleToggleResult(updatedContent = content.copy(annotatedString = newAnnotatedString))
         }
     }

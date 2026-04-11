@@ -73,49 +73,56 @@ object NoteMarkParser {
         // For the first step, we'll use a regex-based approach similar to what you had,
         // but we'll return a list of nodes instead of an AnnotatedString.
         
-        val boldRegex = "(\\s|^)(\\*\\*|__)(.*?)\\2".toRegex()
-        val italicRegex = "(\\s|^)(\\*|_)(.*?)\\2".toRegex()
-        val underlineRegex = "__u__(.*?)__u__".toRegex()
-        val linkRegex = "\\[(.*?)\\]\\((.*?)\\)".toRegex()
-        val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
-        val inlineCodeRegex = "`(.*?)`".toRegex()
+        val boldRegex = "(\\s|^)(\\*\\*|__)(.+?)\\2".toRegex()
+        val italicRegex = "(\\s|^)(\\*|_)(.+?)\\2".toRegex()
+        val underlineRegex = "__u__(.+?)__u__".toRegex()
+        val linkRegex = "\\[(.+?)\\]\\((.+?)\\)".toRegex()
+        val wikiLinkRegex = "\\[\\[(.+?)\\]\\]".toRegex()
+        val inlineCodeRegex = "`(.+?)`".toRegex()
 
         var lastIndex = 0
-        val allMatches = (boldRegex.findAll(text) + 
-                          italicRegex.findAll(text) + 
-                          underlineRegex.findAll(text) +
-                          linkRegex.findAll(text) + 
-                          wikiLinkRegex.findAll(text) +
-                          inlineCodeRegex.findAll(text))
-            .sortedBy { it.range.first }
+        
+        // Tag each match with its type to avoid guessing from match.value
+        val underlineMatches = underlineRegex.findAll(text).map { it to "underline" }
+        val wikiLinkMatches = wikiLinkRegex.findAll(text).map { it to "wikilink" }
+        val linkMatches = linkRegex.findAll(text).map { it to "link" }
+        val boldMatches = boldRegex.findAll(text).map { it to "bold" }
+        val italicMatches = italicRegex.findAll(text).map { it to "italic" }
+        val inlineCodeMatches = inlineCodeRegex.findAll(text).map { it to "code" }
 
-        allMatches.forEach { match ->
+        val allMatches = (underlineMatches + wikiLinkMatches + linkMatches + boldMatches + italicMatches + inlineCodeMatches)
+            .sortedBy { it.first.range.first }
+
+        allMatches.forEach { (match, type) ->
             if (match.range.first >= lastIndex) {
                 val plainText = text.substring(lastIndex, match.range.first)
                 if (plainText.isNotEmpty()) nodes.add(TextNode(plainText))
                 
-                val matchValue = match.value
-                when {
-                    matchValue.startsWith("**") || matchValue.startsWith("__") || matchValue.trim().startsWith("**") -> {
+                when (type) {
+                    "bold" -> {
                          // Extract the actual content group (index 3 because index 1 is prefix space)
                         val content = match.groupValues[3]
+                        val prefix = match.groupValues[1]
+                        if (prefix.isNotEmpty()) nodes.add(TextNode(prefix))
                         nodes.add(BoldNode(parseInline(content)))
                     }
-                    matchValue.startsWith("*") || matchValue.startsWith("_") || matchValue.trim().startsWith("*") -> {
+                    "italic" -> {
                         val content = match.groupValues[3]
+                        val prefix = match.groupValues[1]
+                        if (prefix.isNotEmpty()) nodes.add(TextNode(prefix))
                         nodes.add(ItalicNode(parseInline(content)))
                     }
-                    matchValue.startsWith("__u__") -> {
+                    "underline" -> {
                         val content = match.groupValues[1]
                         nodes.add(UnderlineNode(parseInline(content)))
                     }
-                    matchValue.startsWith("[[") -> {
+                    "wikilink" -> {
                         nodes.add(WikiLinkNode(match.groupValues[1]))
                     }
-                    matchValue.startsWith("[") -> {
+                    "link" -> {
                         nodes.add(LinkNode(match.groupValues[2], parseInline(match.groupValues[1])))
                     }
-                    matchValue.startsWith("`") -> {
+                    "code" -> {
                         nodes.add(InlineCodeNode(match.groupValues[1]))
                     }
                 }
