@@ -13,7 +13,7 @@ Located in `ui/theme`.
 
 Screens are located in `ui/`.
 - **`notes/NotesScreen`**: The main dashboard. Displays the grid/list of notes, search bar, and FAB.
-- **`add_edit_note/AddEditNoteScreen`**: The editor. Handles text input, rich text formatting logic (`RichTextController`), and checklist management.
+- **`add_edit_note/AddEditNoteScreen`**: The editor. Handles text input, Markdown-based WYSIWYG formatting logic (`MarkdownConverter`), and checklist management.
 - **`settings/SettingsScreen`**: App preferences, Backup & Restore UI, About section.
 - **`bin/BinScreen`**: Viewing and cleaning up deleted notes.
 - **`project/ProjectNotesScreen`**: Listing notes within a specific project.

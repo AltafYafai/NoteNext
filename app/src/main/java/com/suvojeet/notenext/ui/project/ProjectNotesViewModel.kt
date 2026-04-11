@@ -56,7 +56,6 @@ class ProjectNotesViewModel @Inject constructor(
     private val noteUseCases: com.suvojeet.notenext.domain.use_case.NoteUseCases,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val richTextController: com.suvojeet.notenext.ui.notes.RichTextController,
     private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
     private val savedStateHandle: SavedStateHandle
@@ -472,7 +471,7 @@ class ProjectNotesViewModel @Inject constructor(
                 val currentValues = state.value.checklistInputValues.toMutableMap()
                 val oldContent = currentValues[event.itemId] ?: TextFieldValue("")
 
-                val finalContent = richTextController.processContentChange(
+                val finalContent = MarkdownConverter.processContentChange(
                     oldContent = oldContent,
                     newContent = event.value,
                     activeStyles = state.value.activeStyles,
@@ -669,7 +668,7 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.ApplyBulletedList -> {
-                val updatedContent = richTextController.toggleBulletedList(state.value.editingContent)
+                val updatedContent = MarkdownConverter.toggleBulletedList(state.value.editingContent)
                 val updatedHistory = state.value.editingHistory.take(state.value.editingHistoryIndex + 1) + (state.value.editingTitle to updatedContent)
                 _state.value = state.value.copy(
                     editingContent = updatedContent,

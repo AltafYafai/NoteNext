@@ -74,7 +74,6 @@ class NotesViewModel @Inject constructor(
     private val noteUseCases: NoteUseCases,
     private val linkPreviewRepository: LinkPreviewRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val richTextController: RichTextController,
     private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
     private val savedStateHandle: androidx.lifecycle.SavedStateHandle
@@ -991,7 +990,7 @@ class NotesViewModel @Inject constructor(
                     val newContent = event.content
                     val oldContent = editState.value.editingContent
 
-                    val finalContent = richTextController.processContentChange(
+                    val finalContent = MarkdownConverter.processContentChange(
                         oldContent,
                         newContent,
                         editState.value.activeStyles,
@@ -1108,7 +1107,7 @@ class NotesViewModel @Inject constructor(
                     if (focusedId != null) {
                         val currentValue = editState.value.checklistInputValues[focusedId]
                         if (currentValue != null) {
-                             val result = richTextController.toggleStyle(
+                             val result = MarkdownConverter.toggleStyle(
                                 currentValue,
                                 event.style,
                                 emptySet(), // We don't track activeStyles per item easily yet, relies on result
@@ -1122,7 +1121,7 @@ class NotesViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    val result = richTextController.toggleStyle(
+                    val result = MarkdownConverter.toggleStyle(
                     editState.value.editingContent,
                     event.style,
                     editState.value.activeStyles,
@@ -1151,7 +1150,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ApplyBulletedList -> {
-                val updatedContent = richTextController.toggleBulletedList(editState.value.editingContent)
+                val updatedContent = MarkdownConverter.toggleBulletedList(editState.value.editingContent)
                 undoRedoManager.addState(editState.value.editingTitle to updatedContent)
                 _editState.value = editState.value.copy(
                     editingContent = updatedContent,
@@ -1162,13 +1161,13 @@ class NotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is NotesEvent.ApplyHeadingStyle -> {
-                val updatedContent = richTextController.applyHeading(editState.value.editingContent, event.level)
+                val updatedContent = MarkdownConverter.applyHeading(editState.value.editingContent, event.level)
 
                 if (updatedContent == null) {
                     // Selection is collapsed, update active styles for future typing
                     val newActiveStyles = mutableSetOf<SpanStyle>()
                     if (event.level != 0) {
-                        newActiveStyles.add(richTextController.getHeadingStyle(event.level))
+                        newActiveStyles.add(MarkdownConverter.getHeadingStyle(event.level))
                     }
                     _editState.value = editState.value.copy(
                         activeHeadingStyle = event.level,

@@ -10,11 +10,16 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+
 /**
  * Utility for converting between [AnnotatedString] and Markdown.
- * Replaces the deprecated HtmlConverter.
+ * Handles WYSIWYG editing state and formatting.
  */
 object MarkdownConverter {
+
+    private val WikiLinkStyle = SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF6200EE))
 
     /**
      * Converts an [AnnotatedString] to a Markdown string.
@@ -23,18 +28,8 @@ object MarkdownConverter {
         val text = annotatedString.text
         val sb = StringBuilder()
         
-        // This is a simplified conversion. For a full WYSIWYG experience, 
-        // we map the SpanStyles back to Markdown symbols.
-        
-        var currentIndex = 0
-        
         // Sort spans by start index
         val spans = annotatedString.spanStyles.sortedBy { it.start }
-        
-        // We'll process the text character by character or in chunks to insert markers.
-        // A more robust way is to use a tree structure, but for simple styles, 
-        // we can track active styles.
-        
         val activeSpans = mutableListOf<AnnotatedString.Range<SpanStyle>>()
         
         for (i in text.indices) {
@@ -82,16 +77,80 @@ object MarkdownConverter {
     }
 
     /**
-     * Converts a Markdown string to an [AnnotatedString].
-     * This implementation uses the logic from RichTextController for WYSIWYG.
+     * Handles text changes while preserving styles and decoding entities.
      */
+    fun processContentChange(
+        oldContent: TextFieldValue,
+        newContent: TextFieldValue,
+        activeStyles: Set<SpanStyle>,
+        activeHeadingStyle: Int
+    ): TextFieldValue {
+        if (newContent.text == oldContent.text) {
+            return oldContent.copy(selection = newContent.selection)
+        }
+
+        val oldText = oldContent.text
+        val newText = decodeHtmlEntities(newContent.text)
+        val fixedNewContent = newContent.copy(text = newText)
+
+        val prefixLength = commonPrefixWith(oldText, newText).length
+        val oldRemainder = oldText.substring(prefixLength)
+        val newRemainder = newText.substring(prefixLength)
+        
+        val maxSuffixLength = minOf(oldRemainder.length, newRemainder.length)
+        val suffixLength = commonSuffixWith(oldRemainder, newRemainder).length.coerceAtMost(maxSuffixLength)
+        
+        val newChangedPart = newRemainder.substring(0, (newRemainder.length - suffixLength).coerceAtLeast(0))
+
+        val newAnnotatedString = buildAnnotatedString {
+            val prefixEnd = prefixLength.coerceAtMost(oldContent.annotatedString.length)
+            append(oldContent.annotatedString.subSequence(0, prefixEnd))
+
+            val headingSpanStyle = getHeadingStyle(activeHeadingStyle)
+            val styleToApply = (activeStyles + headingSpanStyle).reduceOrNull { a, b -> a.merge(b) } ?: SpanStyle()
+
+            withStyle(styleToApply) {
+                append(newChangedPart)
+            }
+
+            val suffixStart = (oldText.length - suffixLength).coerceIn(0, oldContent.annotatedString.length)
+            val suffixEnd = oldText.length.coerceIn(suffixStart, oldContent.annotatedString.length)
+            append(oldContent.annotatedString.subSequence(suffixStart, suffixEnd))
+        }
+        
+        return markdownToAnnotatedString(newAnnotatedString.text).let { 
+            fixedNewContent.copy(annotatedString = it) 
+        }
+    }
+
+    private fun decodeHtmlEntities(text: String): String {
+        if (!text.contains("&")) return text
+        
+        var result = text
+            .replace("&nbsp;", " ")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&apos;", "'")
+            .replace("&#39;", "'")
+        
+        val numericEntityRegex = Regex("&#(\\d+);")
+        result = numericEntityRegex.replace(result) { match ->
+            try {
+                val code = match.groupValues[1].toInt()
+                code.toChar().toString()
+            } catch (e: Exception) { match.value }
+        }
+        return result
+    }
+
     fun markdownToAnnotatedString(text: String): AnnotatedString {
         return buildAnnotatedString {
             val lines = text.split("\n")
             lines.forEachIndexed { index, line ->
                 var currentLine = line
                 
-                // Handle Headers
                 val headerMatch = "^(#+)\\s*(.*)".toRegex().find(currentLine)
                 if (headerMatch != null) {
                     val level = headerMatch.groupValues[1].length
@@ -100,7 +159,6 @@ object MarkdownConverter {
                         appendInlineMarkdown(this, content)
                     }
                 } 
-                // Handle Bullet Points
                 else if (currentLine.trimStart().startsWith("• ") || currentLine.trimStart().startsWith("- ") || currentLine.trimStart().startsWith("* ")) {
                     val bullet = if (currentLine.trimStart().startsWith("• ")) "• " else if (currentLine.trimStart().startsWith("- ")) "- " else "* "
                     val content = currentLine.trimStart().removePrefix(bullet)
@@ -109,7 +167,6 @@ object MarkdownConverter {
                     append("• ") 
                     appendInlineMarkdown(this, content)
                 }
-                // Handle Blockquotes
                 else if (currentLine.trimStart().startsWith("> ")) {
                     val content = currentLine.trimStart().removePrefix("> ")
                     val leadingSpaces = currentLine.takeWhile { it.isWhitespace() }
@@ -170,7 +227,7 @@ object MarkdownConverter {
                     match.value.startsWith("[[") -> {
                         val linkText = match.groupValues[1]
                         builder.pushStringAnnotation(tag = "NOTE_LINK", annotation = linkText)
-                        builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF6200EE))) {
+                        builder.withStyle(WikiLinkStyle) {
                             append(linkText)
                         }
                         builder.pop()
@@ -194,31 +251,126 @@ object MarkdownConverter {
         }
     }
 
-    private fun getHeadingStyle(level: Int): SpanStyle {
+    fun getHeadingStyle(level: Int): SpanStyle {
         return when (level) {
             1 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp)
             2 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp)
             3 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
-            else -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            else -> if (level > 0) SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp) else SpanStyle()
         }
     }
-    
-    /**
-     * Extracts plain text from Markdown by removing symbols.
-     */
+
+    data class StyleToggleResult(
+        val updatedContent: TextFieldValue? = null,
+        val updatedActiveStyles: Set<SpanStyle>? = null
+    )
+
+    fun toggleStyle(
+        content: TextFieldValue,
+        styleToToggle: SpanStyle,
+        currentActiveStyles: Set<SpanStyle>,
+        isBoldActive: Boolean,
+        isItalicActive: Boolean,
+        isUnderlineActive: Boolean
+    ): StyleToggleResult {
+        val selection = content.selection
+        if (selection.collapsed) {
+            val activeStyles = currentActiveStyles.toMutableSet()
+            val isBold = styleToToggle.fontWeight == FontWeight.Bold
+            val isItalic = styleToToggle.fontStyle == FontStyle.Italic
+            val isUnderline = styleToToggle.textDecoration == TextDecoration.Underline
+
+            if (isBold) {
+                if (activeStyles.any { it.fontWeight == FontWeight.Bold }) activeStyles.removeAll { it.fontWeight == FontWeight.Bold }
+                else activeStyles.add(SpanStyle(fontWeight = FontWeight.Bold))
+            }
+            if (isItalic) {
+                if (activeStyles.any { it.fontStyle == FontStyle.Italic }) activeStyles.removeAll { it.fontStyle == FontStyle.Italic }
+                else activeStyles.add(SpanStyle(fontStyle = FontStyle.Italic))
+            }
+            if (isUnderline) {
+                if (activeStyles.any { it.textDecoration == TextDecoration.Underline }) activeStyles.removeAll { it.textDecoration == TextDecoration.Underline }
+                else activeStyles.add(SpanStyle(textDecoration = TextDecoration.Underline))
+            }
+            return StyleToggleResult(updatedActiveStyles = activeStyles)
+        } else {
+            val newAnnotatedString = AnnotatedString.Builder(content.annotatedString).apply {
+                val styleToApply = when {
+                    styleToToggle.fontWeight == FontWeight.Bold -> if (isBoldActive) SpanStyle(fontWeight = FontWeight.Normal) else SpanStyle(fontWeight = FontWeight.Bold)
+                    styleToToggle.fontStyle == FontStyle.Italic -> if (isItalicActive) SpanStyle(fontStyle = FontStyle.Normal) else SpanStyle(fontStyle = FontStyle.Italic)
+                    styleToToggle.textDecoration == TextDecoration.Underline -> if (isUnderlineActive) SpanStyle(textDecoration = TextDecoration.None) else SpanStyle(textDecoration = TextDecoration.Underline)
+                    else -> styleToToggle
+                }
+                addStyle(styleToApply, selection.start, selection.end)
+            }.toAnnotatedString()
+            return StyleToggleResult(updatedContent = content.copy(annotatedString = newAnnotatedString))
+        }
+    }
+
+    fun applyHeading(content: TextFieldValue, level: Int): TextFieldValue? {
+        val selection = content.selection
+        if (!selection.collapsed) {
+             val newAnnotatedString = AnnotatedString.Builder(content.annotatedString).apply {
+                addStyle(getHeadingStyle(level), selection.start, selection.end)
+            }.toAnnotatedString()
+            return content.copy(annotatedString = newAnnotatedString)
+        }
+        return null
+    }
+
+    fun toggleBulletedList(content: TextFieldValue): TextFieldValue {
+        val text = content.text
+        val selection = content.selection
+        val lines = text.split("\n")
+        var currentOffset = 0
+        val newLines = lines.map { line ->
+            val lineStart = currentOffset
+            val lineEnd = currentOffset + line.length
+            val isLineSelected = if (selection.collapsed) selection.start in lineStart..lineEnd
+            else maxOf(selection.start, lineStart) < minOf(selection.end, lineEnd)
+
+            val newLine = if (isLineSelected) {
+                if (line.trimStart().startsWith("• ")) line.replaceFirst("• ", "") else "• $line"
+            } else line
+            currentOffset += line.length + 1
+            newLine
+        }
+        val newText = newLines.joinToString("\n")
+        val diff = newText.length - text.length
+        val newSelection = if (selection.collapsed) TextRange(selection.start + if (diff > 0) 2 else if (diff < 0) -2 else 0)
+        else TextRange(selection.start, selection.end + diff)
+
+        return content.copy(
+            annotatedString = markdownToAnnotatedString(newText),
+            selection = TextRange(newSelection.start.coerceIn(0, newText.length), newSelection.end.coerceIn(0, newText.length))
+        )
+    }
+
+    private fun commonPrefixWith(a: CharSequence, b: CharSequence): String {
+        val minLength = minOf(a.length, b.length)
+        for (i in 0 until minLength) if (a[i] != b[i]) return a.substring(0, i)
+        return a.substring(0, minLength)
+    }
+
+    private fun commonSuffixWith(a: CharSequence, b: CharSequence): String {
+        val minLength = minOf(a.length, b.length)
+        for (i in 0 until minLength) if (a[a.length - 1 - i] != b[b.length - 1 - i]) return a.substring(a.length - i)
+        return a.substring(a.length - minLength)
+    }
+
     fun markdownToPlainText(markdown: String): String {
         return markdown
-            .replace(Regex("(?m)^#+\\s+"), "") // Headers at start of line
-            .replace(Regex("(\\*\\*|__)(.*?)\\1"), "$2") // Bold
-            .replace(Regex("(\\*|_)(.*?)\\1"), "$2") // Italic
-            .replace(Regex("__u__(.*?)__u__"), "$1") // Underline
-            .replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "$1") // Links
-            .replace(Regex("\\[\\[(.*?)\\]\\]"), "$1") // Wiki links
-            .replace(Regex("(?m)^[•\\-*]\\s+"), "") // Bullet points at start of line
-            .replace(Regex("(?m)^>\\s+"), "") // Blockquotes at start of line
-            .replace(Regex("`{1,3}(.*?)\\1"), "$2") // Inline code and code blocks
-            .replace(Regex("~~(.*?)~~"), "$1") // Strikethrough
-            .replace(Regex("<[^>]*>"), "") // Remaining HTML tags
+            .replace(Regex("(?m)^#+\\s+"), "")
+            .replace(Regex("(\\*\\*|__)(.*?)\\1"), "$2")
+            .replace(Regex("(\\*|_)(.*?)\\1"), "$2")
+            .replace(Regex("__u__(.*?)__u__"), "$1")
+            .replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "$1")
+            .replace(Regex("\\[\\[(.*?)\\]\\]"), "$1")
+            .replace(Regex("(?m)^[•\\-*]\\s+"), "")
+            .replace(Regex("(?m)^>\\s+"), "")
+            .replace(Regex("`{1,3}(.*?)\\1"), "$2")
+            .replace(Regex("~~(.*?)~~"), "$1")
+            .replace(Regex("<[^>]*>"), "")
             .trim()
     }
 }
