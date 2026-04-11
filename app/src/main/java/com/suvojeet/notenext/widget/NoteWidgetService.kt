@@ -7,7 +7,7 @@ import android.widget.RemoteViewsService
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteRepository
-import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.util.MarkdownConverter
 import com.suvojeet.notenext.core.model.NoteType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
@@ -51,7 +51,7 @@ class NoteWidgetRemoteViewsFactory(
                         val content = if (note.noteType == NoteType.CHECKLIST) {
                             "Checklist..."
                         } else {
-                            HtmlConverter.htmlToPlainText(note.content)
+                            MarkdownConverter.markdownToPlainText(note.content)
                         }
                         note.id to content
                     }

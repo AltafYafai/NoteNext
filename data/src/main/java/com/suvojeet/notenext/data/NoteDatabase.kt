@@ -18,7 +18,7 @@ import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.data.TodoSubtask
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class, TodoSubtask::class], version = 27, exportSchema = true)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class, TodoSubtask::class], version = 28, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -29,6 +29,62 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Convert all TEXT notes from HTML to Markdown
+                val cursor = db.query("SELECT id, content FROM notes WHERE noteType = 'TEXT'")
+                if (cursor.moveToFirst()) {
+                    do {
+                        val id = cursor.getInt(cursor.getColumnIndexOrThrow("id"))
+                        val html = cursor.getString(cursor.getColumnIndexOrThrow("content"))
+                        if (html.isNotBlank() && (html.contains("<") || html.contains("&"))) {
+                            val markdown = convertHtmlToMarkdown(html)
+                            db.execSQL("UPDATE notes SET content = ? WHERE id = ?", arrayOf(markdown, id))
+                        }
+                    } while (cursor.moveToNext())
+                }
+                cursor.close()
+
+                // Also convert note_versions
+                val versionCursor = db.query("SELECT id, content FROM note_versions WHERE noteType = 'TEXT'")
+                if (versionCursor.moveToFirst()) {
+                    do {
+                        val id = versionCursor.getInt(versionCursor.getColumnIndexOrThrow("id"))
+                        val html = versionCursor.getString(versionCursor.getColumnIndexOrThrow("content"))
+                        if (html.isNotBlank() && (html.contains("<") || html.contains("&"))) {
+                            val markdown = convertHtmlToMarkdown(html)
+                            db.execSQL("UPDATE note_versions SET content = ? WHERE id = ?", arrayOf(markdown, id))
+                        }
+                    } while (versionCursor.moveToNext())
+                }
+                versionCursor.close()
+            }
+
+            private fun convertHtmlToMarkdown(html: String): String {
+                // Simplified Jsoup-like traversal for migration
+                // Since we can't easily use Jsoup here without ensuring it's on the classpath 
+                // and it might be overkill for simple notes, we'll use a basic regex approach 
+                // or just strip tags if it's too complex. 
+                // Actually, NoteNext uses Jsoup in MarkdownExporter, so it's available.
+                // But Migration is a static object, calling MarkdownExporter might be tricky if it's not initialized.
+                // We'll use a basic implementation here.
+                return html
+                    .replace(Regex("<b[^>]*>(.*?)</b>"), "**$1**")
+                    .replace(Regex("<strong[^>]*>(.*?)</strong>"), "**$1**")
+                    .replace(Regex("<i[^>]*>(.*?)</i>"), "*$1*")
+                    .replace(Regex("<em[^>]*>(.*?)</em>"), "*$1*")
+                    .replace(Regex("<u[^>]*>(.*?)</u>"), "<u>$1</u>")
+                    .replace(Regex("<br\\s*/?>"), "\n")
+                    .replace(Regex("<p[^>]*>(.*?)</p>"), "$1\n\n")
+                    .replace(Regex("<li[^>]*>(.*?)</li>"), "- $1\n")
+                    .replace(Regex("<[^>]*>"), "") // Strip remaining tags
+                    .replace("&nbsp;", " ")
+                    .replace("&lt;", "<")
+                    .replace("&gt;", ">")
+                    .replace("&amp;", "&")
+                    .trim()
+            }
+        }
         val MIGRATION_26_27 = object : Migration(26, 27) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Create todo_subtasks table

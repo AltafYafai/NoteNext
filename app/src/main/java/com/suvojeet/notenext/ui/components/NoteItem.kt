@@ -34,7 +34,7 @@ import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.util.MarkdownConverter
 
 @Composable
 fun NoteItem(
@@ -133,7 +133,7 @@ fun NoteItem(
 
                 if (decryptedNote.title.isNotEmpty()) {
                     val unescapedTitle = remember(decryptedNote.title) {
-                        androidx.core.text.HtmlCompat.fromHtml(decryptedNote.title, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                        MarkdownConverter.markdownToPlainText(decryptedNote.title)
                     }
                     val titleText = if (searchQuery.isNotEmpty()) {
                         buildAnnotatedString {
@@ -204,10 +204,8 @@ fun NoteItem(
                             val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
                             val annotatedContent = remember(decryptedNote.content) {
-                                // Strip HTML tags for preview and unescape entities
-                                val plainText = decryptedNote.content.replace(Regex("<[^>]*>"), "")
-                                val unescaped = androidx.core.text.HtmlCompat.fromHtml(plainText, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
-                                androidx.compose.ui.text.AnnotatedString(unescaped)
+                                val plainText = MarkdownConverter.markdownToPlainText(decryptedNote.content)
+                                androidx.compose.ui.text.AnnotatedString(plainText)
                             }
 
                             val highlightedContent = if (searchQuery.isNotEmpty()) {
@@ -389,7 +387,7 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
                 Spacer(modifier = Modifier.width(8.dp))
                 
                 val unescapedItemText = remember(item.text) {
-                    androidx.core.text.HtmlCompat.fromHtml(item.text, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                    MarkdownConverter.markdownToPlainText(item.text)
                 }
                 
                 val itemText = if (searchQuery.isNotEmpty()) {

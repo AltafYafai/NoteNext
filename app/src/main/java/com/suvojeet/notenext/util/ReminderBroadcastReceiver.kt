@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.suvojeet.notenext.MainActivity
 import com.suvojeet.notenext.R
+import com.suvojeet.notenext.util.MarkdownConverter
 import com.suvojeet.notenext.data.AlarmScheduler
 import com.suvojeet.notenext.data.NoteRepository
 import com.suvojeet.notenext.data.RepeatOption
@@ -55,7 +56,7 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
                         val noteContent = intent?.getStringExtra("NOTE_CONTENT") ?: ""
 
                         // Show Notification
-                        val plainTextContent = HtmlConverter.htmlToPlainText(noteContent)
+                        val plainTextContent = MarkdownConverter.markdownToPlainText(noteContent)
                         val truncatedContent = if (plainTextContent.length > 150) {
                             plainTextContent.substring(0, 150) + "..."
                         } else {

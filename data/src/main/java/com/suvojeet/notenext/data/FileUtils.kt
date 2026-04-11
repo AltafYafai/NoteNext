@@ -17,8 +17,7 @@ import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.core.model.AttachmentType
 import java.io.IOException
 
-import com.suvojeet.notenext.util.HtmlConverter
-import com.suvojeet.notenext.data.MarkdownExporter
+import com.suvojeet.notenext.util.MarkdownConverter
 import androidx.compose.ui.text.AnnotatedString
 
 suspend fun saveAsMd(context: Context, title: String, content: AnnotatedString, checklist: List<ChecklistItem> = emptyList()) {
@@ -41,8 +40,7 @@ suspend fun saveAsMd(context: Context, title: String, content: AnnotatedString, 
                         fullContent.append("- [${if (item.isChecked) "x" else " "}] ${item.text}\n")
                     }
                 } else {
-                    val html = HtmlConverter.annotatedStringToHtml(content)
-                    val markdown = MarkdownExporter.convertHtmlToMarkdown(html)
+                    val markdown = MarkdownConverter.annotatedStringToMarkdown(content)
                     fullContent.append(markdown)
                 }
                 outputStream.write(fullContent.toString().toByteArray())
