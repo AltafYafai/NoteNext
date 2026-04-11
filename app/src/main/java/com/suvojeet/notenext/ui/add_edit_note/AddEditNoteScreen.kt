@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.suvojeet.notemark.compose.MarkdownPreview
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.add_edit_note.components.MentionPopup
 import com.suvojeet.notenext.ui.add_edit_note.components.*
@@ -474,6 +475,14 @@ fun AddEditNoteScreen(
                                     onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) },
                                     backgroundColor = backgroundColor
                                 )
+                            } else if (state.editingNoteType == NoteType.MARKDOWN && state.isMarkdownPreviewMode) {
+                                item {
+                                    MarkdownPreview(
+                                        content = state.editingContent.text,
+                                        modifier = Modifier.padding(horizontal = 4.dp),
+                                        onLinkClick = { url -> clickedUrl = url }
+                                    )
+                                }
                             } else {
                                 NoteContentItems(
                                     state = state,
@@ -701,6 +710,7 @@ fun AddEditNoteScreen(
                     when (command.title) {
                         "Heading 1" -> onEvent(NotesEvent.ApplyHeadingStyle(1))
                         "Checklist" -> if (state.editingNoteType == NoteType.TEXT) onEvent(NotesEvent.OnToggleNoteType)
+                        "Markdown" -> onEvent(NotesEvent.SetNoteType(NoteType.MARKDOWN))
                         "Image" -> getContent.launch("image/*")
                         "Bulleted List" -> onEvent(NotesEvent.ApplyBulletedList)
                     }

@@ -94,6 +94,8 @@ sealed class ProjectNotesEvent {
     object ToggleCheckedItemsExpanded : ProjectNotesEvent()
 
     // Search in Note
+    object ToggleMarkdownPreview : ProjectNotesEvent()
+    data class SetNoteType(val type: NoteType) : ProjectNotesEvent()
     object ToggleNoteSearch : ProjectNotesEvent()
     data class OnNoteSearchQueryChange(val query: String) : ProjectNotesEvent()
     object NextSearchResult : ProjectNotesEvent()

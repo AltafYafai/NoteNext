@@ -88,6 +88,8 @@ fun NotesEvent.toProjectNotesEvent(): ProjectNotesEvent {
         is NotesEvent.InsertMention -> throw IllegalArgumentException("InsertMention event cannot be converted")
         is NotesEvent.CloseMentionPopup -> throw IllegalArgumentException("CloseMentionPopup event cannot be converted")
 
+        is NotesEvent.ToggleMarkdownPreview -> ProjectNotesEvent.ToggleMarkdownPreview
+        is NotesEvent.SetNoteType -> ProjectNotesEvent.SetNoteType(this.type)
         is NotesEvent.ToggleNoteSearch -> ProjectNotesEvent.ToggleNoteSearch
         is NotesEvent.OnNoteSearchQueryChange -> ProjectNotesEvent.OnNoteSearchQueryChange(this.query)
         is NotesEvent.NextSearchResult -> ProjectNotesEvent.NextSearchResult

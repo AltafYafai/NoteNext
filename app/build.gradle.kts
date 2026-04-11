@@ -86,6 +86,8 @@ dependencies {
     implementation(project(":credits"))
     implementation(project(":changelog"))
     implementation(project(":feature:todo"))
+    implementation(project(":notemark-core"))
+    implementation(project(":notemark-compose"))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)

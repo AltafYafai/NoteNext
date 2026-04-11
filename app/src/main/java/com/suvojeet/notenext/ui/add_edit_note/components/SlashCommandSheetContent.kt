@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.TextFormat
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ fun SlashCommandSheetContent(
     val commands = listOf(
         SlashCommand("Heading 1", Icons.Default.FormatSize) { /* Handle in parent */ },
         SlashCommand("Checklist", Icons.Default.CheckBox) { /* Handle in parent */ },
+        SlashCommand("Markdown", Icons.Default.TextFormat) { /* Handle in parent */ },
         SlashCommand("Bulleted List", Icons.Default.List) { /* Handle in parent */ },
         SlashCommand("Image", Icons.Default.Image) { /* Handle in parent */ }
     )

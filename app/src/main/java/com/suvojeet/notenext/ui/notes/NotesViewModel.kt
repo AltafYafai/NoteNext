@@ -1565,6 +1565,16 @@ class NotesViewModel @Inject constructor(
                     }
                 }
             }
+            is NotesEvent.ToggleMarkdownPreview -> {
+                _editState.value = editState.value.copy(
+                    isMarkdownPreviewMode = !editState.value.isMarkdownPreviewMode
+                )
+            }
+            is NotesEvent.SetNoteType -> {
+                _editState.value = editState.value.copy(
+                    editingNoteType = event.type
+                )
+            }
             else -> {
                 // Handle any other events or do nothing
             }

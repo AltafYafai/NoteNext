@@ -1355,6 +1355,16 @@ class ProjectNotesViewModel @Inject constructor(
                     _events.emit(ProjectNotesUiEvent.ShowToast("Saved as internal note"))
                 }
             }
+            is ProjectNotesEvent.ToggleMarkdownPreview -> {
+                _state.value = state.value.copy(
+                    isMarkdownPreviewMode = !state.value.isMarkdownPreviewMode
+                )
+            }
+            is ProjectNotesEvent.SetNoteType -> {
+                _state.value = state.value.copy(
+                    editingNoteType = event.type
+                )
+            }
         }
     }
 

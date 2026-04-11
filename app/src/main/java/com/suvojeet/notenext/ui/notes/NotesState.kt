@@ -62,6 +62,7 @@ data class NotesState(
     val isFixingGrammar: Boolean = false,
     val fixedContentPreview: String? = null,
     val originalContentBackup: TextFieldValue? = null,
+    val isMarkdownPreviewMode: Boolean = false,
     val saveStatus: SaveStatus = SaveStatus.SAVED,
 
     // Mention state
@@ -131,6 +132,7 @@ data class NotesEditState(
     val isFixingGrammar: Boolean = false,
     val fixedContentPreview: String? = null,
     val originalContentBackup: TextFieldValue? = null,
+    val isMarkdownPreviewMode: Boolean = false,
     val saveStatus: SaveStatus = SaveStatus.SAVED,
 
     // Mention state

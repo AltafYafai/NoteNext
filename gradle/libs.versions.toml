@@ -1,8 +1,8 @@
 [versions]
 # SDK Versions
-compileSdk = "36"
+compileSdk = "37"
 minSdk     = "24"
-targetSdk  = "36"
+targetSdk  = "37"
 
 # ── Toolchain ───────────────────────────────────────────────────
 # AGP 9.x ships with built-in Kotlin — kotlin-android plugin no longer needed

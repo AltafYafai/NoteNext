@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.PushPin
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -93,6 +94,19 @@ fun AddEditNoteTopAppBar(
                         modifier = Modifier.springPress()
                     ) {
                         Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Note", tint = contentColor)
+                    }
+                }
+
+                if (editingNoteType == NoteType.MARKDOWN) {
+                    IconButton(
+                        onClick = { onEvent(NotesEvent.ToggleMarkdownPreview) },
+                        modifier = Modifier.springPress()
+                    ) {
+                        Icon(
+                            imageVector = if (state.isMarkdownPreviewMode) Icons.Default.Edit else Icons.Default.Visibility,
+                            contentDescription = if (state.isMarkdownPreviewMode) "Edit Markdown" else "Preview Markdown",
+                            tint = contentColor
+                        )
                     }
                 }
                 

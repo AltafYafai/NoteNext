@@ -10,5 +10,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class NoteType {
     TEXT,
-    CHECKLIST
+    CHECKLIST,
+    MARKDOWN
 }
