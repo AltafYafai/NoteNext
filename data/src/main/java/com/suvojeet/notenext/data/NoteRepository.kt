@@ -70,6 +70,7 @@ interface NoteRepository {
     suspend fun insertNoteVersion(version: NoteVersion)
     fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>>
     suspend fun limitNoteVersions(noteId: Int, limit: Int)
+    suspend fun deleteOversizedNoteVersions()
     suspend fun getNoteIdByTitle(title: String): Int?
     suspend fun getNoteByTitleAndCreatedAt(title: String, createdAt: Long): Note?
     fun getAllNotes(): Flow<List<NoteWithAttachments>>

@@ -299,10 +299,22 @@ class NoteRepositoryImpl @Inject constructor(
     override suspend fun deleteChecklistForNote(noteId: Int) = checklistItemDao.deleteChecklistForNote(noteId)
 
     override suspend fun insertNoteVersion(version: NoteVersion) {
-        val note = noteDao.getNoteById(version.noteId)
-        val isLocked = note?.note?.isLocked == true
-        val versionToInsert = if (isLocked) CryptoUtils.encryptNoteVersion(version, isLocked) else version
-        noteDao.insertNoteVersion(versionToInsert)
+        val noteWithAttachments = noteDao.getNoteById(version.noteId) ?: return
+        val note = noteWithAttachments.note
+        
+        // Decrypt content before checking size to be accurate
+        val plainContent = if (note.isLocked) {
+            CryptoUtils.decryptNote(note).content
+        } else {
+            note.content
+        }
+
+        // Safety check: don't save massive versions (> 1MB) to prevent DB bloat/crashes
+        if (plainContent.length < 1_000_000) {
+            val isLocked = note.isLocked
+            val versionToInsert = if (isLocked) CryptoUtils.encryptNoteVersion(version, isLocked) else version
+            noteDao.insertNoteVersion(versionToInsert)
+        }
     }
 
     override fun getNoteVersions(noteId: Int): Flow<List<NoteVersion>> {
@@ -310,6 +322,8 @@ class NoteRepositoryImpl @Inject constructor(
     }
 
     override suspend fun limitNoteVersions(noteId: Int, limit: Int) = noteDao.limitNoteVersions(noteId, limit)
+
+    override suspend fun deleteOversizedNoteVersions() = noteDao.deleteOversizedNoteVersions()
 
     override suspend fun getNoteIdByTitle(title: String): Int? = noteDao.getNoteIdByTitle(title)
 

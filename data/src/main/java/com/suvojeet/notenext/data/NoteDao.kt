@@ -243,6 +243,9 @@ interface NoteDao {
     @Query("DELETE FROM note_versions WHERE noteId = :noteId AND id NOT IN (SELECT id FROM note_versions WHERE noteId = :noteId ORDER BY timestamp DESC LIMIT :limit)")
     suspend fun limitNoteVersions(noteId: Int, limit: Int)
 
+    @Query("DELETE FROM note_versions WHERE LENGTH(content) > 500000")
+    suspend fun deleteOversizedNoteVersions()
+
     @Transaction
     @Query("SELECT * FROM notes WHERE isBinned = 0 AND lastEdited > :timestamp ORDER BY lastEdited DESC")
     fun getNotesModifiedSince(timestamp: Long): Flow<List<NoteWithAttachments>>

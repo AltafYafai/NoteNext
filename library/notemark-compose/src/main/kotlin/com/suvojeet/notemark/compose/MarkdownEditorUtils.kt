@@ -111,26 +111,28 @@ object MarkdownEditorUtils {
 
     /**
      * Converts [AnnotatedString] to Markdown.
+     * This version is robust against redundant or overlapping spans of the same type.
      */
     fun annotatedStringToMarkdown(annotatedString: AnnotatedString): String {
-        // Since we're moving to a robust AST-based approach, 
-        // the conversion from AnnotatedString back to Markdown 
-        // should ideally go through the same logic.
-        // For now, we'll keep the existing manual logic as it's specifically 
-        // designed to handle Compose SpanStyles which might not perfectly map to a fresh AST.
         val text = annotatedString.text
         val sb = StringBuilder()
-        val spans = annotatedString.spanStyles.sortedBy { it.start }
+        
+        // Group spans by type and merge them to avoid redundant tags
+        val mergedSpans = mergeEquivalentSpans(annotatedString.spanStyles)
+            .sortedBy { it.start }
+
         val activeSpans = mutableListOf<AnnotatedString.Range<SpanStyle>>()
 
         for (i in text.indices) {
+            // Close spans that end here (in reverse order of start to maintain nesting)
             val endingSpans = activeSpans.filter { it.end == i }.sortedByDescending { it.start }
             endingSpans.forEach { span ->
                 sb.append(getMarkdownSuffix(span.item))
                 activeSpans.remove(span)
             }
 
-            val startingSpans = spans.filter { it.start == i }
+            // Open spans that start here
+            val startingSpans = mergedSpans.filter { it.start == i }
             startingSpans.forEach { span ->
                 sb.append(getMarkdownPrefix(span.item))
                 activeSpans.add(span)
@@ -138,11 +140,59 @@ object MarkdownEditorUtils {
             sb.append(text[i])
         }
 
+        // Close any remaining spans at the end
         activeSpans.sortedByDescending { it.start }.forEach { span ->
             sb.append(getMarkdownSuffix(span.item))
         }
 
         return sb.toString()
+    }
+
+    /**
+     * Merges adjacent or overlapping spans of the same style type.
+     */
+    private fun mergeEquivalentSpans(spans: List<AnnotatedString.Range<SpanStyle>>): List<AnnotatedString.Range<SpanStyle>> {
+        if (spans.isEmpty()) return emptyList()
+
+        val result = mutableListOf<AnnotatedString.Range<SpanStyle>>()
+        
+        // Define style types to merge independently
+        val styleTypes = listOf(
+            { s: SpanStyle -> s.fontWeight == FontWeight.Bold },
+            { s: SpanStyle -> s.fontStyle == FontStyle.Italic },
+            { s: SpanStyle -> s.textDecoration == TextDecoration.Underline },
+            { s: SpanStyle -> s.textDecoration == TextDecoration.LineThrough }
+        )
+
+        styleTypes.forEach { isType ->
+            val typeSpans = spans.filter { isType(it.item) }.sortedBy { it.start }
+            if (typeSpans.isNotEmpty()) {
+                var current = typeSpans[0]
+                for (j in 1 until typeSpans.size) {
+                    val next = typeSpans[j]
+                    if (next.start <= current.end) {
+                        // Overlapping or adjacent, merge them
+                        current = AnnotatedString.Range(current.item, current.start, maxOf(current.end, next.end))
+                    } else {
+                        result.add(current)
+                        current = next
+                    }
+                }
+                result.add(current)
+            }
+        }
+        
+        // Re-add other spans (like WikiLinks or custom colors if any) 
+        // that are not part of the basic markdown toggles
+        val otherSpans = spans.filter { s ->
+            s.item.fontWeight != FontWeight.Bold &&
+            s.item.fontStyle != FontStyle.Italic &&
+            s.item.textDecoration != TextDecoration.Underline &&
+            s.item.textDecoration != TextDecoration.LineThrough
+        }
+        result.addAll(otherSpans)
+
+        return result
     }
 
     private fun getMarkdownPrefix(style: SpanStyle): String {
@@ -204,8 +254,11 @@ object MarkdownEditorUtils {
                 val styleToToggleIsItalic = styleToToggle.fontStyle == FontStyle.Italic
                 val styleToToggleIsUnderline = styleToToggle.textDecoration == TextDecoration.Underline
 
-                // Copy all existing spans, but remove or split those we're toggling off
-                content.annotatedString.spanStyles.forEach { span ->
+                // First, merge existing spans to avoid duplicates
+                val mergedSpans = mergeEquivalentSpans(content.annotatedString.spanStyles)
+
+                // Copy merged spans, but remove or split those we're toggling off
+                mergedSpans.forEach { span ->
                     val isBoldSpan = span.item.fontWeight == FontWeight.Bold
                     val isItalicSpan = span.item.fontStyle == FontStyle.Italic
                     val isUnderlineSpan = span.item.textDecoration == TextDecoration.Underline
@@ -243,7 +296,20 @@ object MarkdownEditorUtils {
                     addStringAnnotation(it.tag, it.item, it.start, it.end)
                 }
             }
-            return StyleToggleResult(updatedContent = content.copy(annotatedString = newAnnotatedString))
+            
+            // Clean up the resulting AnnotatedString by merging again
+            val cleanedAnnotatedString = buildAnnotatedString {
+                append(newAnnotatedString.text)
+                mergeEquivalentSpans(newAnnotatedString.spanStyles).forEach { 
+                    addStyle(it.item, it.start, it.end)
+                }
+                newAnnotatedString.paragraphStyles.forEach { addStyle(it.item, it.start, it.end) }
+                newAnnotatedString.getStringAnnotations(0, newAnnotatedString.length).forEach { 
+                    addStringAnnotation(it.tag, it.item, it.start, it.end)
+                }
+            }
+
+            return StyleToggleResult(updatedContent = content.copy(annotatedString = cleanedAnnotatedString))
         }
     }
 

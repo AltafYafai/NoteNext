@@ -63,11 +63,20 @@ class MarkdownRenderer {
     }
 
     private fun escapeMarkdown(text: String): String {
-        // Simple escape: characters that start a delimiter or special structure
-        val specialChars = setOf('*', '_', '~', '`', '[', ']', '(', ')', '#', '\\')
+        if (text.isEmpty()) return ""
+        
         val sb = StringBuilder()
-        for (char in text) {
-            if (char in specialChars) {
+        for (i in text.indices) {
+            val char = text[i]
+            // Only escape characters that could actually start a markdown construct
+            // or are backslashes themselves.
+            val shouldEscape = when (char) {
+                '\\', '`', '*' , '_', '~', '[', ']', '(', ')' -> true
+                '#' -> i == 0 || text[i-1] == '\n' // Only escape # at start of line
+                else -> false
+            }
+            
+            if (shouldEscape) {
                 sb.append('\\')
             }
             sb.append(char)

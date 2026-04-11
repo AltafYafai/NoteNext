@@ -55,11 +55,18 @@ import androidx.compose.foundation.rememberScrollState
 
 import com.suvojeet.notenext.util.LogcatManager
 import android.widget.Toast
+import com.suvojeet.notenext.data.NoteRepository
 
 @Composable
 fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) }
+    val noteRepository: NoteRepository = hiltViewModel<BackupRestoreViewModel>().let { 
+        // A bit of a hack to get repository if not using a dedicated settings viewModel
+        // But better would be a dedicated ViewModel. For now, let's use BackupRestoreViewModel's repository if possible
+        // Actually, hiltViewModel is for ViewModels. Let's just use BackupRestoreViewModel for the action.
+        hiltViewModel<BackupRestoreViewModel>().repository 
+    }
     val scope = rememberCoroutineScope()
 
     val versionName = remember {
@@ -245,6 +252,22 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         subtitle = "Switch between Groq, OpenAI, and Anthropic",
                         iconColor = Color(0xFF6200EE),
                         onClick = { onNavigate("ai_provider") }
+                    ),
+                    SettingsItemData(
+                        icon = Icons.Rounded.Storage,
+                        title = "Optimize Database",
+                        subtitle = "Clean up large history to improve performance",
+                        iconColor = primaryColor,
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    noteRepository.deleteOversizedNoteVersions()
+                                    Toast.makeText(context, "Database optimized successfully", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Optimization failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
                     )
                 )
             ),
