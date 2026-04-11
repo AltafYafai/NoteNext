@@ -97,23 +97,13 @@ fun AddEditNoteTopAppBar(
                     }
                 }
 
-                if (editingNoteType == NoteType.MARKDOWN) {
-                    IconButton(
-                        onClick = { onEvent(NotesEvent.ToggleMarkdownPreview) },
-                        modifier = Modifier.springPress()
-                    ) {
-                        Icon(
-                            imageVector = if (state.isMarkdownPreviewMode) Icons.Default.Edit else Icons.Default.Visibility,
-                            contentDescription = if (state.isMarkdownPreviewMode) "Edit Markdown" else "Preview Markdown",
-                            tint = contentColor
-                        )
-                    }
-                }
-                
-                IconButton(onClick = onToggleFocusMode, modifier = Modifier.springPress()) {
+                IconButton(
+                    onClick = { onEvent(NotesEvent.ToggleReadingMode) },
+                    modifier = Modifier.springPress()
+                ) {
                     Icon(
-                        imageVector = if (isFocusMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = "Toggle Focus Mode",
+                        imageVector = if (state.isReadingMode) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (state.isReadingMode) "Exit Reading Mode" else "Reading Mode",
                         tint = contentColor
                     )
                 }

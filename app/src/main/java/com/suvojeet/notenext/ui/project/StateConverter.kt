@@ -49,7 +49,7 @@ fun ProjectNotesState.toNotesState(): NotesState {
         isFixingGrammar = this.isFixingGrammar,
         fixedContentPreview = this.fixedContentPreview,
         originalContentBackup = this.originalContentBackup,
-        isMarkdownPreviewMode = this.isMarkdownPreviewMode,
+        isReadingMode = this.isReadingMode,
         serializedMarkdown = this.serializedMarkdown,
         
         isMentionPopupVisible = false,

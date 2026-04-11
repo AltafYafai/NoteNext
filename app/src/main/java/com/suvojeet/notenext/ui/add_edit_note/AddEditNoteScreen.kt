@@ -309,7 +309,7 @@ fun AddEditNoteScreen(
             containerColor = backgroundColor,
             topBar = {
                 AnimatedVisibility(
-                    visible = !isFocusMode,
+                    visible = !isFocusMode && !state.isReadingMode,
                     enter = slideInVertically(initialOffsetY = { -it }, animationSpec = spring()) + fadeIn(spring()),
                     exit = slideOutVertically(targetOffsetY = { -it }, animationSpec = spring()) + fadeOut(spring())
                 ) {
@@ -328,7 +328,7 @@ fun AddEditNoteScreen(
             },
             bottomBar = {
                 AnimatedVisibility(
-                    visible = !isFocusMode,
+                    visible = !isFocusMode && !state.isReadingMode,
                     enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()),
                     exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring())
                 ) {
@@ -475,7 +475,7 @@ fun AddEditNoteScreen(
                                     onToggleCheckedItems = { onEvent(NotesEvent.ToggleCheckedItemsExpanded) },
                                     backgroundColor = backgroundColor
                                 )
-                            } else if (state.editingNoteType == NoteType.MARKDOWN && state.isMarkdownPreviewMode) {
+                            } else if (state.isReadingMode) {
                                 item {
                                     MarkdownPreview(
                                         content = state.serializedMarkdown,
@@ -508,7 +508,7 @@ fun AddEditNoteScreen(
         }
         
         AnimatedVisibility(
-            visible = showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.MARKDOWN || state.editingNoteType == NoteType.CHECKLIST),
+            visible = !state.isReadingMode && showFormatBar && (state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.MARKDOWN || state.editingNoteType == NoteType.CHECKLIST),
 
             enter = slideInVertically(initialOffsetY = { it }, animationSpec = spring()) + fadeIn(spring()) + androidx.compose.animation.scaleIn(initialScale = 0.9f, animationSpec = spring()),
             exit = slideOutVertically(targetOffsetY = { it }, animationSpec = spring()) + fadeOut(spring()) + androidx.compose.animation.scaleOut(targetScale = 0.9f, animationSpec = spring()),
@@ -536,9 +536,8 @@ fun AddEditNoteScreen(
         }
         
         var showAiChecklistSheet by remember { mutableStateOf(false) }
-        val showAiButton = ((state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.MARKDOWN) && state.editingContent.text.isEmpty()) ||
- 
-                           (state.editingNoteType == NoteType.CHECKLIST && state.editingChecklist.isEmpty())
+        val showAiButton = !state.isReadingMode && (((state.editingNoteType == NoteType.TEXT || state.editingNoteType == NoteType.MARKDOWN) && state.editingContent.text.isEmpty()) ||
+                           (state.editingNoteType == NoteType.CHECKLIST && state.editingChecklist.isEmpty()))
                            
         AnimatedVisibility(
             visible = showAiButton && !isFocusMode && !isAiButtonDismissed,

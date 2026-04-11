@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 
 /**
  * Utility for converting between [AnnotatedString] and Markdown.
@@ -195,10 +196,10 @@ object MarkdownConverter {
 
     private fun getHeadingStyle(level: Int): SpanStyle {
         return when (level) {
-            1 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 24.androidx.compose.ui.unit.sp)
-            2 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 20.androidx.compose.ui.unit.sp)
-            3 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.androidx.compose.ui.unit.sp)
-            else -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.androidx.compose.ui.unit.sp)
+            1 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp)
+            2 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            3 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            else -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
     

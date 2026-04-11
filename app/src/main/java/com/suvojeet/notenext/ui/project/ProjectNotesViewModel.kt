@@ -77,7 +77,7 @@ class ProjectNotesViewModel @Inject constructor(
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
 
     private fun updateSerializedMarkdownAsync(annotatedString: AnnotatedString) {
-        if (state.value.editingNoteType != NoteType.MARKDOWN) return
+        if (state.value.editingNoteType != NoteType.TEXT && state.value.editingNoteType != NoteType.MARKDOWN) return
         
         viewModelScope.launch {
             val markdown = MarkdownConverter.annotatedStringToMarkdown(annotatedString)
@@ -377,7 +377,7 @@ class ProjectNotesViewModel @Inject constructor(
                                 editingHistoryIndex = 0,
                                 linkPreviews = note.linkPreviews,
                                 editingNoteType = note.noteType,
-                                isMarkdownPreviewMode = false,
+                                isReadingMode = false,
                                 serializedMarkdown = if (note.noteType == NoteType.MARKDOWN) note.content else "",
                                 editingChecklist = checklist,
                                 checklistInputValues = checklist.associate { item ->
@@ -404,7 +404,7 @@ class ProjectNotesViewModel @Inject constructor(
                             editingProjectId = if (projectId != -1) projectId else null,
                             linkPreviews = emptyList(),
                             editingNoteType = event.noteType,
-                            isMarkdownPreviewMode = false,
+                            isReadingMode = false,
                             serializedMarkdown = "",
                             editingChecklist = if (event.noteType == NoteType.CHECKLIST) listOf(ChecklistItem(text = "", isChecked = false)) else emptyList(),
                             checklistInputValues = if (event.noteType == NoteType.CHECKLIST) {
@@ -1379,9 +1379,9 @@ class ProjectNotesViewModel @Inject constructor(
                     _events.emit(ProjectNotesUiEvent.ShowToast("Saved as internal note"))
                 }
             }
-            is ProjectNotesEvent.ToggleMarkdownPreview -> {
+            is ProjectNotesEvent.ToggleReadingMode -> {
                 _state.value = state.value.copy(
-                    isMarkdownPreviewMode = !state.value.isMarkdownPreviewMode
+                    isReadingMode = !state.value.isReadingMode
                 )
             }
             is ProjectNotesEvent.SetNoteType -> {

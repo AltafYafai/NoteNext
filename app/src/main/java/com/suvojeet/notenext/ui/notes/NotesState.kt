@@ -62,7 +62,7 @@ data class NotesState(
     val isFixingGrammar: Boolean = false,
     val fixedContentPreview: String? = null,
     val originalContentBackup: TextFieldValue? = null,
-    val isMarkdownPreviewMode: Boolean = false,
+    val isReadingMode: Boolean = false,
     val serializedMarkdown: String = "",
     val saveStatus: SaveStatus = SaveStatus.SAVED,
 
@@ -133,7 +133,7 @@ data class NotesEditState(
     val isFixingGrammar: Boolean = false,
     val fixedContentPreview: String? = null,
     val originalContentBackup: TextFieldValue? = null,
-    val isMarkdownPreviewMode: Boolean = false,
+    val isReadingMode: Boolean = false,
     val serializedMarkdown: String = "",
     val saveStatus: SaveStatus = SaveStatus.SAVED,
 

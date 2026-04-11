@@ -111,7 +111,7 @@ sealed class NotesEvent {
     object CloseMentionPopup : NotesEvent()
 
     // Search in Note
-    object ToggleMarkdownPreview : NotesEvent()
+    object ToggleReadingMode : NotesEvent()
     data class SetNoteType(val type: NoteType) : NotesEvent()
     object ToggleNoteSearch : NotesEvent()
     data class OnNoteSearchQueryChange(val query: String) : NotesEvent()

@@ -182,7 +182,7 @@ class NotesViewModel @Inject constructor(
     private var lastCreatedNoteId: Int? = null
 
     private fun updateSerializedMarkdownAsync(annotatedString: AnnotatedString) {
-        if (editState.value.editingNoteType != NoteType.MARKDOWN) return
+        if (editState.value.editingNoteType != NoteType.TEXT && editState.value.editingNoteType != NoteType.MARKDOWN) return
         
         viewModelScope.launch {
             val markdown = MarkdownConverter.annotatedStringToMarkdown(annotatedString)
@@ -1575,9 +1575,9 @@ class NotesViewModel @Inject constructor(
                     }
                 }
             }
-            is NotesEvent.ToggleMarkdownPreview -> {
+            is NotesEvent.ToggleReadingMode -> {
                 _editState.value = editState.value.copy(
-                    isMarkdownPreviewMode = !editState.value.isMarkdownPreviewMode
+                    isReadingMode = !editState.value.isReadingMode
                 )
             }
             is NotesEvent.SetNoteType -> {
