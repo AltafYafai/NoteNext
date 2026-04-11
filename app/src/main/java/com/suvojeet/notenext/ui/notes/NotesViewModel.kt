@@ -406,7 +406,7 @@ class NotesViewModel @Inject constructor(
                     val wikiLink = "[[${event.noteTitle}]]"
                     val newTextBeforeCursor = textBeforeCursor.substring(0, lastMentionIndex) + wikiLink
                     
-                    val newAnnotatedString = richTextController.parseMarkdownToAnnotatedString(newTextBeforeCursor + textAfterCursor)
+                    val newAnnotatedString = MarkdownConverter.markdownToAnnotatedString(newTextBeforeCursor + textAfterCursor)
                     val newCursorPosition = newTextBeforeCursor.length
                     
                     _editState.value = editState.value.copy(
@@ -484,7 +484,7 @@ class NotesViewModel @Inject constructor(
                             expandedNoteId = -1, // Treat as new note but with external URI
                             externalUri = uri,
                             editingTitle = fileName,
-                            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(content)),
+                            editingContent = TextFieldValue(MarkdownConverter.markdownToAnnotatedString(content)),
                             editingNoteType = NoteType.TEXT,
                             editingIsNewNote = true,
                             canUndo = false,
@@ -869,7 +869,7 @@ class NotesViewModel @Inject constructor(
                                 editingAttachments = noteWithAttachments.attachments.map { it.copy(tempId = java.util.UUID.randomUUID().toString()) },
                                 editingIsLocked = note.isLocked,
                                 serializedMarkdown = if (note.noteType == NoteType.MARKDOWN) note.content else "",
-                                checklistInputValues = it.checklistItems.associate { item ->
+                                checklistInputValues = checklist.associate { item ->
                                     item.id to TextFieldValue(MarkdownConverter.markdownToAnnotatedString(item.text))
                                 },
 
