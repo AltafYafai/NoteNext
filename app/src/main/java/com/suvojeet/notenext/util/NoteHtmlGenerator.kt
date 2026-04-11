@@ -8,7 +8,7 @@ import android.util.Base64
 import androidx.compose.ui.text.AnnotatedString
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.core.model.AttachmentType
-import com.suvojeet.notenext.util.MarkdownConverter
+import com.suvojeet.notemark.compose.MarkdownEditorUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -21,7 +21,7 @@ object NoteHtmlGenerator {
         content: AnnotatedString,
         attachments: List<Attachment>
     ): String = withContext(Dispatchers.IO) {
-        val contentMarkdown = MarkdownConverter.annotatedStringToMarkdown(content)
+        val contentMarkdown = MarkdownEditorUtils.annotatedStringToMarkdown(content)
         val attachmentsHtml = attachments
             .filter { it.type == AttachmentType.IMAGE }
             .joinToString("<br>") { attachment ->

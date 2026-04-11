@@ -34,7 +34,7 @@ import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import com.suvojeet.notenext.util.MarkdownConverter
+import com.suvojeet.notemark.compose.MarkdownEditorUtils
 
 @Composable
 fun NoteItem(
@@ -133,7 +133,7 @@ fun NoteItem(
 
                 if (decryptedNote.title.isNotEmpty()) {
                     val unescapedTitle = remember(decryptedNote.title) {
-                        MarkdownConverter.markdownToPlainText(decryptedNote.title)
+                        MarkdownEditorUtils.markdownToPlainText(decryptedNote.title)
                     }
                     val titleText = if (searchQuery.isNotEmpty()) {
                         buildAnnotatedString {
@@ -204,7 +204,7 @@ fun NoteItem(
                             val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
                             val annotatedContent = remember(decryptedNote.content) {
-                                MarkdownConverter.markdownToAnnotatedString(decryptedNote.content)
+                                MarkdownEditorUtils.markdownToAnnotatedString(decryptedNote.content)
                             }
 
                             val highlightedContent = if (searchQuery.isNotEmpty()) {
@@ -386,7 +386,7 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
                 Spacer(modifier = Modifier.width(8.dp))
                 
                 val unescapedItemText = remember(item.text) {
-                    MarkdownConverter.markdownToPlainText(item.text)
+                    MarkdownEditorUtils.markdownToPlainText(item.text)
                 }
                 
                 val itemText = if (searchQuery.isNotEmpty()) {

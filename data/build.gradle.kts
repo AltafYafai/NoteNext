@@ -52,6 +52,8 @@ android {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":notemark-core"))
+    implementation(project(":notemark-compose"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.annotation)

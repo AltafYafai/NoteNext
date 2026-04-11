@@ -29,7 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.util.MarkdownConverter
+import com.suvojeet.notemark.compose.MarkdownEditorUtils
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.core.model.AttachmentType
 import androidx.compose.ui.res.stringResource
@@ -60,7 +60,7 @@ fun BinnedNoteScreen(
         val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
 
         val annotatedContent = produceState<AnnotatedString>(initialValue = AnnotatedString(""), note.content) {
-            value = MarkdownConverter.markdownToAnnotatedString(note.content)
+            value = MarkdownEditorUtils.markdownToAnnotatedString(note.content)
         }
         
         Scaffold(

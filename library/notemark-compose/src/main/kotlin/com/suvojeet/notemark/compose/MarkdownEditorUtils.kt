@@ -344,4 +344,20 @@ object MarkdownEditorUtils {
         for (i in 0 until minLength) if (a[a.length - 1 - i] != b[b.length - 1 - i]) return a.substring(a.length - i)
         return a.substring(a.length - minLength)
     }
+
+    fun markdownToPlainText(markdown: String): String {
+        return markdown
+            .replace(Regex("(?m)^#+\\s+"), "")
+            .replace(Regex("(\\*\\*|__)(.*?)\\1"), "$2")
+            .replace(Regex("(\\*|_)(.*?)\\1"), "$2")
+            .replace(Regex("__u__(.*?)__u__"), "$1")
+            .replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "$1")
+            .replace(Regex("\\[\\[(.*?)\\]\\]"), "$1")
+            .replace(Regex("(?m)^[•\\-*]\\s+"), "")
+            .replace(Regex("(?m)^>\\s+"), "")
+            .replace(Regex("`{1,3}(.*?)\\1"), "$2")
+            .replace(Regex("~~(.*?)~~"), "$1")
+            .replace(Regex("<[^>]*>"), "")
+            .trim()
+    }
 }
