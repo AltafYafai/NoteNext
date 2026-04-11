@@ -57,7 +57,7 @@ import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.ui.components.*
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import com.suvojeet.notenext.data.repository.SettingsRepository
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
 import androidx.compose.ui.res.stringResource

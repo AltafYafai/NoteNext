@@ -1,6 +1,6 @@
 package com.suvojeet.notenext.domain.use_case
 
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import com.suvojeet.notenext.data.*
 import javax.inject.Inject
 

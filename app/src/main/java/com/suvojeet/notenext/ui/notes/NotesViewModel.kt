@@ -48,8 +48,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
-import com.suvojeet.notenext.core.model.AttachmentType
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.NoteType
 import com.suvojeet.notenext.data.NoteWithAttachments
 import com.suvojeet.notenext.data.repository.GroqRepository
 import com.suvojeet.notenext.data.repository.GroqResult

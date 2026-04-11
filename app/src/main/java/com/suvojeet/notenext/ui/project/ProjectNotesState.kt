@@ -11,7 +11,7 @@ import com.suvojeet.notenext.ui.notes.LayoutType
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.ui.notes.SaveStatus
 
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 
 data class ProjectNotesState(
     val notes: List<NoteSummaryWithAttachments> = emptyList(),

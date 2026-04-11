@@ -6,7 +6,7 @@ import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.data.RepeatOption
 import com.suvojeet.notenext.data.NoteVersion
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import java.time.LocalDate
 import java.time.LocalTime
 

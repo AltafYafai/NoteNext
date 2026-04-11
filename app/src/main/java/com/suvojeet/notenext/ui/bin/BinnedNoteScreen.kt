@@ -30,8 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notemark.compose.MarkdownEditorUtils
-import com.suvojeet.notenext.core.model.NoteType
-import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.NoteType
+import com.suvojeet.notemark.core.model.AttachmentType
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 

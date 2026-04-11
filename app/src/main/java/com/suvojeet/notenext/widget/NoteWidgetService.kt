@@ -8,7 +8,7 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteRepository
 import com.suvojeet.notemark.compose.MarkdownEditorUtils
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

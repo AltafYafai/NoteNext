@@ -46,8 +46,8 @@ import com.suvojeet.notenext.data.repository.GroqResult
 import com.suvojeet.notenext.data.repository.onFailure
 import com.suvojeet.notenext.data.repository.onSuccess
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import com.suvojeet.notenext.core.model.NoteType
-import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.NoteType
+import com.suvojeet.notemark.core.model.AttachmentType
 import javax.inject.Inject
 
 @HiltViewModel

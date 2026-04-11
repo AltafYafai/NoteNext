@@ -14,7 +14,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.core.app.NotificationCompat
 import com.suvojeet.notenext.data.ChecklistItem
-import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.AttachmentType
 import java.io.IOException
 
 import com.suvojeet.notemark.compose.MarkdownEditorUtils

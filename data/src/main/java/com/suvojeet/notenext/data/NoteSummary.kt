@@ -1,6 +1,6 @@
 package com.suvojeet.notenext.data
 
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import kotlinx.serialization.Serializable
 
 @Serializable

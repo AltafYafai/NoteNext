@@ -7,7 +7,7 @@ import android.net.Uri
 import android.util.Base64
 import androidx.compose.ui.text.AnnotatedString
 import com.suvojeet.notenext.data.Attachment
-import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.AttachmentType
 import com.suvojeet.notemark.compose.MarkdownEditorUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

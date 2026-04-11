@@ -3,7 +3,7 @@ package com.suvojeet.notenext.ui.notes
 import android.net.Uri
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.TextFieldValue
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteVersion

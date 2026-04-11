@@ -1,8 +1,8 @@
 package com.suvojeet.notenext.data
 
 import androidx.room.TypeConverter
-import com.suvojeet.notenext.core.model.AttachmentType
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.NoteType
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.builtins.ListSerializer

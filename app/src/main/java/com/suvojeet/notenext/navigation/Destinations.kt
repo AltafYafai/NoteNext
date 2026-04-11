@@ -2,7 +2,7 @@ package com.suvojeet.notenext.navigation
 
 import kotlinx.serialization.Serializable
 
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 
 @Serializable
 sealed interface Destination {

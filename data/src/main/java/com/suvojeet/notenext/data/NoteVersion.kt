@@ -4,7 +4,7 @@ package com.suvojeet.notenext.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 
 @Entity(
     tableName = "note_versions",

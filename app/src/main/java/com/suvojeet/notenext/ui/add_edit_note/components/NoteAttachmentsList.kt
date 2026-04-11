@@ -19,7 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.suvojeet.notenext.data.Attachment
-import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.AttachmentType
 import com.suvojeet.notenext.ui.add_edit_note.ImageViewerData
 import com.suvojeet.notenext.ui.notes.NotesEvent
 

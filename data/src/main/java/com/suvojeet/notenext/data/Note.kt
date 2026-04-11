@@ -4,7 +4,7 @@ package com.suvojeet.notenext.data
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 import kotlinx.serialization.Serializable
 
 @Serializable

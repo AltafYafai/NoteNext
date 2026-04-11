@@ -10,7 +10,7 @@ import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.data.Project
 import com.suvojeet.notenext.data.SortType
 
-import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notemark.core.model.NoteType
 
 data class NotesState(
     val notes: List<NoteSummaryWithAttachments> = emptyList(),

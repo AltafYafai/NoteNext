@@ -3,7 +3,7 @@ package com.suvojeet.notenext.data
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notemark.core.model.AttachmentType
 import kotlinx.serialization.Serializable
 
 @Serializable
