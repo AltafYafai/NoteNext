@@ -222,7 +222,7 @@ object MarkdownEditorUtils {
                     styleToToggle.textDecoration == TextDecoration.Underline -> if (isUnderlineActive) SpanStyle(textDecoration = TextDecoration.None) else SpanStyle(textDecoration = TextDecoration.Underline)
                     else -> styleToToggle
                 }
-                addStyle(styleToApply, selection.start, selection.end)
+                addStyle(styleToApply, selection.min, selection.max)
             }.toAnnotatedString()
             return StyleToggleResult(updatedContent = content.copy(annotatedString = newAnnotatedString))
         }
@@ -232,7 +232,7 @@ object MarkdownEditorUtils {
         val selection = content.selection
         if (!selection.collapsed) {
              val newAnnotatedString = AnnotatedString.Builder(content.annotatedString).apply {
-                addStyle(getHeadingStyle(level), selection.start, selection.end)
+                addStyle(getHeadingStyle(level), selection.min, selection.max)
             }.toAnnotatedString()
             return content.copy(annotatedString = newAnnotatedString)
         }
@@ -248,7 +248,7 @@ object MarkdownEditorUtils {
             val lineStart = currentOffset
             val lineEnd = currentOffset + line.length
             val isLineSelected = if (selection.collapsed) selection.start in lineStart..lineEnd
-            else maxOf(selection.start, lineStart) < minOf(selection.end, lineEnd)
+            else maxOf(selection.min, lineStart) < minOf(selection.max, lineEnd)
 
             val newLine = if (isLineSelected) {
                 if (line.trimStart().startsWith("• ")) line.replaceFirst("• ", "") else "• $line"
@@ -259,11 +259,11 @@ object MarkdownEditorUtils {
         val newText = newLines.joinToString("\n")
         val diff = newText.length - text.length
         val newSelection = if (selection.collapsed) TextRange(selection.start + if (diff > 0) 2 else if (diff < 0) -2 else 0)
-        else TextRange(selection.start, selection.end + diff)
+        else TextRange(selection.min, selection.max + diff)
 
         return content.copy(
             annotatedString = markdownToAnnotatedString(newText),
-            selection = TextRange(newSelection.start.coerceIn(0, newText.length), newSelection.end.coerceIn(0, newText.length))
+            selection = TextRange(newSelection.min.coerceIn(0, newText.length), newSelection.max.coerceIn(0, newText.length))
         )
     }
 

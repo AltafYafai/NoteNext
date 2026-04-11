@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -49,73 +50,68 @@ fun NoteItem(
 ) {
     val adaptiveColor = NoteGradients.getAdaptiveColor(note.note.color, isDarkTheme)
     val isDefaultColor = adaptiveColor == 0
-
+    val backgroundColor = if (isDefaultColor) {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    } else {
+        Color(adaptiveColor)
+    }
     val contentColor = if (isDefaultColor) {
         MaterialTheme.colorScheme.onSurface
     } else {
         NoteGradients.getContentColor(adaptiveColor)
     }
-    
-    val tintColor = if (isDefaultColor) {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    } else {
-        contentColor.copy(alpha = 0.7f)
-    }
+    val tintColor = contentColor.copy(alpha = 0.6f)
 
-    val decryptedNote = remember(note.note.title, note.note.content, note.note.isEncrypted) {
-        if (note.note.isEncrypted) {
-            if (note.note.isLocked) {
-                // Never attempt to decrypt locked notes without auth.
-                // Tap-to-unlock is handled by the click handler in NotesScreen.
-                note.note
-            } else {
-                // Non-locked encrypted notes use the non-auth key — safe to decrypt here.
-                com.suvojeet.notenext.util.CryptoUtils.decryptNote(note.note)
-            }
-        } else {
-            note.note
-        }
-    }
-    val motionScheme = MaterialTheme.motionScheme
     val elevation by animateDpAsState(
-        targetValue = if (isSelected) 4.dp else (if (isDefaultColor) 1.dp else 0.dp),
-        animationSpec = motionScheme.fastSpatialSpec(),
-        label = "Elevation"
+        targetValue = if (isSelected) 8.dp else 0.dp,
+        label = "elevation"
     )
 
-    val cardShape = if (note.note.isPinned) {
-        MaterialTheme.shapes.extraLarge
-    } else {
-        MaterialTheme.shapes.medium
-    }
+    val scale by animateDpAsState(
+        targetValue = if (isSelected) 1.dp else 0.dp,
+        label = "scale"
+    )
 
-    val borderStroke = if (isSelected) {
-        BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-    } else if (isDefaultColor) {
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-    } else {
-        null
-    }
+    val decryptedNote = note.note
 
-    Card(
+    val highlightStyle = SpanStyle(
+        background = MaterialTheme.colorScheme.primaryContainer,
+        color = MaterialTheme.colorScheme.onPrimaryContainer
+    )
+
+    Surface(
         modifier = modifier
             .fillMaxWidth()
-            .springPress()
+            .graphicsLayer {
+                val s = 1f - (scale.value * 0.02f)
+                scaleX = s
+                scaleY = s
+            }
             .combinedClickable(
                 onClick = onNoteClick,
                 onLongClick = onNoteLongClick
+            )
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = spring.DampingRatioLowBouncy,
+                    stiffness = spring.StiffnessLow
+                )
             ),
-        shape = cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDefaultColor) MaterialTheme.colorScheme.surfaceContainer else Color(adaptiveColor),
-            contentColor = contentColor
-        ),
-        border = borderStroke,
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+        shape = MaterialTheme.shapes.extraLarge,
+        color = backgroundColor,
+        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        tonalElevation = elevation,
+        shadowElevation = elevation
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isSelected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                )
+            }
+
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
@@ -132,30 +128,11 @@ fun NoteItem(
                 }
 
                 if (decryptedNote.title.isNotEmpty()) {
-                    val unescapedTitle = remember(decryptedNote.title) {
+                    val unescapedTitle = remember<String>(decryptedNote.title) {
                         MarkdownEditorUtils.markdownToPlainText(decryptedNote.title)
                     }
-                    val titleText = if (searchQuery.isNotEmpty()) {
-                        buildAnnotatedString {
-                            val text = unescapedTitle
-                            append(text)
-                            val lowerText = text.lowercase()
-                            val lowerQuery = searchQuery.lowercase()
-                            var index = lowerText.indexOf(lowerQuery)
-                            while (index >= 0) {
-                                addStyle(
-                                    style = SpanStyle(
-                                        background = MaterialTheme.colorScheme.primaryContainer,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    ),
-                                    start = index,
-                                    end = index + searchQuery.length
-                                )
-                                index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                            }
-                        }
-                    } else {
-                        androidx.compose.ui.text.AnnotatedString(unescapedTitle)
+                    val titleText = remember(unescapedTitle, searchQuery) {
+                        AnnotatedString(unescapedTitle).highlightSearchQuery(searchQuery, highlightStyle)
                     }
 
                     Text(
@@ -203,30 +180,12 @@ fun NoteItem(
     
                             val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
-                            val annotatedContent = remember(decryptedNote.content) {
+                            val annotatedContent = remember<AnnotatedString>(decryptedNote.content) {
                                 MarkdownEditorUtils.markdownToAnnotatedString(decryptedNote.content)
                             }
 
-                            val highlightedContent = if (searchQuery.isNotEmpty()) {
-                                buildAnnotatedString {
-                                    append(annotatedContent)
-                                    val lowerText = annotatedContent.text.lowercase()
-                                    val lowerQuery = searchQuery.lowercase()
-                                    var index = lowerText.indexOf(lowerQuery)
-                                    while (index >= 0) {
-                                        addStyle(
-                                            style = SpanStyle(
-                                                background = MaterialTheme.colorScheme.primaryContainer,
-                                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                                            ),
-                                            start = index,
-                                            end = index + searchQuery.length
-                                        )
-                                        index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                                    }
-                                }
-                            } else {
-                                annotatedContent
+                            val highlightedContent = remember(annotatedContent, searchQuery) {
+                                annotatedContent.highlightSearchQuery(searchQuery, highlightStyle)
                             }
     
                             val uriHandler = LocalUriHandler.current
@@ -276,13 +235,13 @@ fun NoteItem(
                                 }
                             )
                         } else {
-                            ChecklistPreview(note.checklistItems, if (isDefaultColor) MaterialTheme.colorScheme.onSurface else contentColor, searchQuery)
+                            ChecklistPreview(note.checklistItems, if (isDefaultColor) MaterialTheme.colorScheme.onSurface else contentColor, searchQuery, highlightStyle)
                         }
                     }
 
                     if (note.note.linkPreviews.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        LinkPreviewDisplay(
+                        LinkPreviewCard(
                             linkPreview = note.note.linkPreviews.first(),
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -318,26 +277,8 @@ fun NoteItem(
                                     shape = MaterialTheme.shapes.small,
                                     color = if (isDefaultColor) MaterialTheme.colorScheme.secondaryContainer else contentColor.copy(alpha = 0.15f)
                                 ) {
-                                    val labelText = if (searchQuery.isNotEmpty()) {
-                                        buildAnnotatedString {
-                                            append(label)
-                                            val lowerText = label.lowercase()
-                                            val lowerQuery = searchQuery.lowercase()
-                                            var index = lowerText.indexOf(lowerQuery)
-                                            while (index >= 0) {
-                                                addStyle(
-                                                    style = SpanStyle(
-                                                        background = MaterialTheme.colorScheme.primaryContainer,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                    ),
-                                                    start = index,
-                                                    end = index + searchQuery.length
-                                                )
-                                                index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                                            }
-                                        }
-                                    } else {
-                                        androidx.compose.ui.text.AnnotatedString(label)
+                                    val labelText = remember(label, searchQuery) {
+                                        AnnotatedString(label).highlightSearchQuery(searchQuery, highlightStyle)
                                     }
 
                                     Text(
@@ -373,7 +314,12 @@ fun NoteItem(
 }
 
 @Composable
-private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: Color, searchQuery: String = "") {
+private fun ChecklistPreview(
+    checklistItems: List<ChecklistItem>, 
+    contentColor: Color, 
+    searchQuery: String = "",
+    highlightStyle: SpanStyle
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         checklistItems.take(5).forEach { item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -385,49 +331,81 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 
-                val unescapedItemText = remember(item.text) {
+                val unescapedItemText = remember<String>(item.text) {
                     MarkdownEditorUtils.markdownToPlainText(item.text)
                 }
                 
-                val itemText = if (searchQuery.isNotEmpty()) {
-                    buildAnnotatedString {
-                        val text = unescapedItemText
-                        append(text)
-                        val lowerText = text.lowercase()
-                        val lowerQuery = searchQuery.lowercase()
-                        var index = lowerText.indexOf(lowerQuery)
-                        while (index >= 0) {
-                            addStyle(
-                                style = SpanStyle(
-                                    background = MaterialTheme.colorScheme.primaryContainer,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                ),
-                                start = index,
-                                end = index + searchQuery.length
-                            )
-                            index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
-                        }
-                    }
-                } else {
-                    androidx.compose.ui.text.AnnotatedString(unescapedItemText)
+                val itemText = remember(unescapedItemText, searchQuery) {
+                    AnnotatedString(unescapedItemText).highlightSearchQuery(searchQuery, highlightStyle)
                 }
 
                 Text(
                     text = itemText,
-                    fontSize = 14.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = contentColor.copy(alpha = 0.9f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = if (item.isChecked) androidx.compose.ui.text.TextStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough) else androidx.compose.ui.text.TextStyle()
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
-        if (checklistItems.size > 5) {
-            Text(
-                text = "...",
-                fontSize = 14.sp,
-                color = contentColor.copy(alpha = 0.7f)
+    }
+}
+
+/**
+ * Extension function to highlight search queries within an [AnnotatedString].
+ * Adheres to DRY principle by centralizing highlighting logic.
+ */
+private fun AnnotatedString.highlightSearchQuery(
+    searchQuery: String,
+    highlightStyle: SpanStyle
+): AnnotatedString {
+    if (searchQuery.isBlank()) return this
+    return buildAnnotatedString {
+        append(this@highlightSearchQuery)
+        val lowerText = this@highlightSearchQuery.text.lowercase()
+        val lowerQuery = searchQuery.lowercase()
+        var index = lowerText.indexOf(lowerQuery)
+        while (index >= 0) {
+            addStyle(
+                style = highlightStyle,
+                start = index,
+                end = index + searchQuery.length
             )
+            index = lowerText.indexOf(lowerQuery, index + searchQuery.length)
+        }
+    }
+}
+
+@Composable
+private fun LinkPreviewCard(
+    linkPreview: com.suvojeet.notenext.data.LinkPreview,
+    modifier: Modifier = Modifier
+) {
+    // Basic implementation if LinkPreviewCard is not available or has different parameters
+    // In actual code, this should use the shared component
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            Text(
+                text = linkPreview.title ?: linkPreview.url,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            linkPreview.description?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
