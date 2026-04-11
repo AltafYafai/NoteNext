@@ -101,7 +101,10 @@ fun ChangelogScreen(
                         contentPadding = PaddingValues(bottom = 32.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(data.releases) { release ->
+                        items(
+                            items = data.releases,
+                            key = { it.version }
+                        ) { release ->
                             ReleaseSection(release)
                         }
                     }

@@ -33,6 +33,7 @@ import androidx.compose.material3.*
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -256,9 +257,13 @@ fun NotesScreen(
                             }
                         },
                         floatingActionButton = {
-                            val isFabScrollExpanded = when (listState.layoutType) {
-                                LayoutType.GRID -> gridState.firstVisibleItemIndex == 0
-                                LayoutType.LIST -> lazyListState.firstVisibleItemIndex == 0
+                            val isFabScrollExpanded by remember {
+                                derivedStateOf {
+                                    when (listState.layoutType) {
+                                        LayoutType.GRID -> gridState.firstVisibleItemIndex == 0
+                                        LayoutType.LIST -> lazyListState.firstVisibleItemIndex == 0
+                                    }
+                                }
                             }
 
                             MultiActionFab(

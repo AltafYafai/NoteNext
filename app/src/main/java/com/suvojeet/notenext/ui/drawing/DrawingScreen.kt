@@ -298,7 +298,10 @@ private fun DrawingBottomBar(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         contentPadding = PaddingValues(horizontal = 4.dp)
                     ) {
-                        items(colors) { color ->
+                        items(
+                            items = colors,
+                            key = { it.toArgb() }
+                        ) { color ->
                             ColorItem(
                                 color = color,
                                 isSelected = state.currentColor == color && !state.isEraserMode,
@@ -395,7 +398,10 @@ private fun DrawingSideBar(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(colors) { color ->
+                    items(
+                        items = colors,
+                        key = { it.toArgb() }
+                    ) { color ->
                         ColorItem(
                             color = color,
                             isSelected = state.currentColor == color && !state.isEraserMode,

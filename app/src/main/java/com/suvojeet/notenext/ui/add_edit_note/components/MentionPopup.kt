@@ -37,7 +37,10 @@ fun MentionPopup(
                 shadowElevation = 8.dp
             ) {
                 LazyColumn {
-                    items(notes) { noteWithAttachments ->
+                    items(
+                        items = notes,
+                        key = { it.note.id }
+                    ) { noteWithAttachments ->
                         ListItem(
                             headlineContent = { Text(noteWithAttachments.note.title.ifBlank { "Untitled" }) },
                             modifier = Modifier.clickable {

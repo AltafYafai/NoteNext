@@ -1291,7 +1291,10 @@ fun BackupScanResultDialog(
                 Text("Select Projects to Restore", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                 
                 LazyColumn(modifier = Modifier.heightIn(max = 250.dp).fillMaxWidth()) {
-                    items(scanResult.projects.size) { index ->
+                    items(
+                        count = scanResult.projects.size,
+                        key = { index -> scanResult.projects[index].id }
+                    ) { index ->
                         val project = scanResult.projects[index]
                         Row(
                             modifier = Modifier

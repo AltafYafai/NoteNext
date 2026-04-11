@@ -281,10 +281,27 @@ fun AddEditNoteScreen(
         ThemeMode.SYSTEM -> systemInDarkTheme
         else -> false
     }
-    val colors = NoteGradients.getNoteColors(isDarkTheme)
-    val adaptiveColor = NoteGradients.getAdaptiveColor(state.editingColor, isDarkTheme)
-    val backgroundColor = if (adaptiveColor != 0) Color(adaptiveColor) else MaterialTheme.colorScheme.surface
-    val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
+    val colors = remember(isDarkTheme) { NoteGradients.getNoteColors(isDarkTheme) }
+    val adaptiveColor = remember(state.editingColor, isDarkTheme) { NoteGradients.getAdaptiveColor(state.editingColor, isDarkTheme) }
+    val backgroundColor = remember(adaptiveColor) { if (adaptiveColor != 0) Color(adaptiveColor) else null } ?: MaterialTheme.colorScheme.surface
+    val contentColor = remember(adaptiveColor) { if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else null } ?: MaterialTheme.colorScheme.onSurface
+
+    val splitOffsets = remember(state.editingContent.text) {
+        val text = state.editingContent.text
+        val offsets = mutableListOf<Int>()
+        var currentStart = 0
+        var lineCount = 0
+        for (i in text.indices) {
+            if (text[i] == '\n') lineCount++
+            if (lineCount >= 50 || (i - currentStart) >= 5000) {
+                offsets.add(currentStart)
+                currentStart = i + 1
+                lineCount = 0
+            }
+        }
+        offsets.add(currentStart)
+        offsets
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
@@ -407,6 +424,7 @@ fun AddEditNoteScreen(
                             
                             NoteContentItems(
                                 state = state,
+                                splitOffsets = splitOffsets,
                                 onEvent = onEvent,
                                 onUrlClick = { url -> clickedUrl = url },
                                 onSlashCommand = { showSlashCommandSheet = true },
@@ -415,7 +433,7 @@ fun AddEditNoteScreen(
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 item { Spacer(modifier = Modifier.height(16.dp)) }
-                                items(state.linkPreviews) { linkPreview ->
+                                items(state.linkPreviews, key = { it.url }) { linkPreview ->
                                     LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
@@ -459,6 +477,7 @@ fun AddEditNoteScreen(
                             } else {
                                 NoteContentItems(
                                     state = state,
+                                    splitOffsets = splitOffsets,
                                     onEvent = onEvent,
                                     onUrlClick = { url -> clickedUrl = url },
                                     onSlashCommand = { showSlashCommandSheet = true },
@@ -468,7 +487,7 @@ fun AddEditNoteScreen(
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 item { Spacer(modifier = Modifier.height(16.dp)) }
-                                items(state.linkPreviews) { linkPreview ->
+                                items(state.linkPreviews, key = { it.url }) { linkPreview ->
                                     LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }

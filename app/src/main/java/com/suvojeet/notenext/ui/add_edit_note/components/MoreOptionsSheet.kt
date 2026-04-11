@@ -117,7 +117,10 @@ fun MoreOptionsSheet(
                 }
             }
 
-            items(options) { option ->
+            items(
+                items = options,
+                key = { it.label }
+            ) { option ->
                 MoreOptionsItem(
                     icon = option.icon,
                     label = option.label,

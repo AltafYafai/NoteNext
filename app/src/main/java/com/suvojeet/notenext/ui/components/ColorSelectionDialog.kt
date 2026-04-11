@@ -92,7 +92,7 @@ fun ColorSelectionDialog(
                     }
                 }
 
-                items(colors) { colorInt ->
+                items(items = colors, key = { it }) { colorInt ->
                     Box(
                         modifier = Modifier
                             .size(48.dp)

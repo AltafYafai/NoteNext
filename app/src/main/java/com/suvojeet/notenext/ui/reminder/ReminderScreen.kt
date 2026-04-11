@@ -43,11 +43,13 @@ fun ReminderScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0: All, 1: Upcoming, 2: Elapsed
 
-    val currentList = when (selectedTab) {
-        0 -> allReminders
-        1 -> upcomingReminders
-        2 -> elapsedReminders
-        else -> allReminders
+    val currentList = remember(selectedTab, allReminders, upcomingReminders, elapsedReminders) {
+        when (selectedTab) {
+            0 -> allReminders
+            1 -> upcomingReminders
+            2 -> elapsedReminders
+            else -> allReminders
+        }
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -132,7 +134,10 @@ fun ReminderScreen(
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            items(currentList) { note ->
+                            items(
+                                items = currentList,
+                                key = { it.id }
+                            ) { note ->
                                 ReminderItem(
                                     note = note, 
                                     onClick = { onNoteClick(note) },

@@ -97,6 +97,7 @@ fun NoteTitleEditor(
 
 fun LazyListScope.NoteContentItems(
     state: NotesState,
+    splitOffsets: List<Int>,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
     onSlashCommand: () -> Unit,
@@ -104,22 +105,11 @@ fun LazyListScope.NoteContentItems(
 ) {
     val globalContent = state.editingContent
     val text = globalContent.text
-    
-    // We still need to know where to split for rendering items
-    val splitOffsets = mutableListOf<Int>()
-    var currentStart = 0
-    var lineCount = 0
-    for (i in text.indices) {
-        if (text[i] == '\n') lineCount++
-        if (lineCount >= 50 || (i - currentStart) >= 5000) {
-            splitOffsets.add(currentStart)
-            currentStart = i + 1
-            lineCount = 0
-        }
-    }
-    splitOffsets.add(currentStart)
 
-    itemsIndexed(splitOffsets) { index, startOffset ->
+    itemsIndexed(
+        items = splitOffsets,
+        key = { _, startOffset -> startOffset }
+    ) { index, startOffset ->
         val endOffset = if (index + 1 < splitOffsets.size) splitOffsets[index + 1] else text.length
         
         NoteContentChunkEditor(

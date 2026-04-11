@@ -47,7 +47,10 @@ fun SlashCommandSheetContent(
         )
 
         LazyColumn {
-            items(commands) { command ->
+            items(
+                items = commands,
+                key = { it.title }
+            ) { command ->
                 ListItem(
                     headlineContent = { Text(command.title) },
                     leadingContent = { 

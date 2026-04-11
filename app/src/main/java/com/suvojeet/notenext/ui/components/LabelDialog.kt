@@ -152,7 +152,7 @@ fun LabelDialog(
                             .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(12.dp))
                             .clip(RoundedCornerShape(12.dp))
                     ) {
-                        items(labels) { label ->
+                        items(items = labels, key = { it }) { label ->
                             ListItem(
                                 headlineContent = { Text(text = label, fontWeight = FontWeight.Medium) },
                                 leadingContent = {
