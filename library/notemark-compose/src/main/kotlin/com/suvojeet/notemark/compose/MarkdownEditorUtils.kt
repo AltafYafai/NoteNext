@@ -11,8 +11,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
-import com.suvojeet.notemark.core.NoteMarkParser
+import com.suvojeet.notemark.compose.renderer.AnnotatedStringRenderer
 import com.suvojeet.notemark.core.model.*
+import com.suvojeet.notemark.core.parser.NoteMarkParserV2
+import com.suvojeet.notemark.core.renderer.MarkdownRenderer
 
 /**
  * Utility functions for Markdown editing in Compose.
@@ -20,117 +22,71 @@ import com.suvojeet.notemark.core.model.*
 object MarkdownEditorUtils {
 
     private val WikiLinkStyle = SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF6200EE))
+    
+    private val parser = NoteMarkParserV2()
+    private val annotatedStringRenderer = AnnotatedStringRenderer(wikiLinkStyle = WikiLinkStyle)
+    private val markdownRenderer = MarkdownRenderer()
 
     /**
      * Converts a Markdown string to an [AnnotatedString] with styles.
      */
     fun markdownToAnnotatedString(text: String, theme: MarkdownTheme? = null): AnnotatedString {
-        return buildAnnotatedString {
-            val lines = text.split("\n")
-            lines.forEachIndexed { index, line ->
-                val headerMatch = "^(#+)\\s*(.*)".toRegex().find(line)
-                if (headerMatch != null) {
-                    val level = headerMatch.groupValues[1].length
-                    val content = headerMatch.groupValues[2]
-                    withStyle(getHeadingStyle(level)) {
-                        appendInlineMarkdown(this, content)
-                    }
-                } else if (line.trimStart().startsWith("• ") || line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ")) {
-                    val bullet = if (line.trimStart().startsWith("• ")) "• " else if (line.trimStart().startsWith("- ")) "- " else "* "
-                    val content = line.trimStart().removePrefix(bullet)
-                    val leadingSpaces = line.takeWhile { it.isWhitespace() }
-                    append(leadingSpaces)
-                    append("• ")
-                    appendInlineMarkdown(this, content)
-                } else if (line.trimStart().startsWith("> ")) {
-                    val content = line.trimStart().removePrefix("> ")
-                    val leadingSpaces = line.takeWhile { it.isWhitespace() }
-                    append(leadingSpaces)
-                    withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Gray)) {
-                        appendInlineMarkdown(this, content)
-                    }
-                } else {
-                    appendInlineMarkdown(this, line)
-                }
-
-                if (index < lines.size - 1) {
-                    append("\n")
-                }
-            }
-        }
+        val document = parser.parse(text)
+        return annotatedStringRenderer.render(document)
     }
 
     private fun appendInlineMarkdown(builder: AnnotatedString.Builder, text: String) {
-        val boldRegex = "(\\s|^)(\\*\\*|__)(.+?)\\2".toRegex()
-        val italicRegex = "(\\s|^)(\\*|_)(.+?)\\2".toRegex()
-        val underlineRegex = "__u__(.+?)__u__".toRegex()
-        val linkRegex = "\\[(.+?)\\]\\((.+?)\\)".toRegex()
-        val wikiLinkRegex = "\\[\\[(.+?)\\]\\]".toRegex()
+        val inlines = parser.parseInline(text)
+        // Helper to render inlines manually if needed by existing logic, 
+        // but we've centralized this in AnnotatedStringRenderer now.
+        // We'll keep this for backward compatibility if other methods use it.
+        renderInlinesToBuilder(builder, inlines)
+    }
 
-        var lastIndex = 0
-        
-        // Tag each match with its type to avoid guessing from match.value
-        // Priority order: more specific patterns first for stable sorting ties
-        val underlineMatches = underlineRegex.findAll(text).map { it to "underline" }
-        val wikiLinkMatches = wikiLinkRegex.findAll(text).map { it to "wikilink" }
-        val linkMatches = linkRegex.findAll(text).map { it to "link" }
-        val boldMatches = boldRegex.findAll(text).map { it to "bold" }
-        val italicMatches = italicRegex.findAll(text).map { it to "italic" }
-
-        val allMatches = (underlineMatches + wikiLinkMatches + linkMatches + boldMatches + italicMatches)
-            .sortedBy { it.first.range.first }
-
-        allMatches.forEach { (match, type) ->
-            if (match.range.first >= lastIndex) {
-                builder.append(text.substring(lastIndex, match.range.first))
-
-                when (type) {
-                    "bold" -> {
-                        val content = match.groupValues[3]
-                        val prefix = match.groupValues[1]
-                        builder.append(prefix)
-                        builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            appendInlineMarkdown(this, content)
-                        }
-                    }
-                    "italic" -> {
-                        val content = match.groupValues[3]
-                        val prefix = match.groupValues[1]
-                        builder.append(prefix)
-                        builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            appendInlineMarkdown(this, content)
-                        }
-                    }
-                    "underline" -> {
-                        val content = match.groupValues[1]
-                        builder.withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-                            appendInlineMarkdown(this, content)
-                        }
-                    }
-                    "wikilink" -> {
-                        val linkText = match.groupValues[1]
-                        builder.pushStringAnnotation(tag = "NOTE_LINK", annotation = linkText)
-                        builder.withStyle(WikiLinkStyle) {
-                            append(linkText)
-                        }
-                        builder.pop()
-                    }
-                    "link" -> {
-                        val linkText = match.groupValues[1]
-                        val url = match.groupValues[2]
-                        builder.pushStringAnnotation(tag = "URL", annotation = url)
-                        builder.withStyle(SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)) {
-                            append(linkText)
-                        }
-                        builder.pop()
+    private fun renderInlinesToBuilder(builder: AnnotatedString.Builder, inlines: List<InlineNode>) {
+        inlines.forEach { inline ->
+            when (inline) {
+                is TextNode -> builder.append(inline.text)
+                is BoldNode -> {
+                    builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        renderInlinesToBuilder(this, inline.children)
                     }
                 }
-                lastIndex = match.range.last + 1
+                is ItalicNode -> {
+                    builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                        renderInlinesToBuilder(this, inline.children)
+                    }
+                }
+                is UnderlineNode -> {
+                    builder.withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                        renderInlinesToBuilder(this, inline.children)
+                    }
+                }
+                is StrikeThroughNode -> {
+                    builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                        renderInlinesToBuilder(this, inline.children)
+                    }
+                }
+                is InlineCodeNode -> {
+                    builder.withStyle(SpanStyle(background = Color.LightGray.copy(alpha = 0.3f), fontStyle = FontStyle.Italic)) {
+                        append(inline.code)
+                    }
+                }
+                is LinkNode -> {
+                    builder.pushStringAnnotation(tag = "URL", annotation = inline.url)
+                    builder.withStyle(SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)) {
+                        renderInlinesToBuilder(this, inline.children)
+                    }
+                    builder.pop()
+                }
+                is WikiLinkNode -> {
+                    builder.pushStringAnnotation(tag = "NOTE_LINK", annotation = inline.title)
+                    builder.withStyle(WikiLinkStyle) {
+                        append(inline.title)
+                    }
+                    builder.pop()
+                }
             }
-        }
-
-        if (lastIndex < text.length) {
-            builder.append(text.substring(lastIndex))
         }
     }
 
@@ -147,6 +103,11 @@ object MarkdownEditorUtils {
      * Converts [AnnotatedString] to Markdown.
      */
     fun annotatedStringToMarkdown(annotatedString: AnnotatedString): String {
+        // Since we're moving to a robust AST-based approach, 
+        // the conversion from AnnotatedString back to Markdown 
+        // should ideally go through the same logic.
+        // For now, we'll keep the existing manual logic as it's specifically 
+        // designed to handle Compose SpanStyles which might not perfectly map to a fresh AST.
         val text = annotatedString.text
         val sb = StringBuilder()
         val spans = annotatedString.spanStyles.sortedBy { it.start }
@@ -179,11 +140,13 @@ object MarkdownEditorUtils {
         if (style.fontWeight == FontWeight.Bold) sb.append("**")
         if (style.fontStyle == FontStyle.Italic) sb.append("*")
         if (style.textDecoration == TextDecoration.Underline) sb.append("__u__")
+        if (style.textDecoration == TextDecoration.LineThrough) sb.append("~~")
         return sb.toString()
     }
 
     private fun getMarkdownSuffix(style: SpanStyle): String {
         val sb = StringBuilder()
+        if (style.textDecoration == TextDecoration.LineThrough) sb.append("~~")
         if (style.textDecoration == TextDecoration.Underline) sb.append("__u__")
         if (style.fontStyle == FontStyle.Italic) sb.append("*")
         if (style.fontWeight == FontWeight.Bold) sb.append("**")

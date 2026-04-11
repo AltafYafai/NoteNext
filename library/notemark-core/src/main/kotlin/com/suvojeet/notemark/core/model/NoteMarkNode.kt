@@ -102,6 +102,13 @@ data class UnderlineNode(
 ) : InlineNode()
 
 /**
+ * Represents strike-through text (~~strike~~).
+ */
+data class StrikeThroughNode(
+    override val children: List<InlineNode>
+) : InlineNode()
+
+/**
  * Represents inline code (`code`).
  */
 data class InlineCodeNode(val code: String) : InlineNode() {
