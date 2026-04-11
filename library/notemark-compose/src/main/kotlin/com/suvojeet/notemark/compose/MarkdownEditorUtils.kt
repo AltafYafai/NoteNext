@@ -24,7 +24,7 @@ object MarkdownEditorUtils {
     /**
      * Converts a Markdown string to an [AnnotatedString] with styles.
      */
-    fun markdownToAnnotatedString(text: String, theme: MarkdownTheme = MarkdownTheme.default()): AnnotatedString {
+    fun markdownToAnnotatedString(text: String, theme: MarkdownTheme? = null): AnnotatedString {
         return buildAnnotatedString {
             val lines = text.split("\n")
             lines.forEachIndexed { index, line ->
