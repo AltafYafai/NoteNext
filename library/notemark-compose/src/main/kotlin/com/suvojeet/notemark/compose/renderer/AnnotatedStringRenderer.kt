@@ -115,10 +115,10 @@ class AnnotatedStringRenderer(
 
     private fun getHeadingStyle(level: Int): SpanStyle {
         return when (level) {
-            1 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = androidx.compose.ui.unit.sp(24))
-            2 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = androidx.compose.ui.unit.sp(20))
-            3 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = androidx.compose.ui.unit.sp(18))
-            else -> if (level > 0) SpanStyle(fontWeight = FontWeight.Bold, fontSize = androidx.compose.ui.unit.sp(16)) else SpanStyle()
+            1 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 24.sp)
+            2 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            3 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            else -> if (level > 0) SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp) else SpanStyle()
         }
     }
 }
