@@ -57,6 +57,11 @@ object NoteMarkExporter {
                     sb.append(exportInlines(inline.children))
                     sb.append("__u__")
                 }
+                is StrikeThroughNode -> {
+                    sb.append("~~")
+                    sb.append(exportInlines(inline.children))
+                    sb.append("~~")
+                }
                 is InlineCodeNode -> {
                     sb.append("`")
                     sb.append(inline.code)

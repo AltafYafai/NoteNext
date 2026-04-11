@@ -160,6 +160,11 @@ internal fun renderInlines(inlines: List<InlineNode>): AnnotatedString {
                         append(renderInlines(inline.children))
                     }
                 }
+                is StrikeThroughNode -> {
+                    withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                        append(renderInlines(inline.children))
+                    }
+                }
                 is InlineCodeNode -> {
                     withStyle(
                         SpanStyle(

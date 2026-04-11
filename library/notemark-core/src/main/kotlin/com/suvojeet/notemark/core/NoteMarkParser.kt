@@ -76,6 +76,7 @@ object NoteMarkParser {
         val boldRegex = "(\\s|^)(\\*\\*|__)(.+?)\\2".toRegex()
         val italicRegex = "(\\s|^)(\\*|_)(.+?)\\2".toRegex()
         val underlineRegex = "__u__(.+?)__u__".toRegex()
+        val strikethroughRegex = "~~(.+?)~~".toRegex()
         val linkRegex = "\\[(.+?)\\]\\((.+?)\\)".toRegex()
         val wikiLinkRegex = "\\[\\[(.+?)\\]\\]".toRegex()
         val inlineCodeRegex = "`(.+?)`".toRegex()
@@ -84,13 +85,14 @@ object NoteMarkParser {
         
         // Tag each match with its type to avoid guessing from match.value
         val underlineMatches = underlineRegex.findAll(text).map { it to "underline" }
+        val strikethroughMatches = strikethroughRegex.findAll(text).map { it to "strikethrough" }
         val wikiLinkMatches = wikiLinkRegex.findAll(text).map { it to "wikilink" }
         val linkMatches = linkRegex.findAll(text).map { it to "link" }
         val boldMatches = boldRegex.findAll(text).map { it to "bold" }
         val italicMatches = italicRegex.findAll(text).map { it to "italic" }
         val inlineCodeMatches = inlineCodeRegex.findAll(text).map { it to "code" }
 
-        val allMatches = (underlineMatches + wikiLinkMatches + linkMatches + boldMatches + italicMatches + inlineCodeMatches)
+        val allMatches = (underlineMatches + strikethroughMatches + wikiLinkMatches + linkMatches + boldMatches + italicMatches + inlineCodeMatches)
             .sortedBy { it.first.range.first }
 
         allMatches.forEach { (match, type) ->
@@ -115,6 +117,10 @@ object NoteMarkParser {
                     "underline" -> {
                         val content = match.groupValues[1]
                         nodes.add(UnderlineNode(parseInline(content)))
+                    }
+                    "strikethrough" -> {
+                        val content = match.groupValues[1]
+                        nodes.add(StrikeThroughNode(parseInline(content)))
                     }
                     "wikilink" -> {
                         nodes.add(WikiLinkNode(match.groupValues[1]))
