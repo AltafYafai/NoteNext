@@ -14,7 +14,7 @@ kotlin-serialization = "2.3.10"         # must stay in sync with kotlin
 
 # ── Compose & Material ──────────────────────────────────────────
 composeBom     = "2026.02.01"
-material3      = "1.5.0-alpha15"        # M3 Expressive — keep alpha for LoadingIndicator etc.
+material3      = "1.5.0-alpha17"        # M3 Expressive — keep alpha for LoadingIndicator etc.
 dynamicColor   = "1.0.0"
 graphicsShapes = "1.0.1"
 animation      = "1.1.0"
