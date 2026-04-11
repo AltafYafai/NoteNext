@@ -15,6 +15,7 @@ import com.suvojeet.notemark.compose.renderer.AnnotatedStringRenderer
 import com.suvojeet.notemark.core.model.*
 import com.suvojeet.notemark.core.parser.NoteMarkParserV2
 import com.suvojeet.notemark.core.renderer.MarkdownRenderer
+import com.suvojeet.notemark.core.renderer.PlainTextRenderer
 
 /**
  * Utility functions for Markdown editing in Compose.
@@ -26,6 +27,7 @@ object MarkdownEditorUtils {
     private val parser = NoteMarkParserV2()
     private val annotatedStringRenderer = AnnotatedStringRenderer(wikiLinkStyle = WikiLinkStyle)
     private val markdownRenderer = MarkdownRenderer()
+    private val plainTextRenderer = PlainTextRenderer()
 
     /**
      * Converts a Markdown string to an [AnnotatedString] with styles.
@@ -33,6 +35,14 @@ object MarkdownEditorUtils {
     fun markdownToAnnotatedString(text: String, theme: MarkdownTheme? = null): AnnotatedString {
         val document = parser.parse(text)
         return annotatedStringRenderer.render(document)
+    }
+
+    /**
+     * Converts a Markdown string to plain text.
+     */
+    fun markdownToPlainText(text: String): String {
+        val document = parser.parse(text)
+        return plainTextRenderer.render(document)
     }
 
     private fun appendInlineMarkdown(builder: AnnotatedString.Builder, text: String) {
@@ -354,21 +364,5 @@ object MarkdownEditorUtils {
         val minLength = minOf(a.length, b.length)
         for (i in 0 until minLength) if (a[a.length - 1 - i] != b[b.length - 1 - i]) return a.substring(a.length - i)
         return a.substring(a.length - minLength)
-    }
-
-    fun markdownToPlainText(markdown: String): String {
-        return markdown
-            .replace(Regex("(?m)^#+\\s+"), "")
-            .replace(Regex("(\\*\\*|__)(.*?)\\1"), "$2")
-            .replace(Regex("(\\*|_)(.*?)\\1"), "$2")
-            .replace(Regex("__u__(.*?)__u__"), "$1")
-            .replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "$1")
-            .replace(Regex("\\[\\[(.*?)\\]\\]"), "$1")
-            .replace(Regex("(?m)^[•\\-*]\\s+"), "")
-            .replace(Regex("(?m)^>\\s+"), "")
-            .replace(Regex("`{1,3}(.*?)\\1"), "$2")
-            .replace(Regex("~~(.*?)~~"), "$1")
-            .replace(Regex("<[^>]*>"), "")
-            .trim()
     }
 }

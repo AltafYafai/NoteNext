@@ -18,6 +18,7 @@ import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notemark.compose.MarkdownEditorUtils
+import com.suvojeet.notemark.core.util.LinkDetector
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.ProjectDao
 import com.suvojeet.notenext.data.SortType
@@ -564,10 +565,7 @@ class ProjectNotesViewModel @Inject constructor(
                     updateSerializedMarkdownAsync(finalContent.annotatedString)
 
                     // Link detection
-                    val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
-                    val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet() // Use Set for efficient lookup
-
-                    detectedUrls.forEach { url ->
+                    LinkDetector.detectUrls(finalContent.text).forEach { url ->
                         onEvent(ProjectNotesEvent.OnLinkDetected(url))
                     }
                     scheduleAutoSave()

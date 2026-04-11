@@ -19,6 +19,7 @@ import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notemark.compose.MarkdownEditorUtils
+import com.suvojeet.notemark.core.util.LinkDetector
 import com.suvojeet.notenext.core.util.ImageUtils
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.LinkPreviewRepository
@@ -56,7 +57,7 @@ import com.suvojeet.notenext.data.repository.onFailure
 import com.suvojeet.notenext.data.repository.onSuccess
 import com.suvojeet.notenext.data.NoteVersion
 import com.suvojeet.notenext.domain.use_case.NoteUseCases
-import com.suvojeet.notenext.ui.util.UndoRedoManager
+import com.suvojeet.notemark.compose.util.UndoRedoManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
@@ -1039,13 +1040,9 @@ class NotesViewModel @Inject constructor(
                     }
 
                     // Debounced Link detection
-                    val urlRegex = "(https?://[\\w.-]+\\.[a-zA-Z]{2,}(?:/[^\\s]*)?)".toRegex()
-                    val detectedUrls = urlRegex.findAll(finalContent.text).map { it.value }.toSet()
-
-                    detectedUrls.forEach { url ->
+                    LinkDetector.detectUrls(finalContent.text).forEach { url ->
                         onEvent(NotesEvent.OnLinkDetected(url))
-                    }
-                }
+                    }                }
             }
             is NotesEvent.OnChecklistItemValueChange -> {
                 val updatedInputValues = editState.value.checklistInputValues.toMutableMap()
