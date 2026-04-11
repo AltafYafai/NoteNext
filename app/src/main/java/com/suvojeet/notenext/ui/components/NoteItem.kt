@@ -2,6 +2,7 @@
 package com.suvojeet.notenext.ui.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
@@ -93,8 +94,8 @@ fun NoteItem(
             )
             .animateContentSize(
                 animationSpec = spring(
-                    dampingRatio = spring.DampingRatioLowBouncy,
-                    stiffness = spring.StiffnessLow
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
                 )
             ),
         shape = MaterialTheme.shapes.extraLarge,
