@@ -204,8 +204,7 @@ fun NoteItem(
                             val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
                             val annotatedContent = remember(decryptedNote.content) {
-                                val plainText = MarkdownConverter.markdownToPlainText(decryptedNote.content)
-                                androidx.compose.ui.text.AnnotatedString(plainText)
+                                MarkdownConverter.markdownToAnnotatedString(decryptedNote.content)
                             }
 
                             val highlightedContent = if (searchQuery.isNotEmpty()) {

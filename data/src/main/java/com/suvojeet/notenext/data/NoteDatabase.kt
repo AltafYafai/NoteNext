@@ -61,19 +61,12 @@ abstract class NoteDatabase : RoomDatabase() {
             }
 
             private fun convertHtmlToMarkdown(html: String): String {
-                // Simplified Jsoup-like traversal for migration
-                // Since we can't easily use Jsoup here without ensuring it's on the classpath 
-                // and it might be overkill for simple notes, we'll use a basic regex approach 
-                // or just strip tags if it's too complex. 
-                // Actually, NoteNext uses Jsoup in MarkdownExporter, so it's available.
-                // But Migration is a static object, calling MarkdownExporter might be tricky if it's not initialized.
-                // We'll use a basic implementation here.
-                return html
+                var result = html
                     .replace(Regex("<b[^>]*>(.*?)</b>"), "**$1**")
                     .replace(Regex("<strong[^>]*>(.*?)</strong>"), "**$1**")
                     .replace(Regex("<i[^>]*>(.*?)</i>"), "*$1*")
                     .replace(Regex("<em[^>]*>(.*?)</em>"), "*$1*")
-                    .replace(Regex("<u[^>]*>(.*?)</u>"), "<u>$1</u>")
+                    .replace(Regex("<u[^>]*>(.*?)</u>"), "__u__$1__u__")
                     .replace(Regex("<br\\s*/?>"), "\n")
                     .replace(Regex("<p[^>]*>(.*?)</p>"), "$1\n\n")
                     .replace(Regex("<li[^>]*>(.*?)</li>"), "- $1\n")
@@ -82,7 +75,18 @@ abstract class NoteDatabase : RoomDatabase() {
                     .replace("&lt;", "<")
                     .replace("&gt;", ">")
                     .replace("&amp;", "&")
-                    .trim()
+                    .replace("&quot;", "\"")
+                    .replace("&apos;", "'")
+                    .replace("&#39;", "'")
+                
+                // Handle numeric entities like &#37272;
+                val numericEntityRegex = Regex("&#(\\d+);")
+                result = numericEntityRegex.replace(result) { match ->
+                    val code = match.groupValues[1].toInt()
+                    code.toChar().toString()
+                }
+                
+                return result.trim()
             }
         }
         val MIGRATION_26_27 = object : Migration(26, 27) {

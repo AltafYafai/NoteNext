@@ -67,7 +67,7 @@ object MarkdownConverter {
         return when {
             style.fontWeight == FontWeight.Bold -> "**"
             style.fontStyle == FontStyle.Italic -> "*"
-            style.textDecoration == TextDecoration.Underline -> "<u>"
+            style.textDecoration == TextDecoration.Underline -> "__u__"
             else -> ""
         }
     }
@@ -76,7 +76,7 @@ object MarkdownConverter {
         return when {
             style.fontWeight == FontWeight.Bold -> "**"
             style.fontStyle == FontStyle.Italic -> "*"
-            style.textDecoration == TextDecoration.Underline -> "</u>"
+            style.textDecoration == TextDecoration.Underline -> "__u__"
             else -> ""
         }
     }
@@ -132,7 +132,7 @@ object MarkdownConverter {
     private fun appendInlineMarkdown(builder: AnnotatedString.Builder, text: String) {
         val boldRegex = "(\\s|^)(\\*\\*|__)(.*?)\\2".toRegex()
         val italicRegex = "(\\s|^)(\\*|_)(.*?)\\2".toRegex()
-        val underlineRegex = "<u>(.*?)</u>".toRegex()
+        val underlineRegex = "__u__(.*?)__u__".toRegex()
         val linkRegex = "\\[(.*?)\\]\\((.*?)\\)".toRegex()
         val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
 
@@ -161,7 +161,7 @@ object MarkdownConverter {
                             append(content)
                         }
                     }
-                    match.value.startsWith("<u>") -> {
+                    match.value.startsWith("__u__") -> {
                         val content = match.groupValues[1]
                         builder.withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
                             append(content)
@@ -207,15 +207,18 @@ object MarkdownConverter {
      * Extracts plain text from Markdown by removing symbols.
      */
     fun markdownToPlainText(markdown: String): String {
-        // Simple regex-based strip
         return markdown
-            .replace(Regex("(#+)\\s*"), "") // Headers
-            .replace(Regex("\\*\\*|__"), "") // Bold
-            .replace(Regex("\\*|_"), "") // Italic
-            .replace(Regex("<u>|</u>"), "") // Underline
+            .replace(Regex("(?m)^#+\\s+"), "") // Headers at start of line
+            .replace(Regex("(\\*\\*|__)(.*?)\\1"), "$2") // Bold
+            .replace(Regex("(\\*|_)(.*?)\\1"), "$2") // Italic
+            .replace(Regex("__u__(.*?)__u__"), "$1") // Underline
             .replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "$1") // Links
             .replace(Regex("\\[\\[(.*?)\\]\\]"), "$1") // Wiki links
-            .replace(Regex("^[•\\-*]\\s+", RegexOption.MULTILINE), "") // Bullet points
-            .replace(Regex("^>\\s+", RegexOption.MULTILINE), "") // Blockquotes
+            .replace(Regex("(?m)^[•\\-*]\\s+"), "") // Bullet points at start of line
+            .replace(Regex("(?m)^>\\s+"), "") // Blockquotes at start of line
+            .replace(Regex("`{1,3}(.*?)\\1"), "$2") // Inline code and code blocks
+            .replace(Regex("~~(.*?)~~"), "$1") // Strikethrough
+            .replace(Regex("<[^>]*>"), "") // Remaining HTML tags
+            .trim()
     }
 }
