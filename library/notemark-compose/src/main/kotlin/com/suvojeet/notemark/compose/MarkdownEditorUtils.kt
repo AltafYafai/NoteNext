@@ -1,184 +1,58 @@
-package com.suvojeet.notenext.util
+package com.suvojeet.notemark.compose
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
-
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.input.TextFieldValue
+import com.suvojeet.notemark.core.NoteMarkParser
+import com.suvojeet.notemark.core.model.*
 
 /**
- * Utility for converting between [AnnotatedString] and Markdown.
- * Handles WYSIWYG editing state and formatting.
+ * Utility functions for Markdown editing in Compose.
  */
-object MarkdownConverter {
+object MarkdownEditorUtils {
 
     private val WikiLinkStyle = SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF6200EE))
 
     /**
-     * Converts an [AnnotatedString] to a Markdown string.
+     * Converts a Markdown string to an [AnnotatedString] with styles.
      */
-    fun annotatedStringToMarkdown(annotatedString: AnnotatedString): String {
-        val text = annotatedString.text
-        val sb = StringBuilder()
-        
-        // Sort spans by start index
-        val spans = annotatedString.spanStyles.sortedBy { it.start }
-        val activeSpans = mutableListOf<AnnotatedString.Range<SpanStyle>>()
-        
-        for (i in text.indices) {
-            // Close spans that end here (in reverse order of opening)
-            val endingSpans = activeSpans.filter { it.end == i }.sortedByDescending { it.start }
-            endingSpans.forEach { span ->
-                sb.append(getMarkdownSuffix(span.item))
-                activeSpans.remove(span)
-            }
-            
-            // Open spans that start here
-            val startingSpans = spans.filter { it.start == i }
-            startingSpans.forEach { span ->
-                sb.append(getMarkdownPrefix(span.item))
-                activeSpans.add(span)
-            }
-            
-            sb.append(text[i])
-        }
-        
-        // Close any remaining active spans
-        activeSpans.sortedByDescending { it.start }.forEach { span ->
-            sb.append(getMarkdownSuffix(span.item))
-        }
-        
-        return sb.toString()
-    }
-
-    private fun getMarkdownPrefix(style: SpanStyle): String {
-        return when {
-            style.fontWeight == FontWeight.Bold -> "**"
-            style.fontStyle == FontStyle.Italic -> "*"
-            style.textDecoration == TextDecoration.Underline -> "__u__"
-            else -> ""
-        }
-    }
-
-    private fun getMarkdownSuffix(style: SpanStyle): String {
-        return when {
-            style.fontWeight == FontWeight.Bold -> "**"
-            style.fontStyle == FontStyle.Italic -> "*"
-            style.textDecoration == TextDecoration.Underline -> "__u__"
-            else -> ""
-        }
-    }
-
-    /**
-     * Handles text changes while preserving styles and decoding entities.
-     */
-    fun processContentChange(
-        oldContent: TextFieldValue,
-        newContent: TextFieldValue,
-        activeStyles: Set<SpanStyle>,
-        activeHeadingStyle: Int
-    ): TextFieldValue {
-        if (newContent.text == oldContent.text) {
-            return oldContent.copy(selection = newContent.selection)
-        }
-
-        val oldText = oldContent.text
-        val newText = decodeHtmlEntities(newContent.text)
-        val fixedNewContent = newContent.copy(text = newText)
-
-        val prefixLength = commonPrefixWith(oldText, newText).length
-        val oldRemainder = oldText.substring(prefixLength)
-        val newRemainder = newText.substring(prefixLength)
-        
-        val maxSuffixLength = minOf(oldRemainder.length, newRemainder.length)
-        val suffixLength = commonSuffixWith(oldRemainder, newRemainder).length.coerceAtMost(maxSuffixLength)
-        
-        val newChangedPart = newRemainder.substring(0, (newRemainder.length - suffixLength).coerceAtLeast(0))
-
-        val newAnnotatedString = buildAnnotatedString {
-            val prefixEnd = prefixLength.coerceAtMost(oldContent.annotatedString.length)
-            append(oldContent.annotatedString.subSequence(0, prefixEnd))
-
-            val headingSpanStyle = getHeadingStyle(activeHeadingStyle)
-            val styleToApply = (activeStyles + headingSpanStyle).reduceOrNull { a, b -> a.merge(b) } ?: SpanStyle()
-
-            withStyle(styleToApply) {
-                append(newChangedPart)
-            }
-
-            val suffixStart = (oldText.length - suffixLength).coerceIn(0, oldContent.annotatedString.length)
-            val suffixEnd = oldText.length.coerceIn(suffixStart, oldContent.annotatedString.length)
-            append(oldContent.annotatedString.subSequence(suffixStart, suffixEnd))
-        }
-        
-        return markdownToAnnotatedString(newAnnotatedString.text).let { 
-            fixedNewContent.copy(annotatedString = it) 
-        }
-    }
-
-    private fun decodeHtmlEntities(text: String): String {
-        if (!text.contains("&")) return text
-        
-        var result = text
-            .replace("&nbsp;", " ")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&amp;", "&")
-            .replace("&quot;", "\"")
-            .replace("&apos;", "'")
-            .replace("&#39;", "'")
-        
-        val numericEntityRegex = Regex("&#(\\d+);")
-        result = numericEntityRegex.replace(result) { match ->
-            try {
-                val code = match.groupValues[1].toInt()
-                code.toChar().toString()
-            } catch (e: Exception) { match.value }
-        }
-        return result
-    }
-
-    fun markdownToAnnotatedString(text: String): AnnotatedString {
+    fun markdownToAnnotatedString(text: String, theme: MarkdownTheme = MarkdownTheme.default()): AnnotatedString {
         return buildAnnotatedString {
             val lines = text.split("\n")
             lines.forEachIndexed { index, line ->
-                var currentLine = line
-                
-                val headerMatch = "^(#+)\\s*(.*)".toRegex().find(currentLine)
+                val headerMatch = "^(#+)\\s*(.*)".toRegex().find(line)
                 if (headerMatch != null) {
                     val level = headerMatch.groupValues[1].length
                     val content = headerMatch.groupValues[2]
                     withStyle(getHeadingStyle(level)) {
                         appendInlineMarkdown(this, content)
                     }
-                } 
-                else if (currentLine.trimStart().startsWith("• ") || currentLine.trimStart().startsWith("- ") || currentLine.trimStart().startsWith("* ")) {
-                    val bullet = if (currentLine.trimStart().startsWith("• ")) "• " else if (currentLine.trimStart().startsWith("- ")) "- " else "* "
-                    val content = currentLine.trimStart().removePrefix(bullet)
-                    val leadingSpaces = currentLine.takeWhile { it.isWhitespace() }
+                } else if (line.trimStart().startsWith("• ") || line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ")) {
+                    val bullet = if (line.trimStart().startsWith("• ")) "• " else if (line.trimStart().startsWith("- ")) "- " else "* "
+                    val content = line.trimStart().removePrefix(bullet)
+                    val leadingSpaces = line.takeWhile { it.isWhitespace() }
                     append(leadingSpaces)
-                    append("• ") 
+                    append("• ")
                     appendInlineMarkdown(this, content)
-                }
-                else if (currentLine.trimStart().startsWith("> ")) {
-                    val content = currentLine.trimStart().removePrefix("> ")
-                    val leadingSpaces = currentLine.takeWhile { it.isWhitespace() }
+                } else if (line.trimStart().startsWith("> ")) {
+                    val content = line.trimStart().removePrefix("> ")
+                    val leadingSpaces = line.takeWhile { it.isWhitespace() }
                     append(leadingSpaces)
                     withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Gray)) {
                         appendInlineMarkdown(this, content)
                     }
+                } else {
+                    appendInlineMarkdown(this, line)
                 }
-                else {
-                    appendInlineMarkdown(this, currentLine)
-                }
-                
+
                 if (index < lines.size - 1) {
                     append("\n")
                 }
@@ -207,7 +81,7 @@ object MarkdownConverter {
                         val prefix = match.groupValues[1]
                         builder.append(prefix)
                         builder.withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(content)
+                            appendInlineMarkdown(this, content)
                         }
                     }
                     match.value.startsWith("*") || match.value.startsWith("_") || (match.value.trim().startsWith("*")) -> {
@@ -215,13 +89,13 @@ object MarkdownConverter {
                         val prefix = match.groupValues[1]
                         builder.append(prefix)
                         builder.withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                            append(content)
+                            appendInlineMarkdown(this, content)
                         }
                     }
                     match.value.startsWith("__u__") -> {
                         val content = match.groupValues[1]
                         builder.withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-                            append(content)
+                            appendInlineMarkdown(this, content)
                         }
                     }
                     match.value.startsWith("[[") -> {
@@ -258,6 +132,53 @@ object MarkdownConverter {
             3 -> SpanStyle(fontWeight = FontWeight.Bold, fontSize = 18.sp)
             else -> if (level > 0) SpanStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp) else SpanStyle()
         }
+    }
+
+    /**
+     * Converts [AnnotatedString] to Markdown.
+     */
+    fun annotatedStringToMarkdown(annotatedString: AnnotatedString): String {
+        val text = annotatedString.text
+        val sb = StringBuilder()
+        val spans = annotatedString.spanStyles.sortedBy { it.start }
+        val activeSpans = mutableListOf<AnnotatedString.Range<SpanStyle>>()
+
+        for (i in text.indices) {
+            val endingSpans = activeSpans.filter { it.end == i }.sortedByDescending { it.start }
+            endingSpans.forEach { span ->
+                sb.append(getMarkdownSuffix(span.item))
+                activeSpans.remove(span)
+            }
+
+            val startingSpans = spans.filter { it.start == i }
+            startingSpans.forEach { span ->
+                sb.append(getMarkdownPrefix(span.item))
+                activeSpans.add(span)
+            }
+            sb.append(text[i])
+        }
+
+        activeSpans.sortedByDescending { it.start }.forEach { span ->
+            sb.append(getMarkdownSuffix(span.item))
+        }
+
+        return sb.toString()
+    }
+
+    private fun getMarkdownPrefix(style: SpanStyle): String {
+        val sb = StringBuilder()
+        if (style.fontWeight == FontWeight.Bold) sb.append("**")
+        if (style.fontStyle == FontStyle.Italic) sb.append("*")
+        if (style.textDecoration == TextDecoration.Underline) sb.append("__u__")
+        return sb.toString()
+    }
+
+    private fun getMarkdownSuffix(style: SpanStyle): String {
+        val sb = StringBuilder()
+        if (style.textDecoration == TextDecoration.Underline) sb.append("__u__")
+        if (style.fontStyle == FontStyle.Italic) sb.append("*")
+        if (style.fontWeight == FontWeight.Bold) sb.append("**")
+        return sb.toString()
     }
 
     data class StyleToggleResult(
@@ -346,6 +267,72 @@ object MarkdownConverter {
         )
     }
 
+    fun processContentChange(
+        oldContent: TextFieldValue,
+        newContent: TextFieldValue,
+        activeStyles: Set<SpanStyle>,
+        activeHeadingStyle: Int
+    ): TextFieldValue {
+        if (newContent.text == oldContent.text) {
+            return oldContent.copy(selection = newContent.selection)
+        }
+
+        val oldText = oldContent.text
+        val newText = decodeHtmlEntities(newContent.text)
+        val fixedNewContent = newContent.copy(text = newText)
+
+        val prefixLength = commonPrefixWith(oldText, newText).length
+        val oldRemainder = oldText.substring(prefixLength)
+        val newRemainder = newText.substring(prefixLength)
+
+        val maxSuffixLength = minOf(oldRemainder.length, newRemainder.length)
+        val suffixLength = commonSuffixWith(oldRemainder, newRemainder).length.coerceAtMost(maxSuffixLength)
+
+        val newChangedPart = newRemainder.substring(0, (newRemainder.length - suffixLength).coerceAtLeast(0))
+
+        val newAnnotatedString = buildAnnotatedString {
+            val prefixEnd = prefixLength.coerceAtMost(oldContent.annotatedString.length)
+            append(oldContent.annotatedString.subSequence(0, prefixEnd))
+
+            val headingSpanStyle = getHeadingStyle(activeHeadingStyle)
+            val styleToApply = (activeStyles + headingSpanStyle).reduceOrNull { a, b -> a.merge(b) } ?: SpanStyle()
+
+            withStyle(styleToApply) {
+                append(newChangedPart)
+            }
+
+            val suffixStart = (oldText.length - suffixLength).coerceIn(0, oldContent.annotatedString.length)
+            val suffixEnd = oldText.length.coerceIn(suffixStart, oldContent.annotatedString.length)
+            append(oldContent.annotatedString.subSequence(suffixStart, suffixEnd))
+        }
+
+        return markdownToAnnotatedString(newAnnotatedString.text).let {
+            fixedNewContent.copy(annotatedString = it)
+        }
+    }
+
+    private fun decodeHtmlEntities(text: String): String {
+        if (!text.contains("&")) return text
+
+        var result = text
+            .replace("&nbsp;", " ")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&")
+            .replace("&quot;", "\"")
+            .replace("&apos;", "'")
+            .replace("&#39;", "'")
+
+        val numericEntityRegex = Regex("&#(\\d+);")
+        result = numericEntityRegex.replace(result) { match ->
+            try {
+                val code = match.groupValues[1].toInt()
+                code.toChar().toString()
+            } catch (e: Exception) { match.value }
+        }
+        return result
+    }
+
     private fun commonPrefixWith(a: CharSequence, b: CharSequence): String {
         val minLength = minOf(a.length, b.length)
         for (i in 0 until minLength) if (a[i] != b[i]) return a.substring(0, i)
@@ -356,21 +343,5 @@ object MarkdownConverter {
         val minLength = minOf(a.length, b.length)
         for (i in 0 until minLength) if (a[a.length - 1 - i] != b[b.length - 1 - i]) return a.substring(a.length - i)
         return a.substring(a.length - minLength)
-    }
-
-    fun markdownToPlainText(markdown: String): String {
-        return markdown
-            .replace(Regex("(?m)^#+\\s+"), "")
-            .replace(Regex("(\\*\\*|__)(.*?)\\1"), "$2")
-            .replace(Regex("(\\*|_)(.*?)\\1"), "$2")
-            .replace(Regex("__u__(.*?)__u__"), "$1")
-            .replace(Regex("\\[(.*?)\\]\\((.*?)\\)"), "$1")
-            .replace(Regex("\\[\\[(.*?)\\]\\]"), "$1")
-            .replace(Regex("(?m)^[•\\-*]\\s+"), "")
-            .replace(Regex("(?m)^>\\s+"), "")
-            .replace(Regex("`{1,3}(.*?)\\1"), "$2")
-            .replace(Regex("~~(.*?)~~"), "$1")
-            .replace(Regex("<[^>]*>"), "")
-            .trim()
     }
 }

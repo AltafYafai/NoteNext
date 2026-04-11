@@ -17,7 +17,7 @@ import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
-import com.suvojeet.notenext.util.MarkdownConverter
+import com.suvojeet.notemark.compose.MarkdownEditorUtils
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.ProjectDao
 import com.suvojeet.notenext.data.SortType
@@ -79,7 +79,7 @@ class ProjectNotesViewModel @Inject constructor(
         if (state.value.editingNoteType != NoteType.TEXT && state.value.editingNoteType != NoteType.MARKDOWN) return
         
         viewModelScope.launch {
-            val markdown = MarkdownConverter.annotatedStringToMarkdown(annotatedString)
+            val markdown = MarkdownEditorUtils.annotatedStringToMarkdown(annotatedString)
             _state.value = _state.value.copy(serializedMarkdown = markdown)
         }
     }
@@ -125,7 +125,7 @@ class ProjectNotesViewModel @Inject constructor(
         when (event) {
             is ProjectNotesEvent.OnRestoreVersion -> {
                 viewModelScope.launch {
-                    val content = MarkdownConverter.markdownToAnnotatedString(event.version.content)
+                    val content = MarkdownEditorUtils.markdownToAnnotatedString(event.version.content)
                     _state.value = state.value.copy(
                         editingTitle = event.version.title,
                         editingContent = TextFieldValue(content),
@@ -294,7 +294,7 @@ class ProjectNotesViewModel @Inject constructor(
                         val contentBuilder = StringBuilder()
                         selectedIds.forEachIndexed { index, id ->
                             repository.getNoteById(id)?.let { it ->
-                                contentBuilder.append("Title: ${it.note.title}\n\n${MarkdownConverter.markdownToPlainText(it.note.content)}")
+                                contentBuilder.append("Title: ${it.note.title}\n\n${MarkdownEditorUtils.markdownToPlainText(it.note.content)}")
                                 if (index < selectedIds.size - 1) {
                                     contentBuilder.append("\n\n---\n\n")
                                 }
@@ -345,7 +345,7 @@ class ProjectNotesViewModel @Inject constructor(
                         repository.getNoteById(event.noteId)?.let { noteWithAttachments ->
                             val note = noteWithAttachments.note
                             val content = when (note.noteType) {
-                                NoteType.TEXT, NoteType.MARKDOWN -> MarkdownConverter.markdownToAnnotatedString(note.content)
+                                NoteType.TEXT, NoteType.MARKDOWN -> MarkdownEditorUtils.markdownToAnnotatedString(note.content)
                                 else -> AnnotatedString("")
                             }
                             val checklist = if (note.noteType == NoteType.CHECKLIST) {
@@ -380,7 +380,7 @@ class ProjectNotesViewModel @Inject constructor(
                                 serializedMarkdown = if (note.noteType == NoteType.MARKDOWN) note.content else "",
                                 editingChecklist = checklist,
                                 checklistInputValues = checklist.associate { item ->
-                                    item.id to TextFieldValue(MarkdownConverter.markdownToAnnotatedString(item.text))
+                                    item.id to TextFieldValue(MarkdownEditorUtils.markdownToAnnotatedString(item.text))
                                 },
                                 focusedChecklistItemId = null,
                                 editingAttachments = noteWithAttachments.attachments.map { it.copy(tempId = java.util.UUID.randomUUID().toString()) },
@@ -471,7 +471,7 @@ class ProjectNotesViewModel @Inject constructor(
                 val currentValues = state.value.checklistInputValues.toMutableMap()
                 val oldContent = currentValues[event.itemId] ?: TextFieldValue("")
 
-                val finalContent = MarkdownConverter.processContentChange(
+                val finalContent = MarkdownEditorUtils.processContentChange(
                     oldContent = oldContent,
                     newContent = event.value,
                     activeStyles = state.value.activeStyles,
@@ -505,7 +505,7 @@ class ProjectNotesViewModel @Inject constructor(
                 
                 // Sync text with persistence model (Markdown)
                 viewModelScope.launch {
-                    val updatedText = MarkdownConverter.annotatedStringToMarkdown(finalContent.annotatedString)
+                    val updatedText = MarkdownEditorUtils.annotatedStringToMarkdown(finalContent.annotatedString)
                     val updatedChecklist = state.value.editingChecklist.map {
                         if (it.id == event.itemId) it.copy(text = updatedText) else it
                     }
@@ -603,7 +603,7 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.ApplyStyleToContent -> {
-                val result = MarkdownConverter.toggleStyle(
+                val result = MarkdownEditorUtils.toggleStyle(
                     content = state.value.editingContent,
                     styleToToggle = event.style,
                     currentActiveStyles = state.value.activeStyles,
@@ -633,7 +633,7 @@ class ProjectNotesViewModel @Inject constructor(
                 }
             }
             is ProjectNotesEvent.ApplyBulletedList -> {
-                val updatedContent = MarkdownConverter.toggleBulletedList(state.value.editingContent)
+                val updatedContent = MarkdownEditorUtils.toggleBulletedList(state.value.editingContent)
                 val updatedHistory = state.value.editingHistory.take(state.value.editingHistoryIndex + 1) + (state.value.editingTitle to updatedContent)
                 _state.value = state.value.copy(
                     editingContent = updatedContent,
@@ -899,7 +899,7 @@ class ProjectNotesViewModel @Inject constructor(
                     val title = state.value.editingTitle
                     val content = when (state.value.editingNoteType) {
                         NoteType.TEXT, NoteType.MARKDOWN -> {
-                            MarkdownConverter.annotatedStringToMarkdown(state.value.editingContent.annotatedString)
+                            MarkdownEditorUtils.annotatedStringToMarkdown(state.value.editingContent.annotatedString)
                         }
                         else -> ""
                     }

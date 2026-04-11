@@ -18,7 +18,9 @@ import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteDao
-import com.suvojeet.notenext.util.MarkdownConverter
+import com.suvojeet.notemark.compose.MarkdownEditorUtils
+import com.suvojeet.notemark.core.NoteMarkExporter
+import com.suvojeet.notemark.core.NoteMarkParser
 import com.suvojeet.notenext.core.util.ImageUtils
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.LinkPreviewRepository
@@ -91,7 +93,7 @@ class NotesViewModel @Inject constructor(
     private val _editState = MutableStateFlow(
         NotesEditState(
             editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
-            editingContent = TextFieldValue(MarkdownConverter.markdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
+            editingContent = TextFieldValue(MarkdownEditorUtils.markdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
             expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
         )
     )
@@ -158,7 +160,7 @@ class NotesViewModel @Inject constructor(
         SharingStarted.WhileSubscribed(5000), 
         NotesState(
             editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
-            editingContent = TextFieldValue(MarkdownConverter.markdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
+            editingContent = TextFieldValue(MarkdownEditorUtils.markdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
             expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
         )
     )
@@ -184,7 +186,7 @@ class NotesViewModel @Inject constructor(
         if (editState.value.editingNoteType != NoteType.TEXT && editState.value.editingNoteType != NoteType.MARKDOWN) return
         
         viewModelScope.launch {
-            val markdown = MarkdownConverter.annotatedStringToMarkdown(annotatedString)
+            val markdown = MarkdownEditorUtils.annotatedStringToMarkdown(annotatedString)
             _editState.value = editState.value.copy(serializedMarkdown = markdown)
         }
     }
@@ -405,7 +407,7 @@ class NotesViewModel @Inject constructor(
                     val wikiLink = "[[${event.noteTitle}]]"
                     val newTextBeforeCursor = textBeforeCursor.substring(0, lastMentionIndex) + wikiLink
                     
-                    val newAnnotatedString = MarkdownConverter.markdownToAnnotatedString(newTextBeforeCursor + textAfterCursor)
+                    val newAnnotatedString = MarkdownEditorUtils.markdownToAnnotatedString(newTextBeforeCursor + textAfterCursor)
                     val newCursorPosition = newTextBeforeCursor.length
                     
                     _editState.value = editState.value.copy(
@@ -483,7 +485,7 @@ class NotesViewModel @Inject constructor(
                             expandedNoteId = -1, // Treat as new note but with external URI
                             externalUri = uri,
                             editingTitle = fileName,
-                            editingContent = TextFieldValue(MarkdownConverter.markdownToAnnotatedString(content)),
+                            editingContent = TextFieldValue(MarkdownEditorUtils.markdownToAnnotatedString(content)),
                             editingNoteType = NoteType.TEXT,
                             editingIsNewNote = true,
                             canUndo = false,
@@ -501,7 +503,7 @@ class NotesViewModel @Inject constructor(
                     val note = Note(
                         title = editState.value.editingTitle,
                         content = if (editState.value.editingNoteType == NoteType.TEXT || editState.value.editingNoteType == NoteType.MARKDOWN) {
-                            MarkdownConverter.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
+                            MarkdownEditorUtils.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
                         } else "",
                         createdAt = currentTime,
                         lastEdited = currentTime,
@@ -579,7 +581,7 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnRestoreVersion -> {
                 viewModelScope.launch {
-                    val content = MarkdownConverter.markdownToAnnotatedString(event.version.content)
+                    val content = MarkdownEditorUtils.markdownToAnnotatedString(event.version.content)
                     _editState.value = editState.value.copy(
                         editingTitle = event.version.title,
                         editingContent = TextFieldValue(content),
@@ -757,7 +759,7 @@ class NotesViewModel @Inject constructor(
                         val title = if (selectedNotes.size == 1) selectedNotes.first().note.title else "Multiple Notes"
                         val contentBuilder = StringBuilder()
                         selectedNotes.forEachIndexed { index, it ->
-                            contentBuilder.append("Title: ${it.note.title}\n\n${MarkdownConverter.markdownToPlainText(it.note.content)}")
+                            contentBuilder.append("Title: ${it.note.title}\n\n${MarkdownEditorUtils.markdownToPlainText(it.note.content)}")
                             if (index < selectedNotes.size - 1) {
                                 contentBuilder.append("\n\n---\n\n")
                             }
@@ -817,7 +819,7 @@ class NotesViewModel @Inject constructor(
                             }
 
                             val content = when (note.noteType) {
-                                NoteType.TEXT, NoteType.MARKDOWN -> MarkdownConverter.markdownToAnnotatedString(note.content)
+                                NoteType.TEXT, NoteType.MARKDOWN -> MarkdownEditorUtils.markdownToAnnotatedString(note.content)
                                 else -> AnnotatedString("")
                             }
                             
@@ -869,7 +871,7 @@ class NotesViewModel @Inject constructor(
                                 editingIsLocked = note.isLocked,
                                 serializedMarkdown = if (note.noteType == NoteType.MARKDOWN) note.content else "",
                                 checklistInputValues = checklist.associate { item ->
-                                    item.id to TextFieldValue(MarkdownConverter.markdownToAnnotatedString(item.text))
+                                    item.id to TextFieldValue(MarkdownEditorUtils.markdownToAnnotatedString(item.text))
                                 },
 
                                 editingReminderTime = note.reminderTime,
@@ -990,7 +992,7 @@ class NotesViewModel @Inject constructor(
                     val newContent = event.content
                     val oldContent = editState.value.editingContent
 
-                    val finalContent = MarkdownConverter.processContentChange(
+                    val finalContent = MarkdownEditorUtils.processContentChange(
                         oldContent,
                         newContent,
                         editState.value.activeStyles,
@@ -1029,7 +1031,7 @@ class NotesViewModel @Inject constructor(
                     )
 
                     viewModelScope.launch {
-                        val markdown = MarkdownConverter.annotatedStringToMarkdown(finalContent.annotatedString)
+                        val markdown = MarkdownEditorUtils.annotatedStringToMarkdown(finalContent.annotatedString)
                         savedStateHandle[KEY_EDITING_CONTENT] = markdown
                     }
                     updateSerializedMarkdownAsync(finalContent.annotatedString)
@@ -1077,7 +1079,7 @@ class NotesViewModel @Inject constructor(
                 
                 // Async update for persistence model
                 viewModelScope.launch {
-                    val updatedText = MarkdownConverter.annotatedStringToMarkdown(event.value.annotatedString)
+                    val updatedText = MarkdownEditorUtils.annotatedStringToMarkdown(event.value.annotatedString)
 
                     val updatedChecklist = editState.value.editingChecklist.map {
                         if (it.id == event.itemId) it.copy(text = updatedText) else it
@@ -1107,7 +1109,7 @@ class NotesViewModel @Inject constructor(
                     if (focusedId != null) {
                         val currentValue = editState.value.checklistInputValues[focusedId]
                         if (currentValue != null) {
-                             val result = MarkdownConverter.toggleStyle(
+                             val result = MarkdownEditorUtils.toggleStyle(
                                 currentValue,
                                 event.style,
                                 emptySet(), // We don't track activeStyles per item easily yet, relies on result
@@ -1122,7 +1124,7 @@ class NotesViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    val result = MarkdownConverter.toggleStyle(
+                    val result = MarkdownEditorUtils.toggleStyle(
                     editState.value.editingContent,
                     event.style,
                     editState.value.activeStyles,
@@ -1153,7 +1155,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ApplyBulletedList -> {
-                val updatedContent = MarkdownConverter.toggleBulletedList(editState.value.editingContent)
+                val updatedContent = MarkdownEditorUtils.toggleBulletedList(editState.value.editingContent)
                 undoRedoManager.addState(editState.value.editingTitle to updatedContent)
                 _editState.value = editState.value.copy(
                     editingContent = updatedContent,
@@ -1164,13 +1166,13 @@ class NotesViewModel @Inject constructor(
                 scheduleAutoSave()
             }
             is NotesEvent.ApplyHeadingStyle -> {
-                val updatedContent = MarkdownConverter.applyHeading(editState.value.editingContent, event.level)
+                val updatedContent = MarkdownEditorUtils.applyHeading(editState.value.editingContent, event.level)
 
                 if (updatedContent == null) {
                     // Selection is collapsed, update active styles for future typing
                     val newActiveStyles = mutableSetOf<SpanStyle>()
                     if (event.level != 0) {
-                        newActiveStyles.add(MarkdownConverter.getHeadingStyle(event.level))
+                        newActiveStyles.add(MarkdownEditorUtils.getHeadingStyle(event.level))
                     }
                     _editState.value = editState.value.copy(
                         activeHeadingStyle = event.level,
@@ -1554,7 +1556,7 @@ class NotesViewModel @Inject constructor(
                                     (if (it.isChecked) "- [x] " else "- [ ] ") + it.text 
                                 }
                             } else {
-                                MarkdownConverter.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
+                                MarkdownEditorUtils.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
                             }
                         } else {
                             // TXT (Plain Text)
@@ -1655,7 +1657,7 @@ class NotesViewModel @Inject constructor(
         val title = editState.value.editingTitle
         val content = when (editState.value.editingNoteType) {
             NoteType.TEXT, NoteType.MARKDOWN -> {
-                MarkdownConverter.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
+                MarkdownEditorUtils.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
             }
             else -> ""
         }

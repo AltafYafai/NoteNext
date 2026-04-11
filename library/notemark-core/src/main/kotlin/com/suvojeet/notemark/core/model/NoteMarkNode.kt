@@ -95,6 +95,13 @@ data class ItalicNode(
 ) : InlineNode()
 
 /**
+ * Represents underlined text (__u__underline__u__).
+ */
+data class UnderlineNode(
+    override val children: List<InlineNode>
+) : InlineNode()
+
+/**
  * Represents inline code (`code`).
  */
 data class InlineCodeNode(val code: String) : InlineNode() {

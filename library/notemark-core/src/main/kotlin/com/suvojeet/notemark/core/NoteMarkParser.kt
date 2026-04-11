@@ -75,6 +75,7 @@ object NoteMarkParser {
         
         val boldRegex = "(\\s|^)(\\*\\*|__)(.*?)\\2".toRegex()
         val italicRegex = "(\\s|^)(\\*|_)(.*?)\\2".toRegex()
+        val underlineRegex = "__u__(.*?)__u__".toRegex()
         val linkRegex = "\\[(.*?)\\]\\((.*?)\\)".toRegex()
         val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
         val inlineCodeRegex = "`(.*?)`".toRegex()
@@ -82,6 +83,7 @@ object NoteMarkParser {
         var lastIndex = 0
         val allMatches = (boldRegex.findAll(text) + 
                           italicRegex.findAll(text) + 
+                          underlineRegex.findAll(text) +
                           linkRegex.findAll(text) + 
                           wikiLinkRegex.findAll(text) +
                           inlineCodeRegex.findAll(text))
@@ -102,6 +104,10 @@ object NoteMarkParser {
                     matchValue.startsWith("*") || matchValue.startsWith("_") || matchValue.trim().startsWith("*") -> {
                         val content = match.groupValues[3]
                         nodes.add(ItalicNode(parseInline(content)))
+                    }
+                    matchValue.startsWith("__u__") -> {
+                        val content = match.groupValues[1]
+                        nodes.add(UnderlineNode(parseInline(content)))
                     }
                     matchValue.startsWith("[[") -> {
                         nodes.add(WikiLinkNode(match.groupValues[1]))

@@ -155,6 +155,11 @@ internal fun renderInlines(inlines: List<InlineNode>): AnnotatedString {
                         append(renderInlines(inline.children))
                     }
                 }
+                is UnderlineNode -> {
+                    withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                        append(renderInlines(inline.children))
+                    }
+                }
                 is InlineCodeNode -> {
                     withStyle(
                         SpanStyle(

@@ -6,8 +6,8 @@
 
 The library is split into two modules to ensure maximum flexibility:
 
-1.  **`notemark-core`**: A pure Kotlin/JVM module. It contains the Lexer, Parser, and Abstract Syntax Tree (AST). It has zero dependencies on Android or UI frameworks.
-2.  **`notemark-compose`**: An Android library that provides Jetpack Compose components to render the AST into beautiful UI.
+1.  **`notemark-core`**: A pure Kotlin/JVM module. It contains the Lexer, Parser, Abstract Syntax Tree (AST), and **Exporter**. It has zero dependencies on Android or UI frameworks.
+2.  **`notemark-compose`**: An Android library providing Jetpack Compose components to render the AST and **Editor Utilities** for WYSIWYG-style Markdown editing.
 
 ---
 
@@ -20,14 +20,13 @@ Add the modules to your `settings.gradle.kts`:
 ```kotlin
 include(":notemark-core")
 include(":notemark-compose")
-project(":notemark-core").projectDir = file("library/notemark-core")
-project(":notemark-compose").projectDir = file("library/notemark-compose")
 ```
 
 Add the dependency to your app's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
+    implementation(project(":notemark-core"))
     implementation(project(":notemark-compose"))
 }
 ```
@@ -51,18 +50,46 @@ fun MyNoteScreen(content: String) {
 }
 ```
 
-### 3. Advanced Usage (Core Parser)
+### 3. Advanced Usage (Editor Utilities)
 
-If you only need to parse text (e.g., for background processing or indexing):
+`NoteMark` provides powerful utilities for building a WYSIWYG Markdown editor using Compose's `TextFieldValue`.
+
+```kotlin
+import com.suvojeet.notemark.compose.MarkdownEditorUtils
+
+// Convert Markdown string to Styled AnnotatedString for TextField
+val annotatedString = MarkdownEditorUtils.markdownToAnnotatedString("# Hello World")
+
+// Apply Bold to current selection
+val result = MarkdownEditorUtils.toggleStyle(
+    content = textFieldValue,
+    styleToToggle = SpanStyle(fontWeight = FontWeight.Bold),
+    currentActiveStyles = activeStyles,
+    isBoldActive = isBoldActive,
+    isItalicActive = false,
+    isUnderlineActive = false
+)
+
+// Convert Styled AnnotatedString back to Markdown for saving
+val markdown = MarkdownEditorUtils.annotatedStringToMarkdown(textFieldValue.annotatedString)
+```
+
+### 4. Core Parser & Exporter
+
+If you only need to work with the Abstract Syntax Tree (AST):
 
 ```kotlin
 import com.suvojeet.notemark.core.NoteMarkParser
+import com.suvojeet.notemark.core.NoteMarkExporter
 
-val document = NoteMarkParser.parse("# My Header\nThis is a paragraph.")
-// Access the AST nodes
-document.children.forEach { block ->
-    println(block)
-}
+// Parse Markdown to AST
+val document = NoteMarkParser.parse("# Header\nContent")
+
+// Modify AST (e.g., add a node)
+// ...
+
+// Export AST back to Markdown string
+val markdown = NoteMarkExporter.export(document)
 ```
 
 ---
@@ -73,6 +100,7 @@ document.children.forEach { block ->
 | :--- | :--- | :--- |
 | **Headers** | `# H1` ... `###### H6` | ✅ Full |
 | **Emphasis** | `**Bold**`, `*Italic*` | ✅ Full |
+| **Underline** | `__u__Underline__u__` | ✅ Custom |
 | **Blockquotes** | `> Quote` | ✅ Basic |
 | **Code Blocks** | ` ```kotlin ... ``` ` | ✅ Highlighted Background |
 | **Inline Code** | `` `code` `` | ✅ Themed |
