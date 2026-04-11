@@ -306,7 +306,9 @@ object MarkdownEditorUtils {
             append(oldContent.annotatedString.subSequence(suffixStart, suffixEnd))
         }
 
-        return markdownToAnnotatedString(newAnnotatedString.text).let {
+        // Convert the styled string to markdown first, then re-parse to ensure all tags are in sync
+        val markdown = annotatedStringToMarkdown(newAnnotatedString)
+        return markdownToAnnotatedString(markdown).let {
             fixedNewContent.copy(annotatedString = it)
         }
     }
