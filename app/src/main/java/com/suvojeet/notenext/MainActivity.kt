@@ -164,7 +164,7 @@ class MainActivity : FragmentActivity() {
                 ThemeMode.AMOLED -> true
             }
 
-            LaunchedEffect(darkTheme) {
+            androidx.compose.runtime.LaunchedEffect(darkTheme) {
                 enableEdgeToEdge(
                     statusBarStyle = androidx.activity.SystemBarStyle.auto(
                         android.graphics.Color.TRANSPARENT,
@@ -175,6 +175,9 @@ class MainActivity : FragmentActivity() {
                         android.graphics.Color.TRANSPARENT,
                     ) { darkTheme }
                 )
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
             }
 
             val enableAppLockLoaded by _enableAppLockLoaded.collectAsStateWithLifecycle()
