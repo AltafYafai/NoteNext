@@ -530,41 +530,12 @@ class ProjectNotesViewModel @Inject constructor(
                     val newContent = event.content
                     val oldContent = state.value.editingContent
 
-                    val finalContent = if (newContent.text != oldContent.text) {
-                        val oldText = oldContent.text
-                        val newText = newContent.text
-
-                        // 1. Find common prefix
-                        val prefixLength = commonPrefixWith(oldText, newText).length
-
-                        // 2. Find common suffix of the remainder of the strings
-                        val oldRemainder = oldText.substring(prefixLength)
-                        val newRemainder = newText.substring(prefixLength)
-                        val suffixLength = commonSuffixWith(oldRemainder, newRemainder).length
-
-                        // 3. Determine the middle (changed) part of the new text
-                        val newChangedPart = newRemainder.substring(0, newRemainder.length - suffixLength)
-
-                        val newAnnotatedString = buildAnnotatedString {
-                            // Append the styled prefix from the original string
-                            append(oldContent.annotatedString.subSequence(0, prefixLength))
-
-                            // Append the newly typed text with the active styles
-                            val styleToApply = state.value.activeStyles.reduceOrNull { a, b -> a.merge(b) } ?: SpanStyle()
-                            withStyle(styleToApply) {
-                                append(newChangedPart)
-                            }
-
-                            // Append the styled suffix from the original string
-                            append(oldContent.annotatedString.subSequence(oldText.length - suffixLength, oldText.length))
-                        }
-                        newContent.copy(annotatedString = newAnnotatedString)
-                    } else {
-                        // When only the selection changes, trust the old AnnotatedString from our state
-                        // and just update the selection from the new value. This prevents the TextField
-                        // from stripping styles on selection/deselection.
-                        oldContent.copy(selection = newContent.selection)
-                    }
+                    val finalContent = MarkdownEditorUtils.processContentChange(
+                        oldContent,
+                        newContent,
+                        state.value.activeStyles,
+                        state.value.activeHeadingStyle
+                    )
 
                     val selection = finalContent.selection
                     val styles = if (selection.collapsed) {

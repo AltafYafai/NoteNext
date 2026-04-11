@@ -19,8 +19,6 @@ import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notemark.compose.MarkdownEditorUtils
-import com.suvojeet.notemark.core.NoteMarkExporter
-import com.suvojeet.notemark.core.NoteMarkParser
 import com.suvojeet.notenext.core.util.ImageUtils
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.LinkPreviewRepository
