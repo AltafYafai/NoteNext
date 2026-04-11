@@ -39,7 +39,7 @@ abstract class NoteDatabase : RoomDatabase() {
                         val html = cursor.getString(cursor.getColumnIndexOrThrow("content"))
                         if (html.isNotBlank() && (html.contains("<") || html.contains("&"))) {
                             val markdown = convertHtmlToMarkdown(html)
-                            db.execSQL("UPDATE notes SET content = ? WHERE id = ?", arrayOf(markdown, id))
+                            db.execSQL("UPDATE notes SET content = ? WHERE id = ?", arrayOf<Any>(markdown, id))
                         }
                     } while (cursor.moveToNext())
                 }
@@ -53,7 +53,7 @@ abstract class NoteDatabase : RoomDatabase() {
                         val html = versionCursor.getString(versionCursor.getColumnIndexOrThrow("content"))
                         if (html.isNotBlank() && (html.contains("<") || html.contains("&"))) {
                             val markdown = convertHtmlToMarkdown(html)
-                            db.execSQL("UPDATE note_versions SET content = ? WHERE id = ?", arrayOf(markdown, id))
+                            db.execSQL("UPDATE note_versions SET content = ? WHERE id = ?", arrayOf<Any>(markdown, id))
                         }
                     } while (versionCursor.moveToNext())
                 }
