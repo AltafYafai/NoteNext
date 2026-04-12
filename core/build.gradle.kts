@@ -59,4 +59,11 @@ dependencies {
     
     // Gson
     implementation(libs.gson)
+
+    // Markdown (CommonMark)
+    implementation(libs.commonmark)
+    implementation(libs.commonmark.ext.gfm.tables)
+    implementation(libs.commonmark.ext.gfm.strikethrough)
+    implementation(libs.commonmark.ext.autolink)
+    implementation(libs.commonmark.ext.ins)
 }

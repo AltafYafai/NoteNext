@@ -14,9 +14,15 @@ import javax.inject.Inject
 
 import androidx.compose.ui.graphics.Color
 
+import com.suvojeet.notenext.util.MarkdownParser
+
 class RichTextController @Inject constructor() {
 
-    private val WikiLinkStyle = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)
+    private val WikiLinkStyle = SpanStyle(
+        color = Color(0xFFD0BCFF), // Light Purple
+        textDecoration = TextDecoration.Underline,
+        fontWeight = FontWeight.Medium
+    )
 
     fun getHeadingStyle(level: Int): SpanStyle {
         return when (level) {
@@ -40,69 +46,10 @@ class RichTextController @Inject constructor() {
             return oldContent.copy(selection = newContent.selection)
         }
 
-        val oldText = oldContent.text
-        val newText = newContent.text
-
-        val prefixLength = commonPrefixWith(oldText, newText).length
-        val oldRemainder = oldText.substring(prefixLength)
-        val newRemainder = newText.substring(prefixLength)
-        val suffixLength = commonSuffixWith(oldRemainder, newRemainder).length
-        val newChangedPart = newRemainder.substring(0, newRemainder.length - suffixLength)
-
-        val newAnnotatedString = buildAnnotatedString {
-            append(oldContent.annotatedString.subSequence(0, prefixLength))
-
-            val headingSpanStyle = getHeadingStyle(activeHeadingStyle)
-            val styleToApply = (activeStyles + headingSpanStyle).reduceOrNull { a, b -> a.merge(b) } ?: SpanStyle()
-
-            withStyle(styleToApply) {
-                append(newChangedPart)
-            }
-
-            append(oldContent.annotatedString.subSequence(oldText.length - suffixLength, oldText.length))
-        }
+        // Re-parse the entire text with MarkdownParser for real-time syntax highlighting
+        val highlightedAnnotatedString = MarkdownParser.toAnnotatedString(newContent.text)
         
-        return reapplyWikiLinks(newContent.copy(annotatedString = newAnnotatedString))
-    }
-
-    private fun reapplyWikiLinks(content: TextFieldValue): TextFieldValue {
-        val text = content.text
-        val styles = content.annotatedString.spanStyles
-        
-        // Find existing NOTE_LINK annotations to identify which styles to remove
-        val oldLinkAnnotations = content.annotatedString.getStringAnnotations("NOTE_LINK", 0, text.length)
-        
-        // Filter out styles that exactly match the WikiLinkStyle and overlap with old link annotations
-        val cleanedStyles = styles.filterNot { styleRange ->
-            oldLinkAnnotations.any { linkRange ->
-                linkRange.start == styleRange.start && linkRange.end == styleRange.end && styleRange.item == WikiLinkStyle
-            }
-        }
-        
-        // Filter out existing NOTE_LINK annotations
-        val cleanedAnnotations = content.annotatedString.getStringAnnotations(0, text.length).filter { it.tag != "NOTE_LINK" }
-
-        val builder = AnnotatedString.Builder(text)
-        
-        // Add back preserved styles
-        cleanedStyles.forEach { builder.addStyle(it.item, it.start, it.end) }
-        
-        // Add back preserved annotations
-        cleanedAnnotations.forEach { builder.addStringAnnotation(it.tag, it.item, it.start, it.end) }
-
-        // Find and apply new Wiki Links
-        val regex = "\\[\\[(.*?)\\]\\]".toRegex()
-        regex.findAll(text).forEach { matchResult ->
-            val start = matchResult.range.first
-            val end = matchResult.range.last + 1
-            val title = matchResult.groupValues[1]
-            if (title.isNotBlank()) {
-                builder.addStringAnnotation("NOTE_LINK", title, start, end)
-                builder.addStyle(WikiLinkStyle, start, end)
-            }
-        }
-
-        return content.copy(annotatedString = builder.toAnnotatedString())
+        return newContent.copy(annotatedString = highlightedAnnotatedString)
     }
 
     data class StyleToggleResult(
@@ -258,69 +205,6 @@ class RichTextController @Inject constructor() {
     }
 
     fun parseMarkdownToAnnotatedString(text: String): AnnotatedString {
-        return buildAnnotatedString {
-            var currentText = text
-
-            // Match bold **text** or __text__
-            val boldRegex = "(\\s|^)(\\*\\*|__)(.*?)\\2".toRegex()
-            // Match italic *text* or _text_
-            val italicRegex = "(\\s|^)(\\*|_)(.*?)\\2".toRegex()
-            // Match links [text](url)
-            val linkRegex = "\\[(.*?)\\]\\((.*?)\\)".toRegex()
-            // Match wiki links [[text]]
-            val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
-
-            var lastIndex = 0
-            val allMatches = (boldRegex.findAll(text) + italicRegex.findAll(text) + linkRegex.findAll(text) + wikiLinkRegex.findAll(text))
-                .sortedBy { it.range.first }
-
-            allMatches.forEach { match ->
-                if (match.range.first >= lastIndex) {
-                    append(text.substring(lastIndex, match.range.first))
-
-                    when {
-                        match.value.startsWith("**") || match.value.startsWith("__") || (match.value.trim().startsWith("**")) -> {
-                            val content = match.groupValues[3]
-                            // preserve prefix space if any
-                            val prefix = match.groupValues[1]
-                            append(prefix)
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(content)
-                            }
-                        }
-                        match.value.startsWith("*") || match.value.startsWith("_") || (match.value.trim().startsWith("*")) -> {
-                            val content = match.groupValues[3]
-                            val prefix = match.groupValues[1]
-                            append(prefix)
-                            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                append(content)
-                            }
-                        }
-                        match.value.startsWith("[[") -> {
-                            val linkText = match.groupValues[1]
-                            pushStringAnnotation(tag = "NOTE_LINK", annotation = linkText)
-                            withStyle(WikiLinkStyle) {
-                                append(linkText)
-                            }
-                            pop()
-                        }
-                        match.value.startsWith("[") -> {
-                            val linkText = match.groupValues[1]
-                            val url = match.groupValues[2]
-                            pushStringAnnotation(tag = "URL", annotation = url)
-                            withStyle(SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)) {
-                                append(linkText)
-                            }
-                            pop()
-                        }
-                    }
-                    lastIndex = match.range.last + 1
-                }
-            }
-
-            if (lastIndex < text.length) {
-                append(text.substring(lastIndex))
-            }
-        }
+        return MarkdownParser.toAnnotatedString(text)
     }
 }
