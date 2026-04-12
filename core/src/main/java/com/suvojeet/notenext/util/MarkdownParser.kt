@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import org.commonmark.ext.autolink.AutolinkExtension
 import org.commonmark.ext.gfm.strikethrough.Strikethrough
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
@@ -166,7 +167,7 @@ object MarkdownParser {
                 6 -> 12
                 else -> 16
             }
-            builder.withStyle(SpanStyle(fontSize = fontSize.times(1).let { androidx.compose.ui.unit.sp }, fontWeight = FontWeight.Bold)) {
+            builder.withStyle(SpanStyle(fontSize = fontSize.sp, fontWeight = FontWeight.Bold)) {
                 visitChildren(heading)
             }
             builder.append("\n")
