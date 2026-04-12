@@ -18,6 +18,7 @@ import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notenext.data.LinkPreviewRepository
+import com.suvojeet.notenext.core.markdown.MarkdownConverter
 import com.suvojeet.notenext.data.ProjectDao
 import com.suvojeet.notenext.data.SortType
 import com.suvojeet.notenext.data.AlarmScheduler
@@ -915,7 +916,7 @@ class ProjectNotesViewModel @Inject constructor(
 
                     val title = state.value.editingTitle
                     val content = if (state.value.editingNoteType == NoteType.TEXT) {
-                        state.value.editingContent.text
+                        MarkdownConverter.fromAnnotatedString(state.value.editingContent.annotatedString)
                     } else {
                         ""
                     }

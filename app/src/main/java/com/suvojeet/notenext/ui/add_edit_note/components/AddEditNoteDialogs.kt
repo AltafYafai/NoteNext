@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import com.suvojeet.notenext.core.markdown.MarkdownConverter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
@@ -106,7 +107,7 @@ fun AddEditNoteDialogs(
                     val fullHtml = NoteHtmlGenerator.generateNoteHtml(
                         context,
                         state.editingTitle,
-                        state.editingContent.text,
+                        MarkdownConverter.fromAnnotatedString(state.editingContent.annotatedString),
                         state.editingAttachments
                     )
                     printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })

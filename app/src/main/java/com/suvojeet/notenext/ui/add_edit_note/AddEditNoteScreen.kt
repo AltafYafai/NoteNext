@@ -53,6 +53,7 @@ import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
 import com.suvojeet.notenext.ui.notes.NotesState
 import com.suvojeet.notenext.core.model.NoteType
+import com.suvojeet.notenext.core.markdown.MarkdownConverter
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
 import com.suvojeet.notenext.ui.theme.ThemeMode
@@ -620,14 +621,14 @@ fun AddEditNoteScreen(
         scope = scope,
         onSaveAsPdf = {
             scope.launch {
-                val fullHtml = com.suvojeet.notenext.util.NoteHtmlGenerator.generateNoteHtml(
-                    context,
-                    state.editingTitle,
-                    state.editingContent.text,
-                    state.editingAttachments
-                )
+                 val fullHtml = com.suvojeet.notenext.util.NoteHtmlGenerator.generateNoteHtml(
+                     context,
+                     state.editingTitle,
+                     MarkdownConverter.fromAnnotatedString(state.editingContent.annotatedString),
+                     state.editingAttachments
+                 )
 
-                com.suvojeet.notenext.util.printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })
+                 com.suvojeet.notenext.util.printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })
             }
         },
         onSaveAsTxt = {

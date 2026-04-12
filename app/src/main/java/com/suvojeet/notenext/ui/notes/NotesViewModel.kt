@@ -18,6 +18,7 @@ import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
 import com.suvojeet.notenext.core.util.ImageUtils
+import com.suvojeet.notenext.core.markdown.MarkdownConverter
 import com.suvojeet.notenext.data.LinkPreview
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.Project
@@ -492,7 +493,7 @@ class NotesViewModel @Inject constructor(
                     val note = Note(
                         title = editState.value.editingTitle,
                         content = if (editState.value.editingNoteType == NoteType.TEXT) {
-                            editState.value.editingContent.text
+                            MarkdownConverter.fromAnnotatedString(editState.value.editingContent.annotatedString)
                         } else "",
                         createdAt = currentTime,
                         lastEdited = currentTime,
@@ -1019,7 +1020,7 @@ class NotesViewModel @Inject constructor(
                     )
 
                     viewModelScope.launch {
-                        savedStateHandle[KEY_EDITING_CONTENT] = finalContent.text
+                        savedStateHandle[KEY_EDITING_CONTENT] = MarkdownConverter.fromAnnotatedString(finalContent.annotatedString)
                     }
 
                     if (textChanged) {
@@ -1537,7 +1538,7 @@ class NotesViewModel @Inject constructor(
                                     (if (it.isChecked) "- [x] " else "- [ ] ") + it.text 
                                 }
                             } else {
-                                editState.value.editingContent.text
+                                MarkdownConverter.fromAnnotatedString(editState.value.editingContent.annotatedString)
                             }
                         } else {
                             // TXT (Plain Text)
@@ -1627,7 +1628,7 @@ class NotesViewModel @Inject constructor(
 
         val title = editState.value.editingTitle
         val content = if (editState.value.editingNoteType == NoteType.TEXT) {
-            editState.value.editingContent.text
+            MarkdownConverter.fromAnnotatedString(editState.value.editingContent.annotatedString)
         } else {
             ""
         }
