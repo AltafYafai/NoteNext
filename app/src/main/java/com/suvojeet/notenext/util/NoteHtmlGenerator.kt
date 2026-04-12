@@ -5,23 +5,27 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
-import androidx.compose.ui.text.AnnotatedString
 import com.suvojeet.notenext.data.Attachment
 import com.suvojeet.notenext.core.model.AttachmentType
-import com.suvojeet.notenext.util.HtmlConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.commonmark.parser.Parser
+import org.commonmark.renderer.html.HtmlRenderer
 import java.io.ByteArrayOutputStream
 
 object NoteHtmlGenerator {
 
+    private val parser = Parser.builder().build()
+    private val renderer = HtmlRenderer.builder().build()
+
     suspend fun generateNoteHtml(
         context: Context,
         title: String,
-        content: AnnotatedString,
+        content: String,
         attachments: List<Attachment>
     ): String = withContext(Dispatchers.IO) {
-        val contentHtml = HtmlConverter.annotatedStringToHtml(content)
+        val document = parser.parse(content)
+        val contentHtml = renderer.render(document)
         val attachmentsHtml = attachments
             .filter { it.type == AttachmentType.IMAGE }
             .joinToString("<br>") { attachment ->

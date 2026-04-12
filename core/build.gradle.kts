@@ -1,7 +1,9 @@
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -59,4 +61,16 @@ dependencies {
     
     // Gson
     implementation(libs.gson)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+
+    // Markwon
+    api(libs.markwon.core)
+    api(libs.markwon.ext.strikethrough)
+    api(libs.markwon.ext.tables)
+    api(libs.markwon.ext.tasklist)
+    api(libs.markwon.linkify)
+    api(libs.markwon.html)
 }

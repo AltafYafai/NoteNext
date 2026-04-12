@@ -7,7 +7,7 @@ import android.widget.RemoteViewsService
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteRepository
-import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.core.markdown.MarkwonAnnotatedStringBridge
 import com.suvojeet.notenext.core.model.NoteType
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
@@ -21,14 +21,18 @@ class NoteWidgetService : RemoteViewsService() {
     @Inject
     lateinit var repository: NoteRepository
 
+    @Inject
+    lateinit var markdownBridge: MarkwonAnnotatedStringBridge
+
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return NoteWidgetRemoteViewsFactory(this.applicationContext, repository)
+        return NoteWidgetRemoteViewsFactory(this.applicationContext, repository, markdownBridge)
     }
 }
 
 class NoteWidgetRemoteViewsFactory(
     private val context: Context,
-    private val repository: NoteRepository
+    private val repository: NoteRepository,
+    private val bridge: MarkwonAnnotatedStringBridge
 ) : RemoteViewsService.RemoteViewsFactory {
 
     private var notes: List<Note> = emptyList()
@@ -51,7 +55,7 @@ class NoteWidgetRemoteViewsFactory(
                         val content = if (note.noteType == NoteType.CHECKLIST) {
                             "Checklist..."
                         } else {
-                            HtmlConverter.htmlToPlainText(note.content)
+                            bridge.toPlainText(note.content)
                         }
                         note.id to content
                     }

@@ -45,6 +45,8 @@ import com.suvojeet.notenext.util.UpdateChecker
 import com.suvojeet.notenext.util.ReviewManager
 import androidx.compose.ui.res.stringResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import com.suvojeet.notenext.core.markdown.LocalMarkwon
+import io.noties.markwon.Markwon
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 
@@ -53,6 +55,9 @@ class MainActivity : FragmentActivity() {
 
     @Inject
     lateinit var settingsRepository: SettingsRepository
+
+    @Inject
+    lateinit var markwon: Markwon
 
     private val _startNoteIdFlow = MutableStateFlow(-1)
     private val _startAddNoteFlow = MutableStateFlow(false)
@@ -229,11 +234,12 @@ class MainActivity : FragmentActivity() {
             }
 
             NoteNextTheme(themeMode = themeMode) {
-                Scaffold(
-                    snackbarHost = { SnackbarHost(snackbarHostState) },
-                    modifier = Modifier.fillMaxSize(),
-                    contentWindowInsets = WindowInsets(0, 0, 0, 0)
-                ) { paddingValues ->
+                androidx.compose.runtime.CompositionLocalProvider(LocalMarkwon provides markwon) {
+                    Scaffold(
+                        snackbarHost = { SnackbarHost(snackbarHostState) },
+                        modifier = Modifier.fillMaxSize(),
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+                    ) { paddingValues ->
                     Surface(
                         modifier = Modifier
                             .fillMaxSize(),
@@ -285,6 +291,7 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
+}
 
     private fun handleIntent(intent: Intent) {
         val noteId = intent.getIntExtra("NOTE_ID", -1)

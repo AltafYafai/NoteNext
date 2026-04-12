@@ -14,6 +14,7 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.AlarmScheduler
 import com.suvojeet.notenext.data.NoteRepository
 import com.suvojeet.notenext.data.RepeatOption
+import com.suvojeet.notenext.core.markdown.MarkwonAnnotatedStringBridge
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +32,9 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
 
     @Inject
     lateinit var alarmScheduler: AlarmScheduler
+
+    @Inject
+    lateinit var markdownBridge: MarkwonAnnotatedStringBridge
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val pendingResult = goAsync()
@@ -55,7 +59,7 @@ class ReminderBroadcastReceiver : BroadcastReceiver() {
                         val noteContent = intent?.getStringExtra("NOTE_CONTENT") ?: ""
 
                         // Show Notification
-                        val plainTextContent = HtmlConverter.htmlToPlainText(noteContent)
+                        val plainTextContent = markdownBridge.toPlainText(noteContent)
                         val truncatedContent = if (plainTextContent.length > 150) {
                             plainTextContent.substring(0, 150) + "..."
                         } else {

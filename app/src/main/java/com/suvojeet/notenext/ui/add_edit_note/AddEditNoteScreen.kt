@@ -623,9 +623,10 @@ fun AddEditNoteScreen(
                 val fullHtml = com.suvojeet.notenext.util.NoteHtmlGenerator.generateNoteHtml(
                     context,
                     state.editingTitle,
-                    state.editingContent.annotatedString,
+                    state.editingContent.text,
                     state.editingAttachments
                 )
+
                 com.suvojeet.notenext.util.printNote(context, fullHtml, state.editingTitle.ifBlank { "Note Document" })
             }
         },

@@ -13,9 +13,11 @@ import androidx.compose.ui.unit.sp
 import javax.inject.Inject
 
 import androidx.compose.ui.graphics.Color
+import com.suvojeet.notenext.core.markdown.MarkwonAnnotatedStringBridge
 
 class RichTextController @Inject constructor() {
 
+    private val markdownBridge = MarkwonAnnotatedStringBridge()
     private val WikiLinkStyle = SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)
 
     fun getHeadingStyle(level: Int): SpanStyle {
@@ -258,69 +260,10 @@ class RichTextController @Inject constructor() {
     }
 
     fun parseMarkdownToAnnotatedString(text: String): AnnotatedString {
-        return buildAnnotatedString {
-            var currentText = text
+        return markdownBridge.parse(text)
+    }
 
-            // Match bold **text** or __text__
-            val boldRegex = "(\\s|^)(\\*\\*|__)(.*?)\\2".toRegex()
-            // Match italic *text* or _text_
-            val italicRegex = "(\\s|^)(\\*|_)(.*?)\\2".toRegex()
-            // Match links [text](url)
-            val linkRegex = "\\[(.*?)\\]\\((.*?)\\)".toRegex()
-            // Match wiki links [[text]]
-            val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
-
-            var lastIndex = 0
-            val allMatches = (boldRegex.findAll(text) + italicRegex.findAll(text) + linkRegex.findAll(text) + wikiLinkRegex.findAll(text))
-                .sortedBy { it.range.first }
-
-            allMatches.forEach { match ->
-                if (match.range.first >= lastIndex) {
-                    append(text.substring(lastIndex, match.range.first))
-
-                    when {
-                        match.value.startsWith("**") || match.value.startsWith("__") || (match.value.trim().startsWith("**")) -> {
-                            val content = match.groupValues[3]
-                            // preserve prefix space if any
-                            val prefix = match.groupValues[1]
-                            append(prefix)
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(content)
-                            }
-                        }
-                        match.value.startsWith("*") || match.value.startsWith("_") || (match.value.trim().startsWith("*")) -> {
-                            val content = match.groupValues[3]
-                            val prefix = match.groupValues[1]
-                            append(prefix)
-                            withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
-                                append(content)
-                            }
-                        }
-                        match.value.startsWith("[[") -> {
-                            val linkText = match.groupValues[1]
-                            pushStringAnnotation(tag = "NOTE_LINK", annotation = linkText)
-                            withStyle(WikiLinkStyle) {
-                                append(linkText)
-                            }
-                            pop()
-                        }
-                        match.value.startsWith("[") -> {
-                            val linkText = match.groupValues[1]
-                            val url = match.groupValues[2]
-                            pushStringAnnotation(tag = "URL", annotation = url)
-                            withStyle(SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)) {
-                                append(linkText)
-                            }
-                            pop()
-                        }
-                    }
-                    lastIndex = match.range.last + 1
-                }
-            }
-
-            if (lastIndex < text.length) {
-                append(text.substring(lastIndex))
-            }
-        }
+    fun toPlainText(markdown: String): String {
+        return markdownBridge.toPlainText(markdown)
     }
 }

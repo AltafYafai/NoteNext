@@ -17,7 +17,6 @@ import com.suvojeet.notenext.data.Label
 import com.suvojeet.notenext.data.LabelDao
 import com.suvojeet.notenext.data.Note
 import com.suvojeet.notenext.data.NoteDao
-import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.data.LinkPreviewRepository
 import com.suvojeet.notenext.data.ProjectDao
 import com.suvojeet.notenext.data.SortType
@@ -117,7 +116,7 @@ class ProjectNotesViewModel @Inject constructor(
         when (event) {
             is ProjectNotesEvent.OnRestoreVersion -> {
                 viewModelScope.launch {
-                    val content = HtmlConverter.htmlToAnnotatedString(event.version.content)
+                    val content = richTextController.parseMarkdownToAnnotatedString(event.version.content)
                     _state.value = state.value.copy(
                         editingTitle = event.version.title,
                         editingContent = TextFieldValue(content),
@@ -286,7 +285,7 @@ class ProjectNotesViewModel @Inject constructor(
                         val contentBuilder = StringBuilder()
                         selectedIds.forEachIndexed { index, id ->
                             repository.getNoteById(id)?.let { it ->
-                                contentBuilder.append("Title: ${it.note.title}\n\n${HtmlConverter.htmlToPlainText(it.note.content)}")
+                                contentBuilder.append("Title: ${it.note.title}\n\n${richTextController.toPlainText(it.note.content)}")
                                 if (index < selectedIds.size - 1) {
                                     contentBuilder.append("\n\n---\n\n")
                                 }
@@ -337,7 +336,7 @@ class ProjectNotesViewModel @Inject constructor(
                         repository.getNoteById(event.noteId)?.let { noteWithAttachments ->
                             val note = noteWithAttachments.note
                             val content = if (note.noteType == NoteType.TEXT) {
-                                HtmlConverter.htmlToAnnotatedString(note.content)
+                                richTextController.parseMarkdownToAnnotatedString(note.content)
                             } else {
                                 AnnotatedString("")
                             }
@@ -491,13 +490,12 @@ class ProjectNotesViewModel @Inject constructor(
                     isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                     isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline }
                 )
-                
-                // Sync text with persistence model (Markdown)
+                // Async update for persistence model
                 viewModelScope.launch {
-                    val updatedText = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString).let {
-                        com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
-                    }
+                    val updatedText = event.value.text
+
                     val updatedChecklist = state.value.editingChecklist.map {
+
                         if (it.id == event.itemId) it.copy(text = updatedText) else it
                     }
                     _state.value = state.value.copy(editingChecklist = updatedChecklist)
@@ -917,7 +915,7 @@ class ProjectNotesViewModel @Inject constructor(
 
                     val title = state.value.editingTitle
                     val content = if (state.value.editingNoteType == NoteType.TEXT) {
-                        HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString)
+                        state.value.editingContent.text
                     } else {
                         ""
                     }

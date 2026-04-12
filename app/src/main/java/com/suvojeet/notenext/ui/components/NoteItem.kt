@@ -34,7 +34,7 @@ import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.data.NoteSummaryWithAttachments
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.theme.NoteGradients
-import com.suvojeet.notenext.util.HtmlConverter
+import com.suvojeet.notenext.core.markdown.MarkwonAnnotatedStringBridge
 
 @Composable
 fun NoteItem(
@@ -47,7 +47,9 @@ fun NoteItem(
     binnedDaysRemaining: Int? = null,
     isDarkTheme: Boolean = isSystemInDarkTheme()
 ) {
+    val bridge = remember { MarkwonAnnotatedStringBridge() }
     val adaptiveColor = NoteGradients.getAdaptiveColor(note.note.color, isDarkTheme)
+
     val isDefaultColor = adaptiveColor == 0
 
     val contentColor = if (isDefaultColor) {
@@ -204,10 +206,8 @@ fun NoteItem(
                             val fontWeight = if (decryptedNote.title.isEmpty() && rawContentLength < 100) FontWeight.SemiBold else FontWeight.Normal
     
                             val annotatedContent = remember(decryptedNote.content) {
-                                // Strip HTML tags for preview and unescape entities
-                                val plainText = decryptedNote.content.replace(Regex("<[^>]*>"), "")
-                                val unescaped = androidx.core.text.HtmlCompat.fromHtml(plainText, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
-                                androidx.compose.ui.text.AnnotatedString(unescaped)
+                                val plainText = bridge.toPlainText(decryptedNote.content).trim()
+                                androidx.compose.ui.text.AnnotatedString(plainText)
                             }
 
                             val highlightedContent = if (searchQuery.isNotEmpty()) {
@@ -279,7 +279,7 @@ fun NoteItem(
                                 }
                             )
                         } else {
-                            ChecklistPreview(note.checklistItems, if (isDefaultColor) MaterialTheme.colorScheme.onSurface else contentColor, searchQuery)
+                            ChecklistPreview(note.checklistItems, if (isDefaultColor) MaterialTheme.colorScheme.onSurface else contentColor, searchQuery, bridge)
                         }
                     }
 
@@ -376,7 +376,7 @@ fun NoteItem(
 }
 
 @Composable
-private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: Color, searchQuery: String = "") {
+private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: Color, searchQuery: String = "", bridge: MarkwonAnnotatedStringBridge) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         checklistItems.take(5).forEach { item ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -389,7 +389,7 @@ private fun ChecklistPreview(checklistItems: List<ChecklistItem>, contentColor: 
                 Spacer(modifier = Modifier.width(8.dp))
                 
                 val unescapedItemText = remember(item.text) {
-                    androidx.core.text.HtmlCompat.fromHtml(item.text, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                    bridge.toPlainText(item.text).trim()
                 }
                 
                 val itemText = if (searchQuery.isNotEmpty()) {

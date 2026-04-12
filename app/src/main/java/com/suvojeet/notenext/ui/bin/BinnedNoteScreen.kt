@@ -29,11 +29,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.suvojeet.notenext.util.HtmlConverter
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.core.model.AttachmentType
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
+import com.suvojeet.notenext.ui.components.MarkdownText
 
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.heightIn
@@ -58,10 +58,6 @@ fun BinnedNoteScreen(
         val adaptiveColor = NoteGradients.getAdaptiveColor(note.color, isDark)
         val backgroundColor = if (adaptiveColor != 0) Color(adaptiveColor) else MaterialTheme.colorScheme.surface
         val contentColor = if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else MaterialTheme.colorScheme.onSurface
-
-        val annotatedContent = produceState<AnnotatedString>(initialValue = AnnotatedString(""), note.content) {
-            value = HtmlConverter.htmlToAnnotatedString(note.content)
-        }
         
         Scaffold(
             topBar = {
@@ -119,10 +115,9 @@ fun BinnedNoteScreen(
                                 }
                             }
                         } else {
-                            Text(
-                                text = annotatedContent.value,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = contentColor
+                            MarkdownText(
+                                markdown = note.content,
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
 

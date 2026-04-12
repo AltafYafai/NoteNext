@@ -68,6 +68,9 @@ play-review               = "2.0.2"
 # ── ACRA ────────────────────────────────────────────────────────
 acra = "5.13.1"
 
+# ── Markwon ─────────────────────────────────────────────────────
+markwon = "4.6.2"
+
 # ── Testing ─────────────────────────────────────────────────────
 junit       = "4.13.2"
 junit-ext   = "1.2.1"
@@ -164,6 +167,14 @@ billing = { group = "com.android.billingclient", name = "billing-ktx", version.r
 play-review = { group = "com.google.android.play", name = "review", version.ref = "play-review" }
 play-review-ktx = { group = "com.google.android.play", name = "review-ktx", version.ref = "play-review" }
 
+
+# Markwon
+markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
+markwon-ext-strikethrough = { group = "io.noties.markwon", name = "ext-strikethrough", version.ref = "markwon" }
+markwon-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version.ref = "markwon" }
+markwon-ext-tasklist = { group = "io.noties.markwon", name = "ext-tasklist", version.ref = "markwon" }
+markwon-linkify = { group = "io.noties.markwon", name = "linkify", version.ref = "markwon" }
+markwon-html = { group = "io.noties.markwon", name = "html", version.ref = "markwon" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

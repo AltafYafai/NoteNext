@@ -15,13 +15,10 @@ import android.text.TextPaint
 import androidx.core.app.NotificationCompat
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.core.model.AttachmentType
+import com.suvojeet.notenext.core.markdown.MarkwonAnnotatedStringBridge
 import java.io.IOException
 
-import com.suvojeet.notenext.util.HtmlConverter
-import com.suvojeet.notenext.data.MarkdownExporter
-import androidx.compose.ui.text.AnnotatedString
-
-suspend fun saveAsMd(context: Context, title: String, content: AnnotatedString, checklist: List<ChecklistItem> = emptyList()) {
+suspend fun saveAsMd(context: Context, title: String, content: String, checklist: List<ChecklistItem> = emptyList()) {
     val contentResolver = context.contentResolver
     val contentValues = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, "${title.ifBlank { "Untitled" }}.md")
@@ -41,9 +38,7 @@ suspend fun saveAsMd(context: Context, title: String, content: AnnotatedString, 
                         fullContent.append("- [${if (item.isChecked) "x" else " "}] ${item.text}\n")
                     }
                 } else {
-                    val html = HtmlConverter.annotatedStringToHtml(content)
-                    val markdown = MarkdownExporter.convertHtmlToMarkdown(html)
-                    fullContent.append(markdown)
+                    fullContent.append(content)
                 }
                 outputStream.write(fullContent.toString().toByteArray())
             }
@@ -108,8 +103,10 @@ fun showSaveSuccessNotification(context: Context, title: String, location: Strin
     notificationManager.notify(1, notification)
 }
 
-// Helper to map AnnotatedString to Spannable for PDF
-private fun annotatedStringToSpannable(annotatedString: AnnotatedString): android.text.SpannableString {
+// Helper to map Markdown to Spannable for PDF
+private fun markdownToSpannable(markdown: String): android.text.Spanned {
+    val bridge = MarkwonAnnotatedStringBridge()
+    val annotatedString = bridge.parse(markdown)
     val spannable = android.text.SpannableString(annotatedString.text)
     annotatedString.spanStyles.forEach { range ->
         val style = range.item
@@ -125,7 +122,6 @@ private fun annotatedStringToSpannable(annotatedString: AnnotatedString): androi
         if (style.textDecoration == androidx.compose.ui.text.style.TextDecoration.Underline) {
             spannable.setSpan(android.text.style.UnderlineSpan(), start, end, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
-        // Add more style mappings as needed
     }
     return spannable
 }
@@ -133,7 +129,7 @@ private fun annotatedStringToSpannable(annotatedString: AnnotatedString): androi
 fun saveAsPdf(
     context: Context, 
     title: String, 
-    content: AnnotatedString,
+    content: String,
     attachments: List<Attachment> = emptyList(),
     checklist: List<ChecklistItem> = emptyList()
 ) {
@@ -254,7 +250,7 @@ fun saveAsPdf(
         }
     } else {
         // Draw Rich Text Content
-        val spannable = annotatedStringToSpannable(content)
+        val spannable = markdownToSpannable(content)
         val contentLayout = StaticLayout.Builder.obtain(spannable, 0, spannable.length, textPaint, contentWidth)
             .setAlignment(android.text.Layout.Alignment.ALIGN_NORMAL)
             .setLineSpacing(0f, 1.2f)
