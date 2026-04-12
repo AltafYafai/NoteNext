@@ -7,10 +7,10 @@ targetSdk  = "37"
 # ── Toolchain ───────────────────────────────────────────────────
 # AGP 9.x ships with built-in Kotlin — kotlin-android plugin no longer needed
 agp                  = "9.1.0"
-kotlin               = "2.3.10"
+kotlin               = "2.3.20"
 ksp                  = "2.3.5"          # pinned — do not upgrade
 hilt                 = "2.59.2"
-kotlin-serialization = "2.3.10"         # must stay in sync with kotlin
+kotlin-serialization = "2.3.20"         # must stay in sync with kotlin
 
 # ── Compose & Material ──────────────────────────────────────────
 composeBom     = "2026.02.01"
@@ -173,6 +173,8 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-serialization" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
