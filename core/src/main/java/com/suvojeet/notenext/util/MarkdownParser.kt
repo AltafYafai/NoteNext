@@ -41,15 +41,15 @@ object MarkdownParser {
     )
 
     fun toAnnotatedString(markdown: String): AnnotatedString {
-        // Pre-handle <u> tags before markdown parsing since commonmark-java doesn't handle them by default 
-        // in a way that maps directly to SpanStyles without extra complexity.
+        // Pre-handle <u> tags before markdown parsing
         val document = parser.parse(markdown)
         val result = buildAnnotatedString {
             val visitor = AnnotatedStringVisitor(this)
             document.accept(visitor)
         }
         
-        // Simple trim for trailing newlines
+        // Only trim the VERY last newline added by the last paragraph if it exists
+        // to avoid infinite growth, but don't trim spaces or meaningful newlines.
         return if (result.text.endsWith("\n\n")) {
             result.subSequence(0, result.text.length - 2) as AnnotatedString
         } else if (result.text.endsWith("\n")) {
@@ -62,31 +62,52 @@ object MarkdownParser {
     fun toMarkdown(annotatedString: AnnotatedString): String {
         val result = StringBuilder(annotatedString.text)
         
-        // Sort spans by start position in descending order to avoid index shifts
-        val sortedSpans = annotatedString.spanStyles.sortedByDescending { it.start }
+        // Group spans by their range to handle multiple styles on the same text
+        val spansByRange = annotatedString.spanStyles
+            .groupBy { it.start to it.end }
+            .toList()
+            .sortedByDescending { it.first.first } // Sort by start index descending
         
-        sortedSpans.forEach { range ->
-            val start = range.start
-            val end = range.end
-            val style = range.item
+        spansByRange.forEach { (range, spans) ->
+            val start = range.first
+            val end = range.second
             
-            when {
-                style.fontWeight == FontWeight.Bold -> {
-                    result.insert(end, "**")
-                    result.insert(start, "**")
+            var isBold = false
+            var isItalic = false
+            var isUnderline = false
+            var isStrikethrough = false
+            
+            spans.forEach { span ->
+                val style = span.item
+                if (style.fontWeight == FontWeight.Bold) isBold = true
+                if (style.fontStyle == FontStyle.Italic) isItalic = true
+                style.textDecoration?.let { decoration ->
+                    if (decoration.contains(TextDecoration.Underline)) isUnderline = true
+                    if (decoration.contains(TextDecoration.LineThrough)) isStrikethrough = true
                 }
-                style.fontStyle == FontStyle.Italic -> {
-                    result.insert(end, "*")
-                    result.insert(start, "*")
-                }
-                style.textDecoration == TextDecoration.Underline -> {
-                    result.insert(end, "</u>")
-                    result.insert(start, "<u>")
-                }
-                style.textDecoration == TextDecoration.LineThrough -> {
-                    result.insert(end, "~~")
-                    result.insert(start, "~~")
-                }
+            }
+            
+            // Apply markers in a specific order to avoid confusion
+            if (isStrikethrough) {
+                result.insert(end, "~~")
+                result.insert(start, "~~")
+            }
+            if (isUnderline) {
+                result.insert(end, "</u>")
+                result.insert(start, "<u>")
+            }
+            
+            // Combine Bold and Italic markers
+            val marker = when {
+                isBold && isItalic -> "***"
+                isBold -> "**"
+                isItalic -> "*"
+                else -> ""
+            }
+            
+            if (marker.isNotEmpty()) {
+                result.insert(end, marker)
+                result.insert(start, marker)
             }
         }
         

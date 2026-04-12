@@ -61,7 +61,14 @@ class RichTextController @Inject constructor() {
         
         // If markdown parser changed the text significantly (more than just trim/normalization), 
         // we use its result as is. Otherwise, we proceed to merge manual styles.
-        if (highlighted.text != newText && highlighted.text.replace("\n", "") != newText.replace("\n", "")) {
+        // We allow a single character difference if it's a trailing space or newline to fix the typing issue.
+        val textChangedSignificantly = if (newText.length > highlighted.text.length && (newText.endsWith(" ") || newText.endsWith("\n"))) {
+             highlighted.text != newText.dropLast(1)
+        } else {
+             highlighted.text != newText && highlighted.text.replace("\n", "") != newText.replace("\n", "")
+        }
+
+        if (textChangedSignificantly) {
             return newContent.copy(annotatedString = highlighted)
         }
 
