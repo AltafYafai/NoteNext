@@ -18,7 +18,7 @@ import com.suvojeet.notenext.data.TodoItem
 import com.suvojeet.notenext.data.TodoSubtask
 import kotlinx.serialization.builtins.ListSerializer
 
-@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class, TodoSubtask::class], version = 27, exportSchema = true)
+@Database(entities = [Note::class, Label::class, Attachment::class, Project::class, NoteFts::class, ChecklistItem::class, NoteVersion::class, TodoItem::class, TodoSubtask::class], version = 28, exportSchema = true)
 @TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
 
@@ -29,6 +29,12 @@ abstract class NoteDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     companion object {
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Empty migration to resolve version mismatch
+            }
+        }
+
         val MIGRATION_26_27 = object : Migration(26, 27) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Create todo_subtasks table
