@@ -1066,12 +1066,10 @@ class NotesViewModel @Inject constructor(
                 
                 // Async update for persistence model
                 viewModelScope.launch {
-                    val updatedText = HtmlConverter.annotatedStringToHtml(event.value.annotatedString).let {
-                        com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
-                    }
+                    val updatedMarkdown = HtmlConverter.annotatedStringToHtml(event.value.annotatedString)
 
                     val updatedChecklist = editState.value.editingChecklist.map {
-                        if (it.id == event.itemId) it.copy(text = updatedText) else it
+                        if (it.id == event.itemId) it.copy(text = updatedMarkdown) else it
                     }
                     _editState.value = editState.value.copy(editingChecklist = updatedChecklist)
                 }
