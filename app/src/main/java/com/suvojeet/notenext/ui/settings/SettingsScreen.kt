@@ -805,10 +805,3 @@ fun RateAppDialog(context: android.content.Context, onDismiss: () -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Later") } }
     )
 }
-Name}"))) }
-            catch (e: Exception) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))) }
-            onDismiss()
-        }, modifier = Modifier.springPress()) { Text("Rate Now") } },
-        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Later") } }
-    )
-}
