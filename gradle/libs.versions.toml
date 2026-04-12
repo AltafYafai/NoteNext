@@ -70,6 +70,7 @@ acra = "5.13.1"
 
 # ── Markwon ─────────────────────────────────────────────────────
 markwon = "4.6.2"
+commonmark = "0.28.0"
 
 # ── Testing ─────────────────────────────────────────────────────
 junit       = "4.13.2"
@@ -175,6 +176,11 @@ markwon-ext-tables = { group = "io.noties.markwon", name = "ext-tables", version
 markwon-ext-tasklist = { group = "io.noties.markwon", name = "ext-tasklist", version.ref = "markwon" }
 markwon-linkify = { group = "io.noties.markwon", name = "linkify", version.ref = "markwon" }
 markwon-html = { group = "io.noties.markwon", name = "html", version.ref = "markwon" }
+
+# CommonMark
+commonmark = { group = "org.commonmark", name = "commonmark", version.ref = "commonmark" }
+commonmark-ext-autolink = { group = "org.commonmark", name = "commonmark-ext-autolink", version.ref = "commonmark" }
+commonmark-ext-strikethrough = { group = "org.commonmark", name = "commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

@@ -67,10 +67,27 @@ dependencies {
     ksp(libs.hilt.android.compiler)
 
     // Markwon
-    api(libs.markwon.core)
-    api(libs.markwon.ext.strikethrough)
-    api(libs.markwon.ext.tables)
-    api(libs.markwon.ext.tasklist)
-    api(libs.markwon.linkify)
-    api(libs.markwon.html)
+    api(libs.markwon.core) {
+        exclude(group = "com.atlassian.commonmark")
+    }
+    api(libs.markwon.ext.strikethrough) {
+        exclude(group = "com.atlassian.commonmark")
+    }
+    api(libs.markwon.ext.tables) {
+        exclude(group = "com.atlassian.commonmark")
+    }
+    api(libs.markwon.ext.tasklist) {
+        exclude(group = "com.atlassian.commonmark")
+    }
+    api(libs.markwon.linkify) {
+        exclude(group = "com.atlassian.commonmark")
+    }
+    api(libs.markwon.html) {
+        exclude(group = "com.atlassian.commonmark")
+    }
+
+    // CommonMark
+    api(libs.commonmark)
+    api(libs.commonmark.ext.autolink)
+    api(libs.commonmark.ext.strikethrough)
 }

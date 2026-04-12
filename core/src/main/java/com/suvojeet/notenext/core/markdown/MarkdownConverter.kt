@@ -41,7 +41,7 @@ object MarkdownConverter {
                 result.append("~~"); activeStyles.remove(StyleType.STRIKE)
             }
             if (StyleType.ITALIC in activeStyles && StyleType.ITALIC !in charStyles) {
-                result.append("_"); activeStyles.remove(StyleType.ITALIC)
+                result.append("*"); activeStyles.remove(StyleType.ITALIC)
             }
             if (StyleType.BOLD in activeStyles && StyleType.BOLD !in charStyles) {
                 result.append("**"); activeStyles.remove(StyleType.BOLD)
@@ -52,7 +52,7 @@ object MarkdownConverter {
                 result.append("**"); activeStyles.add(StyleType.BOLD)
             }
             if (StyleType.ITALIC in charStyles && StyleType.ITALIC !in activeStyles) {
-                result.append("_"); activeStyles.add(StyleType.ITALIC)
+                result.append("*"); activeStyles.add(StyleType.ITALIC)
             }
             if (StyleType.STRIKE in charStyles && StyleType.STRIKE !in activeStyles) {
                 result.append("~~"); activeStyles.add(StyleType.STRIKE)
@@ -67,7 +67,7 @@ object MarkdownConverter {
         // Close any remaining open styles
         if (StyleType.UNDERLINE in activeStyles) result.append("</u>")
         if (StyleType.STRIKE in activeStyles) result.append("~~")
-        if (StyleType.ITALIC in activeStyles) result.append("_")
+        if (StyleType.ITALIC in activeStyles) result.append("*")
         if (StyleType.BOLD in activeStyles) result.append("**")
 
         return result.toString()

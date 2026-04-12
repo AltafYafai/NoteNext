@@ -12,11 +12,14 @@ import androidx.compose.ui.unit.sp
 import org.commonmark.node.*
 import org.commonmark.parser.Parser
 import org.commonmark.renderer.text.TextContentRenderer
+import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
+import org.commonmark.ext.autolink.AutolinkExtension
 
 class MarkwonAnnotatedStringBridge {
 
-    private val parser = Parser.builder().build()
-    private val textRenderer = TextContentRenderer.builder().build()
+    private val extensions = listOf(StrikethroughExtension.create(), AutolinkExtension.create())
+    private val parser = Parser.builder().extensions(extensions).build()
+    private val textRenderer = TextContentRenderer.builder().extensions(extensions).build()
 
     fun parse(text: String): AnnotatedString {
         val node = parser.parse(text)
@@ -119,6 +122,27 @@ class MarkwonAnnotatedStringBridge {
 
         override fun visit(hardLineBreak: HardLineBreak) {
             builder.append("\n")
+        }
+
+        override fun visit(customNode: CustomNode) {
+            if (customNode is org.commonmark.ext.gfm.strikethrough.Strikethrough) {
+                builder.withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                    visitChildren(customNode)
+                }
+            } else {
+                super.visit(customNode)
+            }
+        }
+
+        override fun visit(htmlInline: HtmlInline) {
+            when (htmlInline.literal) {
+                "<u>" -> builder.pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
+                "</u>" -> builder.pop()
+                "<s>" -> builder.pushStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
+                "</s>" -> builder.pop()
+                "<br>" -> builder.append("\n")
+                else -> super.visit(htmlInline)
+            }
         }
     }
 }
