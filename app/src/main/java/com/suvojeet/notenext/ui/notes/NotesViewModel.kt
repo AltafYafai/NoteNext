@@ -1013,6 +1013,7 @@ class NotesViewModel @Inject constructor(
                         editingContent = finalContent,
                         canUndo = undoRedoManager.canUndo.value,
                         canRedo = undoRedoManager.canRedo.value,
+                        activeStyles = styles.map { it.item }.toSet(),
                         isBoldActive = styles.any { style -> style.item.fontWeight == FontWeight.Bold },
                         isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                         isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline },
@@ -1038,26 +1039,36 @@ class NotesViewModel @Inject constructor(
             }
             is NotesEvent.OnChecklistItemValueChange -> {
                 val updatedInputValues = editState.value.checklistInputValues.toMutableMap()
-                updatedInputValues[event.itemId] = event.value
+                val oldContent = updatedInputValues[event.itemId] ?: TextFieldValue("")
+
+                val finalContent = richTextController.processContentChange(
+                    oldContent = oldContent,
+                    newContent = event.value,
+                    activeStyles = editState.value.activeStyles,
+                    activeHeadingStyle = 0 // Usually no heading style in checklist items
+                )
+
+                updatedInputValues[event.itemId] = finalContent
 
                 // Check for styles at selection to update toolbar state
-                 val selection = event.value.selection
+                 val selection = finalContent.selection
                  val styles = if (selection.collapsed) {
                     if (selection.start > 0) {
-                        event.value.annotatedString.spanStyles.filter {
+                        finalContent.annotatedString.spanStyles.filter {
                             it.start <= selection.start - 1 && it.end >= selection.start
                         }
                     } else {
                         emptyList()
                     }
                 } else {
-                    event.value.annotatedString.spanStyles.filter {
+                    finalContent.annotatedString.spanStyles.filter {
                         maxOf(selection.start, it.start) < minOf(selection.end, it.end)
                     }
                 }
 
                 _editState.value = editState.value.copy(
                     checklistInputValues = updatedInputValues,
+                     activeStyles = styles.map { it.item }.toSet(),
                      isBoldActive = styles.any { style -> style.item.fontWeight == FontWeight.Bold },
                      isItalicActive = styles.any { style -> style.item.fontStyle == FontStyle.Italic },
                      isUnderlineActive = styles.any { style -> style.item.textDecoration == TextDecoration.Underline }
@@ -1066,7 +1077,7 @@ class NotesViewModel @Inject constructor(
                 
                 // Async update for persistence model
                 viewModelScope.launch {
-                    val updatedMarkdown = HtmlConverter.annotatedStringToHtml(event.value.annotatedString)
+                    val updatedMarkdown = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
 
                     val updatedChecklist = editState.value.editingChecklist.map {
                         if (it.id == event.itemId) it.copy(text = updatedMarkdown) else it

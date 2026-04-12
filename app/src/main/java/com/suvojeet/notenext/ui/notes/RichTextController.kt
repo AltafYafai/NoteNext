@@ -46,10 +46,73 @@ class RichTextController @Inject constructor() {
             return oldContent.copy(selection = newContent.selection)
         }
 
-        // Re-parse the entire text with MarkdownParser for real-time syntax highlighting
-        val highlightedAnnotatedString = MarkdownParser.toAnnotatedString(newContent.text)
+        val oldText = oldContent.text
+        val newText = newContent.text
+
+        // Calculate diff
+        val prefixLen = commonPrefixWith(oldText, newText).length
+        val suffixLen = commonSuffixWith(oldText.substring(prefixLen), newText.substring(prefixLen)).length
         
-        return newContent.copy(annotatedString = highlightedAnnotatedString)
+        val addedLen = newText.length - prefixLen - suffixLen
+        val removedLen = oldText.length - prefixLen - suffixLen
+
+        // 1. Get auto-highlighted base
+        val highlighted = MarkdownParser.toAnnotatedString(newText)
+        
+        // If markdown parser changed the text (stripped markers), we use its result as is
+        // to maintain consistent live-preview behavior.
+        if (highlighted.text != newText) {
+            return newContent.copy(annotatedString = highlighted)
+        }
+
+        val builder = AnnotatedString.Builder(newText)
+        
+        // Add auto-highlighted styles (WikiLinks etc.)
+        highlighted.spanStyles.forEach { range ->
+            builder.addStyle(range.item, range.start, range.end)
+        }
+
+        // 2. Preserve and shift manual styles from old content
+        oldContent.annotatedString.spanStyles.forEach { range ->
+            val start = range.start
+            val end = range.end
+            
+            val newStart = when {
+                start <= prefixLen -> start
+                start < prefixLen + removedLen -> prefixLen
+                else -> start - removedLen + addedLen
+            }
+            
+            val newEnd = when {
+                end <= prefixLen -> end
+                end < prefixLen + removedLen -> prefixLen
+                else -> end - removedLen + addedLen
+            }
+            
+            if (newEnd > newStart) {
+                // To avoid duplicate styles from MarkdownParser, we could filter here, 
+                // but usually manual styles and auto styles are disjoint or compatible.
+                builder.addStyle(range.item, newStart, newEnd)
+            }
+        }
+
+        // 3. Apply activeStyles to the added text (the newly typed character)
+        if (activeStyles.isNotEmpty() && addedLen > 0) {
+            activeStyles.forEach { style ->
+                builder.addStyle(style, prefixLen, prefixLen + addedLen)
+            }
+        }
+
+        // 4. Re-apply heading style if active
+        if (activeHeadingStyle != 0) {
+            val headingStyle = getHeadingStyle(activeHeadingStyle)
+            val lineStart = newText.lastIndexOf('\n', prefixLen).coerceAtLeast(0)
+            val nextLine = newText.indexOf('\n', prefixLen + addedLen)
+            val lineEnd = if (nextLine != -1) nextLine else newText.length
+            builder.addStyle(headingStyle, lineStart, lineEnd)
+        }
+
+        return newContent.copy(annotatedString = builder.toAnnotatedString())
     }
 
     data class StyleToggleResult(
