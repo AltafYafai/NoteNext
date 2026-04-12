@@ -210,6 +210,13 @@ dependencies {
     implementation(libs.acra.toast)
     implementation(libs.acra.notification)
     implementation(libs.acra.dialog)
+
+    // Markdown (CommonMark)
+    implementation(libs.commonmark)
+    implementation(libs.commonmark.ext.gfm.tables)
+    implementation(libs.commonmark.ext.gfm.strikethrough)
+    implementation(libs.commonmark.ext.autolink)
+    implementation(libs.commonmark.ext.ins)
 }
 
 android {

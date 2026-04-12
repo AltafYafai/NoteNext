@@ -68,6 +68,9 @@ play-review               = "2.0.2"
 # ── ACRA ────────────────────────────────────────────────────────
 acra = "5.13.1"
 
+# ── Markdown (CommonMark) ───────────────────────────────────────
+commonmark = "0.28.0"
+
 # ── Testing ─────────────────────────────────────────────────────
 junit       = "4.13.2"
 junit-ext   = "1.2.1"
@@ -169,6 +172,13 @@ play-review-ktx = { group = "com.google.android.play", name = "review-ktx", vers
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junit-ext" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+
+# Markdown (CommonMark)
+commonmark = { group = "org.commonmark", name = "commonmark", version.ref = "commonmark" }
+commonmark-ext-gfm-tables = { group = "org.commonmark", name = "commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commonmark-ext-gfm-strikethrough = { group = "org.commonmark", name = "commonmark-ext-gfm-strikethrough", version.ref = "commonmark" }
+commonmark-ext-autolink = { group = "org.commonmark", name = "commonmark-ext-autolink", version.ref = "commonmark" }
+commonmark-ext-ins = { group = "org.commonmark", name = "commonmark-ext-ins", version.ref = "commonmark" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
