@@ -41,6 +41,8 @@ object MarkdownParser {
     )
 
     fun toAnnotatedString(markdown: String): AnnotatedString {
+        // Pre-handle <u> tags before markdown parsing since commonmark-java doesn't handle them by default 
+        // in a way that maps directly to SpanStyles without extra complexity.
         val document = parser.parse(markdown)
         val result = buildAnnotatedString {
             val visitor = AnnotatedStringVisitor(this)
@@ -78,8 +80,8 @@ object MarkdownParser {
                     result.insert(start, "*")
                 }
                 style.textDecoration == TextDecoration.Underline -> {
-                    result.insert(end, "++")
-                    result.insert(start, "++")
+                    result.insert(end, "</u>")
+                    result.insert(start, "<u>")
                 }
                 style.textDecoration == TextDecoration.LineThrough -> {
                     result.insert(end, "~~")
@@ -95,18 +97,35 @@ object MarkdownParser {
         
         override fun visit(text: Text) {
             val content = text.literal
-            // Simple Wiki Link detection within text nodes
+            
+            // 1. Wiki Link detection
             val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
+            // 2. Underline detection
+            val underlineRegex = "<u>(.*?)</u>".toRegex()
+            
             var lastIndex = 0
             
-            wikiLinkRegex.findAll(content).forEach { match ->
+            // Combine all tags for sequential processing
+            val matches = (wikiLinkRegex.findAll(content).map { it to "WIKI" } + 
+                           underlineRegex.findAll(content).map { it to "UNDERLINE" })
+                           .sortedBy { it.first.range.first }
+
+            matches.forEach { (match, type) ->
                 builder.append(content.substring(lastIndex, match.range.first))
-                val title = match.groupValues[1]
-                builder.pushStringAnnotation("NOTE_LINK", title)
-                builder.withStyle(WikiLinkStyle) {
-                    append(title)
+                val innerText = match.groupValues[1]
+                
+                when (type) {
+                    "WIKI" -> {
+                        builder.pushStringAnnotation("NOTE_LINK", innerText)
+                        builder.withStyle(WikiLinkStyle) { append(innerText) }
+                        builder.pop()
+                    }
+                    "UNDERLINE" -> {
+                        builder.withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+                            append(innerText)
+                        }
+                    }
                 }
-                builder.pop()
                 lastIndex = match.range.last + 1
             }
             

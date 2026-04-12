@@ -59,9 +59,9 @@ class RichTextController @Inject constructor() {
         // 1. Get auto-highlighted base
         val highlighted = MarkdownParser.toAnnotatedString(newText)
         
-        // If markdown parser changed the text (stripped markers), we use its result as is
-        // to maintain consistent live-preview behavior.
-        if (highlighted.text != newText) {
+        // If markdown parser changed the text significantly (more than just trim/normalization), 
+        // we use its result as is. Otherwise, we proceed to merge manual styles.
+        if (highlighted.text != newText && highlighted.text.replace("\n", "") != newText.replace("\n", "")) {
             return newContent.copy(annotatedString = highlighted)
         }
 
