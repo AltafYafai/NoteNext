@@ -55,18 +55,12 @@ import androidx.compose.foundation.rememberScrollState
 
 import com.suvojeet.notenext.util.LogcatManager
 import android.widget.Toast
-import com.suvojeet.notenext.data.NoteRepository
 
 @Composable
 fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) }
-    val noteRepository: NoteRepository = hiltViewModel<BackupRestoreViewModel>().let { 
-        // A bit of a hack to get repository if not using a dedicated settings viewModel
-        // But better would be a dedicated ViewModel. For now, let's use BackupRestoreViewModel's repository if possible
-        // Actually, hiltViewModel is for ViewModels. Let's just use BackupRestoreViewModel for the action.
-        hiltViewModel<BackupRestoreViewModel>().repository 
-    }
+    val backupViewModel: BackupRestoreViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
 
     val versionName = remember {
@@ -805,6 +799,13 @@ fun RateAppDialog(context: android.content.Context, onDismiss: () -> Unit) {
         text = { Text("Loving the app? Help us by rating it on the Play Store!") },
         confirmButton = { TextButton(onClick = { 
             try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${context.packageName}"))) }
+            catch (e: Exception) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))) }
+            onDismiss()
+        }, modifier = Modifier.springPress()) { Text("Rate Now") } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.springPress()) { Text("Later") } }
+    )
+}
+Name}"))) }
             catch (e: Exception) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}"))) }
             onDismiss()
         }, modifier = Modifier.springPress()) { Text("Rate Now") } },

@@ -962,4 +962,12 @@ class BackupRestoreViewModel @Inject constructor(
     fun clearFoundProjects() {
         _state.value = _state.value.copy(foundBackupDetails = null)
     }
+
+    fun optimizeDatabase() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteOversizedNoteVersions()
+            }
+        }
+    }
 }
