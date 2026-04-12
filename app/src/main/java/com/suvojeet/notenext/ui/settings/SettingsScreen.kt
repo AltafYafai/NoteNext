@@ -255,7 +255,7 @@ fun SettingsScreen(onBackClick: () -> Unit, onNavigate: (String) -> Unit) {
                         onClick = {
                             scope.launch {
                                 try {
-                                    noteRepository.deleteOversizedNoteVersions()
+                                    backupViewModel.optimizeDatabase()
                                     Toast.makeText(context, "Database optimized successfully", Toast.LENGTH_SHORT).show()
                                 } catch (e: Exception) {
                                     Toast.makeText(context, "Optimization failed: ${e.message}", Toast.LENGTH_SHORT).show()
