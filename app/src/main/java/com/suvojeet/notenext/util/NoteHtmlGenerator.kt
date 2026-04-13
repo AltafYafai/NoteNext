@@ -21,7 +21,7 @@ object NoteHtmlGenerator {
         content: AnnotatedString,
         attachments: List<Attachment>
     ): String = withContext(Dispatchers.IO) {
-        val contentHtml = HtmlConverter.annotatedStringToHtml(content)
+        val contentHtml = HtmlConverter.annotatedStringToMarkdown(content)
         val attachmentsHtml = attachments
             .filter { it.type == AttachmentType.IMAGE }
             .joinToString("<br>") { attachment ->

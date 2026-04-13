@@ -493,7 +493,7 @@ class NotesViewModel @Inject constructor(
                     val note = Note(
                         title = editState.value.editingTitle,
                         content = if (editState.value.editingNoteType == NoteType.TEXT) {
-                            HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
+                            HtmlConverter.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
                         } else "",
                         createdAt = currentTime,
                         lastEdited = currentTime,
@@ -1021,7 +1021,7 @@ class NotesViewModel @Inject constructor(
                     )
 
                     viewModelScope.launch {
-                        savedStateHandle[KEY_EDITING_CONTENT] = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
+                        savedStateHandle[KEY_EDITING_CONTENT] = HtmlConverter.annotatedStringToMarkdown(finalContent.annotatedString)
                     }
 
                     if (textChanged) {
@@ -1077,7 +1077,7 @@ class NotesViewModel @Inject constructor(
                 
                 // Async update for persistence model
                 viewModelScope.launch {
-                    val updatedMarkdown = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString)
+                    val updatedMarkdown = HtmlConverter.annotatedStringToMarkdown(finalContent.annotatedString)
 
                     val updatedChecklist = editState.value.editingChecklist.map {
                         if (it.id == event.itemId) it.copy(text = updatedMarkdown) else it
@@ -1549,7 +1549,7 @@ class NotesViewModel @Inject constructor(
                                     (if (it.isChecked) "- [x] " else "- [ ] ") + it.text 
                                 }
                             } else {
-                                HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString).let {
+                                HtmlConverter.annotatedStringToMarkdown(editState.value.editingContent.annotatedString).let {
                                     com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
                                 }
                             }
@@ -1641,7 +1641,7 @@ class NotesViewModel @Inject constructor(
 
         val title = editState.value.editingTitle
         val content = if (editState.value.editingNoteType == NoteType.TEXT) {
-            HtmlConverter.annotatedStringToHtml(editState.value.editingContent.annotatedString)
+            HtmlConverter.annotatedStringToMarkdown(editState.value.editingContent.annotatedString)
         } else {
             ""
         }

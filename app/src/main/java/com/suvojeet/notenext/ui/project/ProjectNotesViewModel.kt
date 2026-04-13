@@ -495,7 +495,7 @@ class ProjectNotesViewModel @Inject constructor(
                 
                 // Sync text with persistence model (Markdown)
                 viewModelScope.launch {
-                    val updatedText = HtmlConverter.annotatedStringToHtml(finalContent.annotatedString).let {
+                    val updatedText = HtmlConverter.annotatedStringToMarkdown(finalContent.annotatedString).let {
                         com.suvojeet.notenext.data.MarkdownExporter.convertHtmlToMarkdown(it)
                     }
                     val updatedChecklist = state.value.editingChecklist.map {
@@ -890,7 +890,7 @@ class ProjectNotesViewModel @Inject constructor(
 
                     val title = state.value.editingTitle
                     val content = if (state.value.editingNoteType == NoteType.TEXT) {
-                        HtmlConverter.annotatedStringToHtml(state.value.editingContent.annotatedString)
+                        HtmlConverter.annotatedStringToMarkdown(state.value.editingContent.annotatedString)
                     } else {
                         ""
                     }

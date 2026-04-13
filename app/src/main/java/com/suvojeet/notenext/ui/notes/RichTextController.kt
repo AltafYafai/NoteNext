@@ -14,7 +14,7 @@ import javax.inject.Inject
 
 import androidx.compose.ui.graphics.Color
 
-import com.suvojeet.notenext.util.MarkdownParser
+import com.suvojeet.notenext.util.MarkdownHighlighter
 
 class RichTextController @Inject constructor() {
 
@@ -56,27 +56,19 @@ class RichTextController @Inject constructor() {
         val addedLen = newText.length - prefixLen - suffixLen
         val removedLen = oldText.length - prefixLen - suffixLen
 
-        // 1. Get auto-highlighted base
-        val highlighted = MarkdownParser.toAnnotatedString(newText)
+        // 1. Get syntax-highlighted base (Preserves all markers)
+        val highlighted = MarkdownHighlighter.highlight(newText)
         
-        // If markdown parser changed the text significantly (more than just trim/normalization), 
-        // we use its result as is. Otherwise, we proceed to merge manual styles.
-        // We allow a single character difference if it's a trailing space or newline to fix the typing issue.
-        val textChangedSignificantly = if (newText.length > highlighted.text.length && (newText.endsWith(" ") || newText.endsWith("\n"))) {
-             highlighted.text != newText.dropLast(1)
-        } else {
-             highlighted.text != newText && highlighted.text.replace("\n", "") != newText.replace("\n", "")
-        }
-
-        if (textChangedSignificantly) {
-            return newContent.copy(annotatedString = highlighted)
-        }
-
         val builder = AnnotatedString.Builder(newText)
         
-        // Add auto-highlighted styles (WikiLinks etc.)
+        // Add auto-highlighted styles (Markers, WikiLinks, etc.)
         highlighted.spanStyles.forEach { range ->
             builder.addStyle(range.item, range.start, range.end)
+        }
+        
+        // Add auto-highlighted annotations
+        highlighted.getStringAnnotations(0, newText.length).forEach { range ->
+            builder.addStringAnnotation(range.tag, range.item, range.start, range.end)
         }
 
         // 2. Preserve and shift manual styles from old content
@@ -97,8 +89,7 @@ class RichTextController @Inject constructor() {
             }
             
             if (newEnd > newStart) {
-                // To avoid duplicate styles from MarkdownParser, we could filter here, 
-                // but usually manual styles and auto styles are disjoint or compatible.
+                // Check if this style is already covered by highlighter (optional but cleaner)
                 builder.addStyle(range.item, newStart, newEnd)
             }
         }
@@ -275,6 +266,6 @@ class RichTextController @Inject constructor() {
     }
 
     fun parseMarkdownToAnnotatedString(text: String): AnnotatedString {
-        return MarkdownParser.toAnnotatedString(text)
+        return MarkdownHighlighter.highlight(text)
     }
 }

@@ -41,7 +41,7 @@ suspend fun saveAsMd(context: Context, title: String, content: AnnotatedString, 
                         fullContent.append("- [${if (item.isChecked) "x" else " "}] ${item.text}\n")
                     }
                 } else {
-                    val html = HtmlConverter.annotatedStringToHtml(content)
+                    val html = HtmlConverter.annotatedStringToMarkdown(content)
                     val markdown = MarkdownExporter.convertHtmlToMarkdown(html)
                     fullContent.append(markdown)
                 }

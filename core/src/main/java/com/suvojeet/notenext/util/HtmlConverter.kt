@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 
 object HtmlConverter {
 
-    suspend fun annotatedStringToHtml(annotatedString: AnnotatedString): String = withContext(Dispatchers.Default) {
+    suspend fun annotatedStringToMarkdown(annotatedString: AnnotatedString): String = withContext(Dispatchers.Default) {
         MarkdownParser.toMarkdown(annotatedString)
     }
 
@@ -28,12 +28,26 @@ object HtmlConverter {
     }
 
     suspend fun htmlToAnnotatedString(html: String): AnnotatedString = withContext(Dispatchers.Default) {
-        // We first use HtmlCompat to handle legacy HTML notes.
-        // If the note is already Markdown, HtmlCompat.fromHtml will just return it as is.
-        val legacySpanned = HtmlCompat.fromHtml(html, HtmlCompat.FROM_HTML_MODE_LEGACY)
-        val textContent = legacySpanned.toString()
+        // If it looks like HTML, we convert basic formatting tags to Markdown symbols
+        // to preserve legacy note formatting in the new Markdown system.
+        val processedText = if (html.contains("<") && html.contains(">")) {
+             html.replace("<b>", "**").replace("</b>", "**")
+                 .replace("<strong>", "**").replace("</strong>", "**")
+                 .replace("<i>", "*").replace("</i>", "*")
+                 .replace("<em>", "*").replace("</em>", "*")
+                 .replace("<u>", "<u>").replace("</u>", "</u>")
+                 .replace("<strike>", "~~").replace("</strike>", "~~")
+                 .replace("<del>", "~~").replace("</del>", "~~")
+                 .replace("<s>", "~~").replace("</s>", "~~")
+                 .replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n")
+                 .let { 
+                     // Strip any remaining HTML tags
+                     HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY).toString()
+                 }
+        } else {
+            html
+        }
         
-        // Then we use MarkdownParser to handle all Markdown features and styling.
-        MarkdownParser.toAnnotatedString(textContent)
+        MarkdownHighlighter.highlight(processedText)
     }
 }
