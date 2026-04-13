@@ -90,10 +90,17 @@ class NotesViewModel @Inject constructor(
     private val _listState = MutableStateFlow(NotesListState())
     val listState = _listState.asStateFlow()
 
-    val editState = editorDelegate.editState
+    private val _editState = MutableStateFlow(
+        NotesEditState(
+            editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
+            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
+            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
+        )
+    )
+    val editState = _editState.asStateFlow()
 
     // Combined state for backward compatibility and complex screen mappings
-    val state: StateFlow<NotesState> = combine(_listState, editState) { list, edit ->
+    val state: StateFlow<NotesState> = combine(_listState, _editState) { list, edit ->
         NotesState(
             notes = list.notes,
             layoutType = list.layoutType,
@@ -163,12 +170,34 @@ class NotesViewModel @Inject constructor(
 
     private var recentlyDeletedNote: Note? = null
     
+    private val undoRedoManager = UndoRedoManager<Pair<String, TextFieldValue>>("" to TextFieldValue())
+
     private val _searchQuery = MutableStateFlow("")
     private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
     private val _filteredProjectId = MutableStateFlow<Int?>(null)
 
     private var autoSaveJob: Job? = null
     private var selectionActionsJob: Job? = null
+    private var linkDetectionJob: Job? = null
+
+    private var lastCreatedNoteId: Int? = null
+
+    private fun scheduleAutoSave() {
+        autoSaveJob?.cancel()
+        _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVING)
+        autoSaveJob = viewModelScope.launch {
+            try {
+                delay(1000L) // 1 second debounce
+                saveNote(shouldCollapse = false)
+                _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVED)
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                e.printStackTrace()
+                _editState.value = editState.value.copy(saveStatus = SaveStatus.ERROR)
+                _events.emit(NotesUiEvent.ShowToast("Auto-save failed: ${e.message}"))
+            }
+        }
+    }
 
     init {
         @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
