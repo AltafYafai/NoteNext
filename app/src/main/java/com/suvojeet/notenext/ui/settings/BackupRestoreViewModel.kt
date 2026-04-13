@@ -461,13 +461,18 @@ class BackupRestoreViewModel @Inject constructor(
 
         val attachmentsToExtract = mutableListOf<Pair<String, File>>() // ZipEntryName -> TargetFile
 
+        // Pass 2.5: Pre-fetch data needed for deletion outside transaction to minimize lock time
+        val existingNotes = if (!effectiveMerge) repository.getNotes().first() else emptyList()
+        val existingLabels = if (!effectiveMerge) repository.getLabels().first() else emptyList()
+        val existingProjects = if (!effectiveMerge) repository.getProjects().first() else emptyList()
+
         repository.runInTransaction {
             if (!effectiveMerge) {
                 // Only delete local data if NOT merging and NOT incremental
-                repository.getNotes().first().flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
-                repository.getNotes().first().forEach { repository.deleteNote(it.note) }
-                repository.getLabels().first().forEach { repository.deleteLabel(it) }
-                repository.getProjects().first().forEach { repository.deleteProject(it.id) }
+                existingNotes.flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
+                existingNotes.forEach { repository.deleteNote(it.note) }
+                existingLabels.forEach { repository.deleteLabel(it) }
+                existingProjects.forEach { repository.deleteProject(it.id) }
             }
 
             // Pass 3: Restore Data

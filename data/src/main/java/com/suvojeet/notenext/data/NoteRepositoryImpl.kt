@@ -190,10 +190,11 @@ class NoteRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateNote(note: Note) {
-        require(!note.isEncrypted) {
-            "updateNote() must receive a plaintext note. Decrypt before calling this function."
+        val noteToSave = if (note.isLocked && !note.isEncrypted) {
+            CryptoUtils.encryptNote(note)
+        } else {
+            note
         }
-        val noteToSave = if (note.isLocked) CryptoUtils.encryptNote(note) else note
         noteDao.updateNote(noteToSave)
         incrementEditCounter()
     }

@@ -242,7 +242,9 @@ class NotesViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        autoSaveJob?.cancel()
         selectionActionsJob?.cancel()
+        linkDetectionJob?.cancel()
     }
 
     fun onEvent(event: NotesEvent) {
