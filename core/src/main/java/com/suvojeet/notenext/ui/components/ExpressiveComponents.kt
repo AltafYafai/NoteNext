@@ -11,8 +11,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -256,26 +254,6 @@ fun ExpressiveLoading(modifier: Modifier = Modifier) {
                 )
             }
         }
-    }
-}
-
-@Composable
-fun ExpressiveButtonGroup(
-    modifier: Modifier = Modifier,
-    content: @Composable ButtonGroupScope.() -> Unit
-) {
-    ButtonGroup(
-        modifier = modifier, 
-        overflowIndicator = {
-            IconButton(onClick = {}) {
-                Icon(
-                    imageVector = Icons.Default.MoreHoriz,
-                    contentDescription = "More"
-                )
-            }
-        }
-    ) {
-        content()
     }
 }
 
