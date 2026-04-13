@@ -2,16 +2,11 @@
 package com.suvojeet.notenext.ui.notes
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
-import androidx.compose.material3.adaptive.layout.paneExpansionDraggable
-import androidx.compose.material3.VerticalDragHandle
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-...
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
-import androidx.compose.material3.adaptive.layout.PaneAdaptiveEvents
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -94,6 +89,7 @@ fun NotesScreen(
 ) {
     val listState by viewModel.listState.collectAsStateWithLifecycle()
     val editState by viewModel.editState.collectAsStateWithLifecycle()
+    val notesState by viewModel.state.collectAsStateWithLifecycle()
     var isFabExpanded by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     
@@ -201,16 +197,6 @@ fun NotesScreen(
     NavigableListDetailPaneScaffold(
         navigator = navigator,
         paneExpansionState = paneExpansionState,
-        paneExpansionDragHandle = { state ->
-            val interactionSource = remember { MutableInteractionSource() }
-            VerticalDragHandle(
-                modifier = Modifier.paneExpansionDraggable(
-                    state = state,
-                    interactionSource = interactionSource
-                ),
-                interactionSource = interactionSource
-            )
-        },
         listPane = {
             AnimatedPane {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -627,7 +613,7 @@ fun NotesScreen(
         detailPane = {
             AnimatedPane {
                 AddEditNoteScreen(
-                    state = editState,
+                    state = notesState,
                     onEvent = viewModel::onEvent,
                     onDismiss = { viewModel.onEvent(NotesEvent.CollapseNote) },
                     themeMode = themeMode,
