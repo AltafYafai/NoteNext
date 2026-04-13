@@ -163,7 +163,7 @@ fun SettingsGroupCard(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 fun Modifier.springPress(
-    dampingRatio: Float = 0.6f,
+    dampingRatio: Float = androidx.compose.animation.core.Spring.DampingRatioLowBouncy,
     stiffness: Float = 400f
 ): Modifier {
     var isPressed by remember { mutableStateOf(false) }

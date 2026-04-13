@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 package com.suvojeet.notenext.ui.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -55,7 +56,7 @@ fun MultiActionFab(
 ) {
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 135f else 0f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 500f),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
         label = "FabIconRotation"
     )
 
@@ -180,6 +181,17 @@ fun MultiActionFab(
         }
 
         // Main FAB
+        val fabContainerColor by animateColorAsState(
+            targetValue = if (isExpanded) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primary,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+            label = "FabContainerColor"
+        )
+        val fabContentColor by animateColorAsState(
+            targetValue = if (isExpanded) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimary,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium),
+            label = "FabContentColor"
+        )
+
         ExtendedFloatingActionButton(
             text = { 
                  AnimatedVisibility(
@@ -205,8 +217,8 @@ fun MultiActionFab(
                 onExpandedChange(!isExpanded)
             },
             expanded = isScrollExpanded && !isExpanded,
-            containerColor = if (isExpanded) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primary,
-            contentColor = if (isExpanded) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimary,
+            containerColor = fabContainerColor,
+            contentColor = fabContentColor,
             modifier = Modifier.springPress(),
             shape = MaterialTheme.shapes.extraLarge
         )

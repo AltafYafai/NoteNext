@@ -96,7 +96,16 @@ class MainActivity : FragmentActivity() {
                 .start()
         }
 
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            navigationBarStyle = androidx.activity.SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            )
+        )
         super.onCreate(savedInstanceState)
 
         updateChecker = UpdateChecker(this)
@@ -166,14 +175,26 @@ class MainActivity : FragmentActivity() {
 
             androidx.compose.runtime.LaunchedEffect(darkTheme) {
                 enableEdgeToEdge(
-                    statusBarStyle = androidx.activity.SystemBarStyle.auto(
-                        android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT,
-                    ) { darkTheme },
-                    navigationBarStyle = androidx.activity.SystemBarStyle.auto(
-                        android.graphics.Color.TRANSPARENT,
-                        android.graphics.Color.TRANSPARENT,
-                    ) { darkTheme }
+                    statusBarStyle = if (!darkTheme) {
+                        androidx.activity.SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT
+                        )
+                    } else {
+                        androidx.activity.SystemBarStyle.dark(
+                            android.graphics.Color.TRANSPARENT
+                        )
+                    },
+                    navigationBarStyle = if (!darkTheme) {
+                        androidx.activity.SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT
+                        )
+                    } else {
+                        androidx.activity.SystemBarStyle.dark(
+                            android.graphics.Color.TRANSPARENT
+                        )
+                    }
                 )
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                     window.isNavigationBarContrastEnforced = false
