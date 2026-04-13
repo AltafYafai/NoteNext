@@ -683,7 +683,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.DeleteSelectedNotes -> {
-                viewModelScope.launch {
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                     val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isBinned = true, binnedOn = System.currentTimeMillis()))
@@ -694,7 +694,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ArchiveSelectedNotes -> {
-                viewModelScope.launch {
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                     val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isArchived = !note.note.isArchived))
@@ -704,7 +704,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ToggleImportantForSelectedNotes -> {
-                viewModelScope.launch {
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                     val selectedNotes = getSelectedNotes()
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(isImportant = !note.note.isImportant))
@@ -1415,7 +1415,7 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.ConvertToTodo -> {
-                viewModelScope.launch {
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
                     val title = editState.value.editingTitle
                     val content = editState.value.editingContent.text
                     val noteType = editState.value.editingNoteType
@@ -1475,7 +1475,7 @@ class NotesViewModel @Inject constructor(
                     } else {
                          // Cache miss - fetch
                         _editState.value = editState.value.copy(isSummarizing = true, showSummaryDialog = true)
-                        viewModelScope.launch {
+                        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
                             groqRepository.summarizeNote(content).collect { result ->
                                 result.onSuccess { summary ->
                                     _editState.value = editState.value.copy(isSummarizing = false, summaryResult = summary)
