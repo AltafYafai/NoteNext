@@ -432,13 +432,27 @@ class NotesViewModel @Inject constructor(
                         val mimeType = context.contentResolver.getType(compressedUri)
                         onEvent(NotesEvent.AddAttachment(compressedUri.toString(), mimeType ?: "image/jpeg"))
                     } else {
-                        val mimeType = context.contentResolver.getType(uri)
+                        // Fallback: Copy to internal storage manually if compression fails
                         try {
-                             context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            val fileName = "IMG_${java.util.UUID.randomUUID()}.jpg"
+                            val destFile = java.io.File(context.filesDir, "images/$fileName")
+                            destFile.parentFile?.mkdirs()
+                            
+                            context.contentResolver.openInputStream(uri)?.use { input ->
+                                java.io.FileOutputStream(destFile).use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            
+                            val localUri = androidx.core.content.FileProvider.getUriForFile(
+                                context, "${context.packageName}.provider", destFile
+                            )
+                            val mimeType = context.contentResolver.getType(localUri)
+                            onEvent(NotesEvent.AddAttachment(localUri.toString(), mimeType ?: "image/jpeg"))
                         } catch (e: Exception) {
-                            // Ignore if permission not persistable
+                            e.printStackTrace()
+                            _events.emit(NotesUiEvent.ShowToast("Failed to import image: ${e.message}"))
                         }
-                        onEvent(NotesEvent.AddAttachment(uri.toString(), mimeType ?: "image/jpeg"))
                     }
                 }
             }

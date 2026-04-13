@@ -29,7 +29,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(settingsRepository: com.suvojeet.notenext.data.repository.SettingsRepository): OkHttpClient {
+    fun provideOkHttpClient(
+        groqConfigProvider: com.suvojeet.notenext.data.remote.GroqConfigProvider
+    ): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (com.suvojeet.notenext.BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -39,14 +41,10 @@ object NetworkModule {
         }
 
         val authInterceptor = Interceptor { chain ->
-            val settings = runBlocking {
-                val use = settingsRepository.useCustomGroqKey.first()
-                val key = settingsRepository.customGroqKey.first()
-                use to key
-            }
+            val config = groqConfigProvider.config
 
-            val apiKey = if (settings.first && settings.second.isNotBlank()) {
-                settings.second
+            val apiKey = if (config.useCustomKey && config.customKey.isNotBlank()) {
+                config.customKey
             } else {
                 val encryptedKey = com.suvojeet.notenext.BuildConfig.GROQ_API_KEY_ENC
                 val xorKey = com.suvojeet.notenext.BuildConfig.GROQ_XOR_KEY

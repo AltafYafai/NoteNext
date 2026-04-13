@@ -67,6 +67,10 @@ class RichTextController @Inject constructor() {
 
     private fun reapplyWikiLinks(content: TextFieldValue): TextFieldValue {
         val text = content.text
+        
+        // Optimization: Only re-apply if the text contains potential link markers
+        if (!text.contains("[[")) return content
+
         val styles = content.annotatedString.spanStyles
         
         // Find existing NOTE_LINK annotations to identify which styles to remove
@@ -90,9 +94,9 @@ class RichTextController @Inject constructor() {
         // Add back preserved annotations
         cleanedAnnotations.forEach { builder.addStringAnnotation(it.tag, it.item, it.start, it.end) }
 
-        // Find and apply new Wiki Links
-        val regex = "\\[\\[(.*?)\\]\\]".toRegex()
-        regex.findAll(text).forEach { matchResult ->
+        // Find and apply new Wiki Links - use a faster search for the whole string
+        val wikiLinkRegex = "\\[\\[(.*?)\\]\\]".toRegex()
+        wikiLinkRegex.findAll(text).forEach { matchResult ->
             val start = matchResult.range.first
             val end = matchResult.range.last + 1
             val title = matchResult.groupValues[1]

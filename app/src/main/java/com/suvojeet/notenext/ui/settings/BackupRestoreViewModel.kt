@@ -466,23 +466,30 @@ class BackupRestoreViewModel @Inject constructor(
         val existingLabels = if (!effectiveMerge) repository.getLabels().first() else emptyList()
         val existingProjects = if (!effectiveMerge) repository.getProjects().first() else emptyList()
 
-        repository.runInTransaction {
-            if (!effectiveMerge) {
-                // Only delete local data if NOT merging and NOT incremental
+        // Transaction 1: Clear existing data (if not merging)
+        if (!effectiveMerge) {
+            repository.runInTransaction {
                 existingNotes.flatMap { it.attachments }.forEach { repository.deleteAttachment(it) }
                 existingNotes.forEach { repository.deleteNote(it.note) }
                 existingLabels.forEach { repository.deleteLabel(it) }
                 existingProjects.forEach { repository.deleteProject(it.id) }
             }
+        }
 
-            // Pass 3: Restore Data
+        // Pass 3: Restore Data in chunks
+        
+        // Restore Projects
+        repository.runInTransaction {
             projectsToRestore.forEach { project ->
                 val oldId = project.id
                 val newId = repository.insertProject(project.copy(id = 0))
                 require(newId <= Int.MAX_VALUE) { "Project ID overflow" }
                 oldToNewProjectIds[oldId] = newId.toInt()
             }
+        }
 
+        // Restore Labels
+        repository.runInTransaction {
             labelsToRestore.forEach { 
                 try {
                     repository.insertLabel(it) 
@@ -490,68 +497,73 @@ class BackupRestoreViewModel @Inject constructor(
                     // Label might already exist, ignore in merge mode
                 }
             }
+        }
 
-            notesToRestore.forEach { noteWithAttachments ->
-                val oldProjectId = noteWithAttachments.note.projectId
-                val newProjectId = if (oldProjectId != null) oldToNewProjectIds[oldProjectId] else null
-                
-                // If merging/incremental, check if note with same title + createdAt exists (Fix 5)
-                val existingNoteId = if (effectiveMerge) {
-                    repository.getNoteByTitleAndCreatedAt(
-                        noteWithAttachments.note.title,
-                        noteWithAttachments.note.createdAt
-                    )?.id
-                } else null
+        // Restore Notes in chunks of 50 to avoid long DB locks
+        notesToRestore.chunked(50).forEach { chunk ->
+            repository.runInTransaction {
+                chunk.forEach { noteWithAttachments ->
+                    val oldProjectId = noteWithAttachments.note.projectId
+                    val newProjectId = if (oldProjectId != null) oldToNewProjectIds[oldProjectId] else null
+                    
+                    // If merging/incremental, check if note with same title + createdAt exists (Fix 5)
+                    val existingNoteId = if (effectiveMerge) {
+                        repository.getNoteByTitleAndCreatedAt(
+                            noteWithAttachments.note.title,
+                            noteWithAttachments.note.createdAt
+                        )?.id
+                    } else null
 
-                val newNoteId = if (existingNoteId != null) {
-                    // Update existing
-                    repository.updateNote(noteWithAttachments.note.copy(id = existingNoteId, projectId = newProjectId))
-                    existingNoteId.toLong()
-                } else {
-                    // Insert new
-                    val id = repository.insertNote(noteWithAttachments.note.copy(id = 0, projectId = newProjectId))
-                    require(id <= Int.MAX_VALUE) { "Note ID overflow" }
-                    id
-                }
-                
-                // Handle checklist items
-                if (noteWithAttachments.checklistItems.isNotEmpty()) {
-                    if (existingNoteId != null) {
-                        repository.deleteChecklistForNote(existingNoteId)
+                    val newNoteId = if (existingNoteId != null) {
+                        // Update existing
+                        repository.updateNote(noteWithAttachments.note.copy(id = existingNoteId, projectId = newProjectId))
+                        existingNoteId.toLong()
+                    } else {
+                        // Insert new
+                        val id = repository.insertNote(noteWithAttachments.note.copy(id = 0, projectId = newProjectId))
+                        require(id <= Int.MAX_VALUE) { "Note ID overflow" }
+                        id
                     }
-
-                    val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
-                        checklistItem.copy(
-                            id = java.util.UUID.randomUUID().toString(),
-                            noteId = newNoteId.toInt()
-                        )
-                    }
-                    repository.insertChecklistItems(newChecklistItems)
-                }
-
-                // Handle Attachments (Fix 2)
-                noteWithAttachments.attachments.forEach { attachment ->
-                    try {
-                        val originalUri = Uri.parse(attachment.uri)
-                        val zipEntryName = attachmentUriMap[attachment.uri] ?: run {
-                            val fileName = File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
-                            "attachments/$fileName"
+                    
+                    // Handle checklist items
+                    if (noteWithAttachments.checklistItems.isNotEmpty()) {
+                        if (existingNoteId != null) {
+                            repository.deleteChecklistForNote(existingNoteId)
                         }
-                        
-                        val fileName = File(originalUri.path ?: "attachment").name
-                        val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
-                        val attachmentsDir = File(application.filesDir, "attachments")
-                        if (!attachmentsDir.exists()) attachmentsDir.mkdirs()
-                        
-                        val targetFile = File(attachmentsDir, uniqueFileName)
-                        val newUri = Uri.fromFile(targetFile).toString()
-                        
-                        val newAttachment = attachment.copy(id = 0, noteId = newNoteId.toInt(), uri = newUri)
-                        repository.insertAttachment(newAttachment)
-                        
-                        attachmentsToExtract.add(zipEntryName to targetFile)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+
+                        val newChecklistItems = noteWithAttachments.checklistItems.map { checklistItem ->
+                            checklistItem.copy(
+                                id = java.util.UUID.randomUUID().toString(),
+                                noteId = newNoteId.toInt()
+                            )
+                        }
+                        repository.insertChecklistItems(newChecklistItems)
+                    }
+
+                    // Handle Attachments
+                    noteWithAttachments.attachments.forEach { attachment ->
+                        try {
+                            val originalUri = Uri.parse(attachment.uri)
+                            val zipEntryName = attachmentUriMap[attachment.uri] ?: run {
+                                val fileName = java.io.File(originalUri.path ?: "unknown_${System.currentTimeMillis()}").name
+                                "attachments/$fileName"
+                            }
+                            
+                            val fileName = java.io.File(originalUri.path ?: "attachment").name
+                            val uniqueFileName = "${System.currentTimeMillis()}_$fileName"
+                            val attachmentsDir = java.io.File(application.filesDir, "attachments")
+                            if (!attachmentsDir.exists()) attachmentsDir.mkdirs()
+                            
+                            val targetFile = java.io.File(attachmentsDir, uniqueFileName)
+                            val newUri = Uri.fromFile(targetFile).toString()
+                            
+                            val newAttachment = attachment.copy(id = 0, noteId = newNoteId.toInt(), uri = newUri)
+                            repository.insertAttachment(newAttachment)
+                            
+                            attachmentsToExtract.add(zipEntryName to targetFile)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
             }

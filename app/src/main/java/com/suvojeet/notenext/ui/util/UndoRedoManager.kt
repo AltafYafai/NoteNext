@@ -3,7 +3,7 @@ package com.suvojeet.notenext.ui.util
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class UndoRedoManager<T>(initialState: T, private val maxHistorySize: Int = 50) {
+class UndoRedoManager<T>(initialState: T, private val maxHistorySize: Int = 30) {
 
     private val history = ArrayList<T>()
     private var currentIndex = 0
@@ -19,6 +19,11 @@ class UndoRedoManager<T>(initialState: T, private val maxHistorySize: Int = 50) 
     }
 
     fun addState(state: T) {
+        // Optimization: Don't add if the state is the same as the current one
+        if (history.isNotEmpty() && state == history[currentIndex]) {
+            return
+        }
+
         // If we are not at the end, remove all future states (redo history)
         if (currentIndex < history.lastIndex) {
             history.subList(currentIndex + 1, history.size).clear()
