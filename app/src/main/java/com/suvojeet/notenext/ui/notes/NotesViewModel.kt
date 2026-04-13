@@ -77,7 +77,8 @@ class NotesViewModel @Inject constructor(
     private val richTextController: RichTextController,
     private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
-    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle,
+    private val editorDelegate: com.suvojeet.notenext.ui.notes.delegate.NoteEditorDelegate
 ) : ViewModel() {
 
     companion object {
@@ -89,17 +90,10 @@ class NotesViewModel @Inject constructor(
     private val _listState = MutableStateFlow(NotesListState())
     val listState = _listState.asStateFlow()
 
-    private val _editState = MutableStateFlow(
-        NotesEditState(
-            editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
-            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
-            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
-        )
-    )
-    val editState = _editState.asStateFlow()
+    val editState = editorDelegate.editState
 
     // Combined state for backward compatibility and complex screen mappings
-    val state: StateFlow<NotesState> = combine(_listState, _editState) { list, edit ->
+    val state: StateFlow<NotesState> = combine(_listState, editState) { list, edit ->
         NotesState(
             notes = list.notes,
             layoutType = list.layoutType,
