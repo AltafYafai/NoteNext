@@ -51,6 +51,10 @@ dependencies {
     implementation(libs.compose.ui.preview)
     implementation(libs.material3)
     
+    // Icons
+    implementation(libs.icons.core)
+    implementation(libs.icons.extended)
+    
     // Biometric
     implementation(libs.androidx.biometric)
     

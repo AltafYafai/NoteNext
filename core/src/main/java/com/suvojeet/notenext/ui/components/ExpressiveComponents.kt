@@ -273,9 +273,10 @@ fun ExpressiveButtonGroup(
                     contentDescription = "More"
                 )
             }
-        },
-        content = content
-    )
+        }
+    ) {
+        content()
+    }
 }
 
 @Composable
