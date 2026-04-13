@@ -107,6 +107,9 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.material3.window)
     implementation(libs.material3.adaptive)
+    implementation(libs.material3.adaptive.layout)
+    implementation(libs.material3.adaptive.navigation)
+    implementation(libs.material3.adaptive.navigation.suite)
 
     // Icons — manually add karna padega ab se M3 1.4.0+
     implementation(libs.icons.core)

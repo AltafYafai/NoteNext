@@ -1,6 +1,17 @@
-@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class, ExperimentalMaterial3AdaptiveApi::class)
 package com.suvojeet.notenext.ui.notes
-
+import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
+import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
+import androidx.compose.material3.adaptive.layout.paneExpansionDraggable
+import androidx.compose.material3.VerticalDragHandle
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+...
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.layout.PaneAdaptiveEvents
+import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
+import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -86,6 +97,19 @@ fun NotesScreen(
     var isFabExpanded by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     
+    val navigator = rememberListDetailPaneScaffoldNavigator<Int>()
+    val foldingFeatures = androidx.compose.material3.adaptive.collectFoldingFeaturesAsState()
+
+    LaunchedEffect(editState.expandedNoteId) {
+        if (editState.expandedNoteId != null) {
+            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, editState.expandedNoteId)
+        } else {
+            if (navigator.currentDestination?.pane == ListDetailPaneScaffoldRole.Detail) {
+                navigator.navigateBack()
+            }
+        }
+    }
+
     val systemInDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
     val isDarkTheme = when (themeMode) {
         ThemeMode.DARK, ThemeMode.AMOLED -> true
@@ -165,22 +189,30 @@ fun NotesScreen(
     val gridState = rememberLazyStaggeredGridState()
     val lazyListState = rememberLazyListState()
 
-    SharedTransitionLayout {
-        AnimatedContent(
-            targetState = editState.expandedNoteId,
-            label = "NoteTransition",
-            transitionSpec = {
-                val springSpec = spring<Float>(dampingRatio = 0.8f, stiffness = 300f)
-                if (targetState != null) {
-                    (fadeIn(spring()) + scaleIn(initialScale = 0.85f, animationSpec = springSpec))
-                        .togetherWith(fadeOut(spring()))
-                } else {
-                    fadeIn(spring())
-                        .togetherWith(fadeOut(spring()) + scaleOut(targetScale = 0.85f, animationSpec = springSpec))
-                }
-            }
-        ) { expandedId ->
-            if (expandedId == null) {
+    val paneExpansionState = rememberPaneExpansionState(
+        keyProvider = navigator.scaffoldValue,
+        anchors = listOf(
+            PaneExpansionAnchor.Proportion(0.25f),
+            PaneExpansionAnchor.Proportion(0.5f),
+            PaneExpansionAnchor.Proportion(0.75f),
+        )
+    )
+
+    NavigableListDetailPaneScaffold(
+        navigator = navigator,
+        paneExpansionState = paneExpansionState,
+        paneExpansionDragHandle = { state ->
+            val interactionSource = remember { MutableInteractionSource() }
+            VerticalDragHandle(
+                modifier = Modifier.paneExpansionDraggable(
+                    state = state,
+                    interactionSource = interactionSource
+                ),
+                interactionSource = interactionSource
+            )
+        },
+        listPane = {
+            AnimatedPane {
                 Box(modifier = Modifier.fillMaxSize()) {
                     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
                     Scaffold(
@@ -421,12 +453,6 @@ fun NotesScreen(
                                             viewModel.onEvent(NotesEvent.ToggleNoteSelection(note.note.id))
                                         } else {
                                             if (note.note.isLocked) {
-                                                // The NoteNext key uses TIME-BASED auth (validity = 60s via
-                                                // setUserAuthenticationParameters). For time-based keys, cipher.init()
-                                                // throws UserNotAuthenticatedException BEFORE auth — so we must NOT
-                                                // pre-init a cipher or wrap it in a CryptoObject here.
-                                                // The correct flow: authenticate → key unlocked for 60s →
-                                                // ExpandNote calls decryptNote → cipher.init() succeeds in that window.
                                                 biometricAuthManager?.showBiometricPrompt(
                                                     onAuthSuccess = {
                                                         viewModel.onEvent(NotesEvent.ExpandNote(note.note.id))
@@ -463,14 +489,7 @@ fun NotesScreen(
                                                         key = { it.note.id },
                                                         contentType = { it.note.noteType }
                                                     ) { note ->
-                                                        val noteModifier = Modifier
-                                                            .animateItem()
-                                                            .sharedElement(
-                                                                rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                animatedVisibilityScope = this@AnimatedContent
-                                                            )
                                                         NoteItem(
-                                                            modifier = noteModifier,
                                                             note = note,
                                                             isSelected = listState.selectedNoteIds.contains(note.note.id),
                                                             searchQuery = listState.searchQuery,
@@ -502,14 +521,7 @@ fun NotesScreen(
                                                         contentType = pagedNotes.itemContentType { it.note.noteType }
                                                     ) { index ->
                                                         pagedNotes[index]?.let { note ->
-                                                            val noteModifier = Modifier
-                                                                .animateItem()
-                                                                .sharedElement(
-                                                                    rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                    animatedVisibilityScope = this@AnimatedContent
-                                                                )
                                                             NoteItem(
-                                                                modifier = noteModifier,
                                                                 note = note,
                                                                 isSelected = listState.selectedNoteIds.contains(note.note.id),
                                                                 searchQuery = listState.searchQuery,
@@ -545,14 +557,7 @@ fun NotesScreen(
                                                         key = { it.note.id },
                                                         contentType = { it.note.noteType }
                                                     ) { note ->
-                                                        val noteModifier = Modifier
-                                                            .animateItem()
-                                                            .sharedElement(
-                                                                rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                animatedVisibilityScope = this@AnimatedContent
-                                                            )
                                                         NoteItem(
-                                                            modifier = noteModifier,
                                                             note = note,
                                                             isSelected = listState.selectedNoteIds.contains(note.note.id),
                                                             searchQuery = listState.searchQuery,
@@ -584,14 +589,7 @@ fun NotesScreen(
                                                         contentType = pagedNotes.itemContentType { it.note.noteType }
                                                     ) { index ->
                                                         pagedNotes[index]?.let { note ->
-                                                            val noteModifier = Modifier
-                                                                .animateItem()
-                                                                .sharedElement(
-                                                                    rememberSharedContentState(key = "note-${note.note.id}"),
-                                                                    animatedVisibilityScope = this@AnimatedContent
-                                                                )
                                                             NoteItem(
-                                                                modifier = noteModifier,
                                                                 note = note,
                                                                 isSelected = listState.selectedNoteIds.contains(note.note.id),
                                                                 searchQuery = listState.searchQuery,
@@ -624,22 +622,21 @@ fun NotesScreen(
                         }
                     }
                 }
-            } else {
-                 AddEditNoteScreen(
-                    state = viewModel.state.collectAsStateWithLifecycle().value,
+            }
+        },
+        detailPane = {
+            AnimatedPane {
+                AddEditNoteScreen(
+                    state = editState,
                     onEvent = viewModel::onEvent,
                     onDismiss = { viewModel.onEvent(NotesEvent.CollapseNote) },
                     themeMode = themeMode,
                     settingsRepository = settingsRepository,
-                    events = viewModel.events,
-                    modifier = Modifier.sharedElement(
-                        rememberSharedContentState(key = "note-${expandedId}"),
-                        animatedVisibilityScope = this@AnimatedContent
-                    )
+                    events = events
                 )
             }
         }
-    }
+    )
 }
 
 @Composable
