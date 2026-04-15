@@ -607,7 +607,7 @@ fun ProjectNotesScreen(
             exit = scaleOut(targetScale = 0.85f, animationSpec = spring()) + fadeOut(animationSpec = spring())
         ) {
             AddEditNoteScreen(
-                state = state.toNotesState(),
+                state = state.toNotesEditState(),
                 onEvent = { viewModel.onEvent(it.toProjectNotesEvent()) },
                 onDismiss = { viewModel.onEvent(ProjectNotesEvent.CollapseNote) },
                 themeMode = themeMode,
