@@ -51,7 +51,8 @@ import com.suvojeet.notenext.ui.add_edit_note.components.*
 import com.suvojeet.notenext.ui.components.AiThinkingIndicator
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
+import com.suvojeet.notenext.ui.notes.NotesListState
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.NotesUiEvent
 import com.suvojeet.notenext.ui.theme.NoteGradients
@@ -242,7 +243,7 @@ fun AddEditNoteScreen(
                 }
                 is NotesUiEvent.ScrollToSearchResult -> {
                     val globalIndex = event.index
-                    val text = state.editingContent.text
+                    val textValue = state.editingContent.text
                     
                     // Re-calculate chunks to find which item to scroll to
                     var startOffset = 0
@@ -252,7 +253,7 @@ fun AddEditNoteScreen(
                     // Account for NoteAttachmentsList and NoteTitleEditor items (2 items)
                     val baseItemCount = 2 
 
-                    for (i in text.indices) {
+                    for (i in textValue.indices) {
                         if (globalIndex >= startOffset && globalIndex <= i) {
                             // Found it!
                             scope.launch {
@@ -261,7 +262,7 @@ fun AddEditNoteScreen(
                             break
                         }
                         
-                        if (text[i] == '\n') lineCount++
+                        if (textValue[i] == '\n') lineCount++
                         if (lineCount >= 50 || (i - startOffset) >= 5000) {
                             startOffset = i + 1
                             lineCount = 0
@@ -287,12 +288,12 @@ fun AddEditNoteScreen(
     val contentColor = remember(adaptiveColor) { if (adaptiveColor != 0) NoteGradients.getContentColor(adaptiveColor) else null } ?: MaterialTheme.colorScheme.onSurface
 
     val splitOffsets = remember(state.editingContent.text) {
-        val text = state.editingContent.text
+        val textValue = state.editingContent.text
         val offsets = mutableListOf<Int>()
         var currentStart = 0
         var lineCount = 0
-        for (i in text.indices) {
-            if (text[i] == '\n') lineCount++
+        for (i in textValue.indices) {
+            if (textValue[i] == '\n') lineCount++
             if (lineCount >= 50 || (i - currentStart) >= 5000) {
                 offsets.add(currentStart)
                 currentStart = i + 1
@@ -433,7 +434,7 @@ fun AddEditNoteScreen(
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 item { Spacer(modifier = Modifier.height(16.dp)) }
-                                items(state.linkPreviews, key = { it.url }) { linkPreview ->
+                                items(items = state.linkPreviews, key = { it.url }) { linkPreview ->
                                     LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
@@ -487,7 +488,7 @@ fun AddEditNoteScreen(
 
                             if (enableRichLinkPreview && state.linkPreviews.isNotEmpty()) {
                                 item { Spacer(modifier = Modifier.height(16.dp)) }
-                                items(state.linkPreviews, key = { it.url }) { linkPreview ->
+                                items(items = state.linkPreviews, key = { it.url }) { linkPreview ->
                                     LinkPreviewCard(linkPreview = linkPreview, onEvent = onEvent)
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
@@ -664,8 +665,8 @@ fun AddEditNoteScreen(
             shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
-            val currentReminderDateTime = state.editingReminderTime?.let {
-                java.time.Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault())
+            val currentReminderDateTime: java.time.ZonedDateTime? = state.editingReminderTime?.let {
+                java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault())
             }
             ReminderSheetContent(
                 initialDate = currentReminderDateTime?.toLocalDate(),
