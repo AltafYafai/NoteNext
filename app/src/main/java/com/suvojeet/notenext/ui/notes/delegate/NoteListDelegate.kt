@@ -89,4 +89,8 @@ class NoteListDelegate @Inject constructor(
     fun clearSelection() {
         _listState.update { it.copy(selectedNoteIds = emptyList()) }
     }
+
+    fun updateState(transform: (NotesListState) -> NotesListState) {
+        _listState.update(transform)
+    }
 }

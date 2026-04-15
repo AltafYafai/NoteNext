@@ -120,7 +120,7 @@ class NoteEditorDelegate @Inject constructor(
         }
     }
 
-    private fun scheduleAutoSave(scope: CoroutineScope, onSave: suspend () -> Unit) {
+    fun scheduleAutoSave(scope: CoroutineScope, onSave: suspend () -> Unit) {
         autoSaveJob?.cancel()
         autoSaveJob = scope.launch {
             delay(2000L) // 2 second debounce for auto-save
@@ -139,7 +139,16 @@ class NoteEditorDelegate @Inject constructor(
         undoRedoManager.reset(newState.editingTitle to newState.editingContent)
         updateUndoRedoFlags()
     }
+
+    fun reset(title: String, content: TextFieldValue) {
+        undoRedoManager.reset(title to content)
+        updateUndoRedoFlags()
+    }
     
+    fun cancelAutoSave() {
+        autoSaveJob?.cancel()
+    }
+
     fun updateState(transform: (NotesEditState) -> NotesEditState) {
         _editState.update(transform)
     }
