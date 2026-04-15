@@ -1075,7 +1075,7 @@ class NotesViewModel @Inject constructor(
                     for (note in selectedNotes) {
                         repository.updateNote(note.note.copy(projectId = event.projectId))
                     }
-                    _listState.value = listState.value.copy(selectedNoteIds = emptyList())
+                    listDelegate.updateState { it.copy(selectedNoteIds = emptyList()) }
                     _events.emit(NotesUiEvent.ShowToast("${selectedNotes.size} notes moved to project"))
                 }
             }
