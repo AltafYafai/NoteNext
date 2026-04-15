@@ -18,15 +18,26 @@ import javax.inject.Inject
 class AIDelegate @Inject constructor(
     private val groqRepository: GroqRepository
 ) {
-    fun summarize(text: String, scope: CoroutineScope, events: MutableSharedFlow<NotesUiEvent>, onUpdate: ((NotesEditState) -> NotesEditState) -> Unit) {
+    fun summarize(
+        content: String,
+        scope: CoroutineScope,
+        events: MutableSharedFlow<NotesUiEvent>,
+        onUpdate: ((NotesEditState) -> NotesEditState) -> Unit
+    ) {
         scope.launch {
-            onUpdate { it.copy(isSummarizing = true, summaryResult = null) }
-            groqRepository.summarizeNote(text).collect { result ->
+            onUpdate { it.copy(isSummarizing = true, showSummaryDialog = true) }
+            groqRepository.summarizeNote(content).collect { result ->
                 result.onSuccess { summary ->
-                    onUpdate { it.copy(isSummarizing = false, summaryResult = summary, showSummaryDialog = true) }
+                    onUpdate { it.copy(isSummarizing = false, summaryResult = summary) }
                 }.onFailure { failure ->
-                    onUpdate { it.copy(isSummarizing = false) }
-                    events.emit(NotesUiEvent.ShowToast("Summarization failed"))
+                    val errorMessage = when (failure) {
+                        is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
+                        is GroqResult.InvalidKey -> "Invalid API key. Check your settings."
+                        is GroqResult.NetworkError -> "Network error: ${failure.message}"
+                        is GroqResult.AllModelsFailed -> "All AI models failed to respond. Try again later."
+                        else -> "Failed to summarize note."
+                    }
+                    onUpdate { it.copy(isSummarizing = false, summaryResult = "Error: $errorMessage") }
                 }
             }
         }

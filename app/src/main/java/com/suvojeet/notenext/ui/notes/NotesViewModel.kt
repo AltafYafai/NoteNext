@@ -80,7 +80,10 @@ class NotesViewModel @Inject constructor(
     private val groqRepository: GroqRepository,
     @ApplicationContext private val context: Context,
     private val savedStateHandle: androidx.lifecycle.SavedStateHandle,
-    private val editorDelegate: com.suvojeet.notenext.ui.notes.delegate.NoteEditorDelegate
+    private val editorDelegate: com.suvojeet.notenext.ui.notes.delegate.NoteEditorDelegate,
+    private val listDelegate: com.suvojeet.notenext.ui.notes.delegate.NoteListDelegate,
+    private val bulkActionDelegate: com.suvojeet.notenext.ui.notes.delegate.BulkActionDelegate,
+    private val aiDelegate: com.suvojeet.notenext.ui.notes.delegate.AIDelegate
 ) : ViewModel() {
 
     companion object {
@@ -89,87 +92,25 @@ class NotesViewModel @Inject constructor(
         private const val KEY_EXPANDED_NOTE_ID = "expanded_note_id"
     }
 
-    private val _listState = MutableStateFlow(NotesListState())
-    val listState = _listState.asStateFlow()
-
-    private val _editState = MutableStateFlow(
-        NotesEditState(
-            editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
-            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
-            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
-        )
-    )
-    val editState = _editState.asStateFlow()
+    val listState = listDelegate.listState
+    val editState = editorDelegate.editState
 
     // High-frequency editing flows to isolate recomposition
-    val editingContent = _editState.map { it.editingContent }.distinctUntilChanged()
-    val editingTitle = _editState.map { it.editingTitle }.distinctUntilChanged()
+    val editingContent = editState.map { it.editingContent }.distinctUntilChanged()
+    val editingTitle = editState.map { it.editingTitle }.distinctUntilChanged()
 
     private val _events = MutableSharedFlow<NotesUiEvent>()
     val events = _events.asSharedFlow()
 
     private var recentlyDeletedNote: Note? = null
     
-    private val undoRedoManager = UndoRedoManager<Pair<String, TextFieldValue>>("" to TextFieldValue())
-
-    private val _searchQuery = MutableStateFlow("")
-    private val _sortType = MutableStateFlow(SortType.DATE_MODIFIED)
-    private val _filteredProjectId = MutableStateFlow<Int?>(null)
-
-    private var autoSaveJob: Job? = null
     private var selectionActionsJob: Job? = null
     private var linkDetectionJob: Job? = null
 
     private var lastCreatedNoteId: Int? = null
 
-    private fun scheduleAutoSave() {
-        autoSaveJob?.cancel()
-        _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVING)
-        autoSaveJob = viewModelScope.launch {
-            try {
-                delay(1000L) // 1 second debounce
-                saveNote(shouldCollapse = false)
-                _editState.value = editState.value.copy(saveStatus = SaveStatus.SAVED)
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                e.printStackTrace()
-                _editState.value = editState.value.copy(saveStatus = SaveStatus.ERROR)
-                _events.emit(NotesUiEvent.ShowToast("Auto-save failed: ${e.message}"))
-            }
-        }
-    }
-
     init {
-        @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-        val queryFlow = _searchQuery
-        val sortFlow = _sortType
-        val projectFlow = _filteredProjectId
-        val combinedFlow = combine(queryFlow, sortFlow, projectFlow) { query, sortType, projectId -> Triple(query, sortType, projectId) }
-        
-        combinedFlow.flatMapLatest { (query, sortType, projectId) ->
-            repository.getPinnedNoteSummaries(query, projectId)
-        }.onEach { pinned ->
-            _listState.value = _listState.value.copy(pinnedNotes = pinned)
-        }.launchIn(viewModelScope)
-
-        combinedFlow.onEach { (query, sortType, projectId) ->
-            _listState.value = _listState.value.copy(
-                pagedNotes = repository.getOtherNoteSummariesPaged(query, sortType, projectId).cachedIn(viewModelScope),
-                searchQuery = query,
-                sortType = sortType,
-                filteredProjectId = projectId
-            )
-        }.launchIn(viewModelScope)
-
-        repository.getLabels().onEach { labels ->
-            val labelNames = labels.map { it.name }
-            _listState.value = _listState.value.copy(labels = labelNames)
-            _editState.value = _editState.value.copy(labels = labelNames)
-        }.launchIn(viewModelScope)
-
-        repository.getProjects().onEach { projects ->
-            _listState.value = _listState.value.copy(projects = projects, isLoading = false)
-        }.launchIn(viewModelScope)
+        listDelegate.observeNotes(viewModelScope)
 
         selectionActionsJob = viewModelScope.launch {
             try {
@@ -244,70 +185,8 @@ class NotesViewModel @Inject constructor(
                 _editState.value = editState.value.copy(generatedChecklistPreview = emptyList(), isGeneratingChecklist = false)
             }
             is NotesEvent.FixGrammar -> {
-                val currentTextFieldValue = editState.value.editingContent
-                val selection = currentTextFieldValue.selection
-                val fullText = currentTextFieldValue.text
-
-                // Determine target text (selection or full)
-                val targetText = if (selection.start != selection.end) {
-                    fullText.substring(selection.start, selection.end)
-                } else {
-                    fullText
-                }
-
-                if (targetText.isBlank()) {
-                    viewModelScope.launch { _events.emit(NotesUiEvent.ShowToast("No content to fix")) }
-                    return
-                }
-
-                viewModelScope.launch {
-                    _editState.value = editState.value.copy(
-                        isFixingGrammar = true, 
-                        fixedContentPreview = null,
-                        originalContentBackup = currentTextFieldValue // Backup for Undo
-                    )
-                    
-                    groqRepository.fixGrammar(targetText).collect { result ->
-                        result.onSuccess { fixedFragment ->
-                            // Calculate global clean text (what it will be if accepted)
-                            val finalCleanText = if (selection.start != selection.end) {
-                                fullText.replaceRange(selection.start, selection.end, fixedFragment)
-                            } else {
-                                fixedFragment
-                            }
-
-                            // Calculate Diff just for the changed part
-                            val diffs = com.suvojeet.notenext.util.SimpleDiffUtils.computeDiff(targetText, fixedFragment)
-                            val diffAnnotated = com.suvojeet.notenext.util.SimpleDiffUtils.generateDiffString(diffs)
-
-                            // Construct Inline Preview (Original Before + Diff + Original After)
-                            val inlinePreviewBuilder = androidx.compose.ui.text.AnnotatedString.Builder()
-                            if (selection.start != selection.end) {
-                                inlinePreviewBuilder.append(fullText.substring(0, selection.start))
-                                inlinePreviewBuilder.append(diffAnnotated)
-                                inlinePreviewBuilder.append(fullText.substring(selection.end))
-                            } else {
-                                inlinePreviewBuilder.append(diffAnnotated)
-                            }
-                            val inlinePreview = inlinePreviewBuilder.toAnnotatedString()
-
-                            _editState.value = editState.value.copy(
-                                isFixingGrammar = false,
-                                fixedContentPreview = finalCleanText, // Clean text for Apply
-                                editingContent = TextFieldValue(inlinePreview, selection) // Show Diff Inline
-                            )
-                        }.onFailure { failure ->
-                            _editState.value = editState.value.copy(isFixingGrammar = false, fixedContentPreview = null, originalContentBackup = null)
-                            val errorMessage = when (failure) {
-                                is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
-                                is GroqResult.InvalidKey -> "Invalid API key. Check your settings."
-                                is GroqResult.NetworkError -> "Network error: ${failure.message}"
-                                is GroqResult.AllModelsFailed -> "All AI models failed to respond. Try again later."
-                                else -> "Failed to fix grammar."
-                            }
-                            _events.emit(NotesUiEvent.ShowToast(errorMessage))
-                        }
-                    }
+                aiDelegate.fixGrammar(editState.value.editingContent, viewModelScope, _events) { transform ->
+                    editorDelegate.updateState(transform)
                 }
             }
             is NotesEvent.AutoSaveNote -> {
@@ -526,54 +405,19 @@ class NotesViewModel @Inject constructor(
                 }
             }
             is NotesEvent.OnSearchQueryChange -> {
-                _searchQuery.value = event.query
+                listDelegate.setSearchQuery(event.query)
             }
-            is NotesEvent.OnRestoreVersion -> {
-                viewModelScope.launch {
-                    val content = HtmlConverter.htmlToAnnotatedString(event.version.content)
-                    _editState.value = editState.value.copy(
-                        editingTitle = event.version.title,
-                        editingContent = TextFieldValue(content),
-                        editingNoteType = event.version.noteType
-                    )
-                    _events.emit(NotesUiEvent.ShowToast("Version restored"))
-                }
+            is NotesEvent.SortNotes -> {
+                listDelegate.setSortType(event.sortType)
             }
-            is NotesEvent.NavigateToNoteByTitle -> {
-                viewModelScope.launch {
-                    _events.emit(NotesUiEvent.NavigateToNoteByTitle(event.title))
-                }
-            }
-            is NotesEvent.DeleteNote -> {
-                viewModelScope.launch {
-                    repository.getNoteById(event.note.note.id)?.let { noteWithAttachments ->
-                        noteUseCases.deleteNote(noteWithAttachments.note)
-                        recentlyDeletedNote = noteWithAttachments.note
-                        _events.emit(NotesUiEvent.ShowToast("Note moved to Bin"))
-                        updateWidgets()
-                    }
-                }
-            }
-            is NotesEvent.RestoreNote -> {
-                viewModelScope.launch {
-                    recentlyDeletedNote?.let { restoredNote ->
-                        repository.updateNote(restoredNote.copy(isBinned = false))
-                        recentlyDeletedNote = null
-                        updateWidgets()
-                    }
-                }
+            is NotesEvent.FilterByProject -> {
+                listDelegate.setProjectId(event.projectId)
             }
             is NotesEvent.ToggleNoteSelection -> {
-                val selectedIds = listState.value.selectedNoteIds.toMutableList()
-                if (selectedIds.contains(event.noteId)) {
-                    selectedIds.remove(event.noteId)
-                } else {
-                    selectedIds.add(event.noteId)
-                }
-                _listState.value = listState.value.copy(selectedNoteIds = selectedIds)
+                listDelegate.toggleSelection(event.noteId)
             }
             is NotesEvent.ClearSelection -> {
-                _listState.value = listState.value.copy(selectedNoteIds = emptyList())
+                listDelegate.clearSelection()
             }
             is NotesEvent.SelectAllNotes -> {
                 // Since we use paging, "Select All" is tricky.
@@ -1426,30 +1270,11 @@ class NotesViewModel @Inject constructor(
 
                 if (content.isNotBlank()) {
                     if (editState.value.summaryResult != null) {
-                         // Cache hit - just show dialog
-                         _editState.value = editState.value.copy(showSummaryDialog = true)
+                         editorDelegate.updateState { it.copy(showSummaryDialog = true) }
                     } else {
-                         // Cache miss - fetch
-                        _editState.value = editState.value.copy(isSummarizing = true, showSummaryDialog = true)
-                        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
-                            groqRepository.summarizeNote(content).collect { result ->
-                                result.onSuccess { summary ->
-                                    _editState.value = editState.value.copy(isSummarizing = false, summaryResult = summary)
-                                }.onFailure { failure ->
-                                    val errorMessage = when (failure) {
-                                        is GroqResult.RateLimited -> "AI is busy. Please try again in ${failure.retryAfterSeconds}s."
-                                        is GroqResult.InvalidKey -> "Invalid API key. Check your settings."
-                                        is GroqResult.NetworkError -> "Network error: ${failure.message}"
-                                        is GroqResult.AllModelsFailed -> "All AI models failed to respond. Try again later."
-                                        else -> "Failed to summarize note."
-                                    }
-                                    _editState.value = editState.value.copy(
-                                        isSummarizing = false,
-                                        summaryResult = "Error: $errorMessage"
-                                    )
-                                }
-                            }
-                        }
+                         aiDelegate.summarize(content, viewModelScope, _events) { transform ->
+                             editorDelegate.updateState(transform)
+                         }
                     }
                 }
             }
