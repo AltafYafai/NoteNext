@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.DpOffset
 
 @Composable
 fun FormatToolbar(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     onInsertLinkClick: () -> Unit,
     onGrammarFixClick: () -> Unit,

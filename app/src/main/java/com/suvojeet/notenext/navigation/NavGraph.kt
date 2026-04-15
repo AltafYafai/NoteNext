@@ -70,7 +70,7 @@ import com.suvojeet.notenext.ui.project.ProjectScreen
 import com.suvojeet.notenext.ui.project.ProjectViewModel
 import com.suvojeet.notenext.ui.project.ProjectNotesScreen
 import com.suvojeet.notenext.ui.project.ProjectNotesViewModel
-import com.suvojeet.notenext.ui.project.toNotesState
+import com.suvojeet.notenext.ui.project.toNotesEditState
 import com.suvojeet.notenext.ui.project.toProjectNotesEvent
 import com.suvojeet.notenext.ui.add_edit_note.AddEditNoteScreen
 import com.suvojeet.notenext.ui.theme.ThemeMode
@@ -94,7 +94,8 @@ import androidx.navigation.toRoute
 import com.suvojeet.notenext.ui.components.springPress
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesListState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 
 @Composable
 fun NavGraph(
@@ -113,7 +114,8 @@ fun NavGraph(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val notesViewModel: NotesViewModel = hiltViewModel()
-    val notesState by notesViewModel.state.collectAsState()
+    val notesState by notesViewModel.listState.collectAsState()
+    val editState by notesViewModel.editState.collectAsState()
 
     val activity = context.findActivity() as? FragmentActivity
     val biometricAuthManager = if (activity != null) {
@@ -216,7 +218,7 @@ fun NavGraph(
     } else {
         ModalNavigationDrawer(
             drawerState = drawerState,
-            gesturesEnabled = notesState.expandedNoteId == null,
+            gesturesEnabled = editState.expandedNoteId == null,
             drawerContent = {
                 ModalDrawerSheet(
                     modifier = Modifier.fillMaxWidth(0.85f),
@@ -250,7 +252,7 @@ fun NavGraph(
 @Composable
 private fun DrawerContent(
     navController: NavHostController,
-    notesState: NotesState,
+    notesState: NotesListState,
     notesViewModel: NotesViewModel,
     onCloseDrawer: () -> Unit
 ) {
@@ -679,7 +681,7 @@ private fun NavGraphBuilder.sharedRoutes(
     ) {
         val viewModel: ProjectNotesViewModel = hiltViewModel()
         AddEditNoteScreen(
-            state = viewModel.state.collectAsState().value.toNotesState(),
+            state = viewModel.state.collectAsState().value.toNotesEditState(),
             onEvent = { viewModel.onEvent(it.toProjectNotesEvent()) },
             onDismiss = { navController.popBackStack() },
             themeMode = themeMode,

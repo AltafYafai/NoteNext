@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.TextFieldValue
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import androidx.compose.ui.res.stringResource
 import com.suvojeet.notenext.R
 import androidx.compose.ui.text.TextLayoutResult
@@ -39,7 +39,7 @@ import com.suvojeet.notenext.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun NoteTitleEditor(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     onReminderClick: () -> Unit,
     scrollOffset: Float = 0f
@@ -96,7 +96,7 @@ fun NoteTitleEditor(
 }
 
 fun LazyListScope.NoteContentItems(
-    state: NotesState,
+    state: NotesEditState,
     splitOffsets: List<Int>,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
@@ -139,7 +139,7 @@ fun NoteContentChunkEditor(
     index: Int,
     startOffset: Int,
     endOffset: Int,
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     onUrlClick: (String) -> Unit,
     onSlashCommand: () -> Unit,

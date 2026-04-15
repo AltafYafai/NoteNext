@@ -626,7 +626,7 @@ fun NotesScreen(
                 }
             } else {
                  AddEditNoteScreen(
-                    state = viewModel.state.collectAsStateWithLifecycle().value,
+                    state = editState,
                     onEvent = viewModel::onEvent,
                     onDismiss = { viewModel.onEvent(NotesEvent.CollapseNote) },
                     themeMode = themeMode,

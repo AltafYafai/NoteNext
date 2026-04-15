@@ -99,71 +99,9 @@ class NotesViewModel @Inject constructor(
     )
     val editState = _editState.asStateFlow()
 
-    // Combined state for backward compatibility and complex screen mappings
-    val state: StateFlow<NotesState> = combine(_listState, _editState) { list, edit ->
-        NotesState(
-            notes = list.notes,
-            layoutType = list.layoutType,
-            sortType = list.sortType,
-            selectedNoteIds = list.selectedNoteIds,
-            labels = list.labels,
-            filteredLabel = list.filteredLabel,
-            isLoading = list.isLoading,
-            projects = list.projects,
-            searchQuery = list.searchQuery,
-            filteredProjectId = list.filteredProjectId,
-            
-            expandedNoteId = edit.expandedNoteId,
-            editingTitle = edit.editingTitle,
-            editingContent = edit.editingContent,
-            editingColor = edit.editingColor,
-            editingIsNewNote = edit.editingIsNewNote,
-            editingLastEdited = edit.editingLastEdited,
-            isPinned = edit.isPinned,
-            isArchived = edit.isArchived,
-            editingLabel = edit.editingLabel,
-            canUndo = edit.canUndo,
-            canRedo = edit.canRedo,
-            isBoldActive = edit.isBoldActive,
-            isItalicActive = edit.isItalicActive,
-            isUnderlineActive = edit.isUnderlineActive,
-            activeHeadingStyle = edit.activeHeadingStyle,
-            activeStyles = edit.activeStyles,
-            linkPreviews = edit.linkPreviews,
-            editingNoteType = edit.editingNoteType,
-            editingChecklist = edit.editingChecklist,
-            checklistInputValues = edit.checklistInputValues,
-            focusedChecklistItemId = edit.focusedChecklistItemId,
-            isCheckedItemsExpanded = edit.isCheckedItemsExpanded,
-            newlyAddedChecklistItemId = edit.newlyAddedChecklistItemId,
-            editingAttachments = edit.editingAttachments,
-            editingIsLocked = edit.editingIsLocked,
-            editingNoteVersions = edit.editingNoteVersions,
-            editingReminderTime = edit.editingReminderTime,
-            editingRepeatOption = edit.editingRepeatOption,
-            isSummarizing = edit.isSummarizing,
-            summaryResult = edit.summaryResult,
-            showSummaryDialog = edit.showSummaryDialog,
-            showLabelDialog = edit.showLabelDialog,
-            isGeneratingChecklist = edit.isGeneratingChecklist,
-            generatedChecklistPreview = edit.generatedChecklistPreview,
-            isFixingGrammar = edit.isFixingGrammar,
-            fixedContentPreview = edit.fixedContentPreview,
-            originalContentBackup = edit.originalContentBackup,
-            saveStatus = edit.saveStatus,
-            isMentionPopupVisible = edit.isMentionPopupVisible,
-            mentionSearchQuery = edit.mentionSearchQuery,
-            mentionableNotes = edit.mentionableNotes
-        )
-    }.stateIn(
-        viewModelScope, 
-        SharingStarted.WhileSubscribed(5000), 
-        NotesState(
-            editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
-            editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
-            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
-        )
-    )
+    // High-frequency editing flows to isolate recomposition
+    val editingContent = _editState.map { it.editingContent }.distinctUntilChanged()
+    val editingTitle = _editState.map { it.editingTitle }.distinctUntilChanged()
 
     private val _events = MutableSharedFlow<NotesUiEvent>()
     val events = _events.asSharedFlow()
@@ -222,7 +160,9 @@ class NotesViewModel @Inject constructor(
         }.launchIn(viewModelScope)
 
         repository.getLabels().onEach { labels ->
-            _listState.value = _listState.value.copy(labels = labels.map { it.name })
+            val labelNames = labels.map { it.name }
+            _listState.value = _listState.value.copy(labels = labelNames)
+            _editState.value = _editState.value.copy(labels = labelNames)
         }.launchIn(viewModelScope)
 
         repository.getProjects().onEach { projects ->

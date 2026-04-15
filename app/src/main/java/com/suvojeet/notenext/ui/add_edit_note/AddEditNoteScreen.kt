@@ -70,7 +70,7 @@ data class ImageViewerData(val uri: Uri, val tempId: String)
 
 @Composable
 fun AddEditNoteScreen(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     onDismiss: () -> Unit,
     themeMode: ThemeMode,

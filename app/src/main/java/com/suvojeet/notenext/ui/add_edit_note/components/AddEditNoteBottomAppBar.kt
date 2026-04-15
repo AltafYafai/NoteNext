@@ -29,13 +29,13 @@ import androidx.compose.ui.window.PopupProperties
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.ui.theme.ThemeMode
 import kotlin.math.roundToInt
 
 @Composable
 fun AddEditNoteBottomAppBar(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     showColorPicker: (Boolean) -> Unit,
     showFormatBar: (Boolean) -> Unit,

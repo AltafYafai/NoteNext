@@ -24,7 +24,7 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.repository.SettingsRepository
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.util.BiometricAuthManager
 import com.suvojeet.notenext.util.NoteHtmlGenerator
 import com.suvojeet.notenext.util.printNote
@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AddEditNoteDialogs(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     showDeleteDialog: Boolean,
     onShowDeleteDialogChange: (Boolean) -> Unit,

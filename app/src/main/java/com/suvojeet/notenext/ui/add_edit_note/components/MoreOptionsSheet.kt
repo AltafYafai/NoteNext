@@ -26,14 +26,14 @@ import androidx.compose.ui.unit.dp
 import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import com.suvojeet.notenext.core.model.NoteType
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun MoreOptionsSheet(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     onDismiss: () -> Unit,
     showDeleteDialog: (Boolean) -> Unit,

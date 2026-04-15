@@ -93,6 +93,7 @@ data class NotesListState(
 )
 
 data class NotesEditState(
+    val labels: List<String> = emptyList(),
     val expandedNoteId: Int? = null,
     val editingTitle: String = "",
     val editingContent: TextFieldValue = TextFieldValue(),

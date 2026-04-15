@@ -33,11 +33,11 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.core.model.NoteType
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 
 @Composable
 fun AddEditNoteTopAppBar(
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     onDismiss: () -> Unit,
     editingNoteType: NoteType,

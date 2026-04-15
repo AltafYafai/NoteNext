@@ -44,12 +44,11 @@ import com.suvojeet.notenext.R
 import com.suvojeet.notenext.data.ChecklistItem
 import com.suvojeet.notenext.ui.components.springPress
 import com.suvojeet.notenext.ui.notes.NotesEvent
-import com.suvojeet.notenext.ui.notes.NotesState
+import com.suvojeet.notenext.ui.notes.NotesEditState
 import kotlin.math.roundToInt
 
 fun LazyListScope.ChecklistEditor(
-
-    state: NotesState,
+    state: NotesEditState,
     onEvent: (NotesEvent) -> Unit,
     isCheckedItemsExpanded: Boolean,
     onToggleCheckedItems: () -> Unit,
