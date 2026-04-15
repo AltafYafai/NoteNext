@@ -468,9 +468,10 @@ class NotesViewModel @Inject constructor(
                                 noteToUpdate = decrypted.copy(isLocked = false)
                             }
                             repository.updateNote(noteToUpdate)
-                        }
-                        listDelegate.updateState { it.copy(selectedNoteIds = emptyList()) }
-                        val message = if (areNotesBeingLocked) {
+                            }
+                            listDelegate.updateState { it.copy(selectedNoteIds = emptyList()) }
+                            val message = if (areNotesBeingLocked) {
+
                             if (selectedNotes.size > 1) "${selectedNotes.size} notes locked" else "Note locked"
                         } else {
                             if (selectedNotes.size > 1) "${selectedNotes.size} notes unlocked" else "Note unlocked"
@@ -736,7 +737,7 @@ class NotesViewModel @Inject constructor(
             is NotesEvent.DeleteChecklistItem -> {
                 val updatedChecklist = ChecklistManager.deleteItem(editState.value.editingChecklist, event.itemId)
                 editorDelegate.updateState { it.copy(
-                    updatedChecklist,
+                    editingChecklist = updatedChecklist,
                     checklistInputValues = editState.value.checklistInputValues - event.itemId
                 ) }
                 scheduleAutoSave()
