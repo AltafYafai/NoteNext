@@ -1,6 +1,32 @@
 {
   "releases": [
     {
+      "version": "1.3.7",
+      "date": "April 16, 2026",
+      "items": [
+        {
+          "title": "Performance & Stability",
+          "description": "Improved app launch speed, reduced memory usage, and fixed rare crashes on Android 15.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Enhanced Backup Reliability",
+          "description": "Backup and restore now handle large note sets more efficiently and provide clearer error messages.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "UI Polish & Accessibility",
+          "description": "Refined button contrast, improved TalkBack support, and fixed layout glitches in landscape mode.",
+          "type": "IMPROVEMENT"
+        },
+        {
+          "title": "Bug Fixes",
+          "description": "Resolved issues with project nesting, reminders not firing, and rare sync failures.",
+          "type": "FIX"
+        }
+      ]
+    },
+    {
       "version": "1.3.6",
       "date": "April 05, 2026",
       "items": [
