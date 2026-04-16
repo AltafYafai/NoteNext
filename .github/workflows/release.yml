@@ -53,11 +53,11 @@ jobs:
                 # GitHub Body
                 body = f"## Release v{version} ({release['date']})\n\n"
                 
-                # --- Telegram Premium Message (TechToli Style) ---
-                tg_body = f"🚀 *NoteNext v{version} | Professional Release* 📝\n\n"
-                tg_body += f"*Experience the next generation of private, AI-powered note-taking.*\n\n"
+                # --- Telegram Premium Message (No Emojis) ---
+                tg_body = f"NoteNext v{version} | Professional Release\n\n"
+                tg_body += f"Experience the next generation of private, AI-powered note-taking.\n\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += "✨ *WHAT'S NEW IN THIS VERSION?*\n"
+                tg_body += "WHAT'S NEW IN THIS VERSION?\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
                 # Group by type
@@ -67,28 +67,28 @@ jobs:
                 
                 if features:
                     body += "### New Features\n"
-                    tg_body += "🌟 *NEW FEATURES*\n"
+                    tg_body += "NEW FEATURES\n"
                     for item in features:
                         body += f"- **{item['title']}**: {item['description']}\n"
-                        tg_body += f"• *{item['title']}*: {item['description']}\n"
+                        tg_body += f"- {item['title']}: {item['description']}\n"
                     body += "\n"
                     tg_body += "\n"
                 
                 if improvements:
                     body += "### Improvements\n"
-                    tg_body += "🚀 *SYSTEM IMPROVEMENTS*\n"
+                    tg_body += "SYSTEM IMPROVEMENTS\n"
                     for item in improvements:
                         body += f"- **{item['title']}**: {item['description']}\n"
-                        tg_body += f"• *{item['title']}*: {item['description']}\n"
+                        tg_body += f"- {item['title']}: {item['description']}\n"
                     body += "\n"
                     tg_body += "\n"
                     
                 if fixes:
                     body += "### Bug Fixes\n"
-                    tg_body += "🐛 *CRITICAL BUG FIXES*\n"
+                    tg_body += "CRITICAL BUG FIXES\n"
                     for item in fixes:
                         body += f"- **{item['title']}**: {item['description']}\n"
-                        tg_body += f"• *{item['title']}*: {item['description']}\n"
+                        tg_body += f"- {item['title']}: {item['description']}\n"
                     body += "\n"
                     tg_body += "\n"
                 
@@ -103,21 +103,21 @@ jobs:
                 
                 # Add Technical Info to Telegram
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += "📊 *TECHNICAL INFO*\n"
+                tg_body += "TECHNICAL INFO\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += f"📦 *Package:* `com.suvojeet.notenext`\n"
-                tg_body += f"🏷️ *Version:* `{version}`\n"
-                tg_body += f"🏗️ *Build:* `{build_code}`\n"
-                tg_body += "📱 *Min SDK:* `26 (Android 8.0)`\n"
-                tg_body += "⚖️ *License:* `MIT (Open Source)`\n\n"
+                tg_body += f"Package: `com.suvojeet.notenext`\n"
+                tg_body += f"Version: `{version}`\n"
+                tg_body += f"Build: `{build_code}`\n"
+                tg_body += "Min SDK: `26 (Android 8.0)`\n"
+                tg_body += "License: `MIT (Open Source)`\n\n"
 
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += "📥 *DOWNLOAD & LINKS*\n"
+                tg_body += "DOWNLOAD & LINKS\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += f"🚀 *Play Store:* [Download Now](https://play.google.com/store/apps/details?id=com.suvojeet.notenext)\n"
-                tg_body += f"☕ *Support:* [Coindrop](https://coindrop.to/suvojeet_sengupta)\n"
-                tg_body += f"⭐ *GitHub:* [AltafYafai/NoteNext](https://github.com/{repo})\n"
-                tg_body += f"💬 *Support:* @NoteNextCommunity\n\n"
+                tg_body += f"Play Store: [Download Now](https://play.google.com/store/apps/details?id=com.suvojeet.notenext)\n"
+                tg_body += f"Support: [Coindrop](https://coindrop.to/suvojeet_sengupta)\n"
+                tg_body += f"GitHub: [AltafYafai/NoteNext](https://github.com/{repo})\n"
+                tg_body += f"Support Group: @NoteNextCommunity\n\n"
                 tg_body += "#NoteNext #Android #Material3 #Privacy #AI #OpenSource"
 
                 with open('release_body.md', 'w') as f:
