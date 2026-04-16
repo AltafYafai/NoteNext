@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.suvojeet.notenext.credits"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    namespace = (rootProject.extra["NAMESPACE"] as String) + ".credits"
+    compileSdk = (rootProject.extra["COMPILE_SDK"] as Int)
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk = (rootProject.extra["MIN_SDK"] as Int)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }

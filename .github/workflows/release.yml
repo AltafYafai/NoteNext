@@ -23,13 +23,21 @@ jobs:
       with:
         gradle-version: 9.4.0
 
-    - name: Extract Version Info
-      id: version_info
+    - name: Extract Metadata
+      id: metadata
       run: |
-        VERSION_NAME=$(grep "appVersionName=" gradle.properties | cut -d'=' -f2)
-        VERSION_CODE=$(grep "appVersionCode=" gradle.properties | cut -d'=' -f2)
+        VERSION_NAME=$(grep "const val VERSION_NAME =" metadata.kt | cut -d'"' -f2)
+        VERSION_CODE=$(grep "const val VERSION_CODE =" metadata.kt | awk '{print $NF}' | sed 's/[,;]//g')
+        PACKAGE_NAME=$(grep "const val APPLICATION_ID =" metadata.kt | cut -d'"' -f2)
+        APP_NAME=$(grep "const val APP_NAME =" metadata.kt | cut -d'"' -f2)
+        MIN_SDK=$(grep "const val MIN_SDK =" metadata.kt | awk '{print $NF}' | sed 's/[,;]//g')
+        
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
         echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+        echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+        echo "APP_NAME=$APP_NAME" >> $GITHUB_ENV
+        echo "MIN_SDK=$MIN_SDK" >> $GITHUB_ENV
+        
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
 
     - name: Generate Professional Release Notes
@@ -42,6 +50,9 @@ jobs:
         version = os.environ.get('VERSION_NAME')
         build_code = os.environ.get('VERSION_CODE')
         repo = os.environ.get('GITHUB_REPOSITORY')
+        package_name = os.environ.get('PACKAGE_NAME')
+        app_name = os.environ.get('APP_NAME')
+        min_sdk = os.environ.get('MIN_SDK')
         
         try:
             with open('changelog.json', 'r') as f:
@@ -54,7 +65,7 @@ jobs:
                 body = f"## Release v{version} ({release['date']})\n\n"
                 
                 # --- Telegram Premium Message (No Emojis) ---
-                tg_body = f"NoteNext v{version} | Professional Release\n\n"
+                tg_body = f"{app_name} v{version} | Professional Release\n\n"
                 tg_body += f"Experience the next generation of private, AI-powered note-taking.\n\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 tg_body += "WHAT'S NEW IN THIS VERSION?\n"
@@ -105,20 +116,20 @@ jobs:
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 tg_body += "TECHNICAL INFO\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += f"Package: `com.suvojeet.notenext`\n"
+                tg_body += f"Package: `{package_name}`\n"
                 tg_body += f"Version: `{version}`\n"
                 tg_body += f"Build: `{build_code}`\n"
-                tg_body += "Min SDK: `26 (Android 8.0)`\n"
+                tg_body += f"Min SDK: `{min_sdk}`\n"
                 tg_body += "License: `MIT (Open Source)`\n\n"
 
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 tg_body += "DOWNLOAD & LINKS\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += f"Play Store: [Download Now](https://play.google.com/store/apps/details?id=com.suvojeet.notenext)\n"
+                tg_body += f"Play Store: [Download Now](https://play.google.com/store/apps/details?id={package_name})\n"
                 tg_body += f"Support: [Coindrop](https://coindrop.to/suvojeet_sengupta)\n"
-                tg_body += f"GitHub: [AltafYafai/NoteNext](https://github.com/{repo})\n"
+                tg_body += f"GitHub: [suvojeet-sengupta/{app_name}](https://github.com/{repo})\n"
                 tg_body += f"Support Group: @NoteNextCommunity\n\n"
-                tg_body += "#NoteNext #Android #Material3 #Privacy #AI #OpenSource"
+                tg_body += f"#{app_name} #Android #Material3 #Privacy #AI #OpenSource"
 
                 with open('release_body.md', 'w') as f:
                     f.write(body)
@@ -128,7 +139,7 @@ jobs:
                 with open('release_body.md', 'w') as f:
                     f.write(f"Automated release for version {version}")
                 with open('tg_body.txt', 'w') as f:
-                    f.write(f"🚀 NoteNext v{version} Released!")
+                    f.write(f"🚀 {app_name} v{version} Released!")
         except Exception as e:
             error_msg = f"Automated release for version {version}\n\nError parsing changelog: {str(e)}"
             with open('release_body.md', 'w') as f:

@@ -9,15 +9,17 @@ plugins {
 }
 
 android {
-    namespace = "com.suvojeet.notenext"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    namespace = rootProject.extra["NAMESPACE"] as String
+    compileSdk = (rootProject.extra["COMPILE_SDK"] as Int)
 
     defaultConfig {
-        applicationId = "com.suvojeet.notenext"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = project.properties["appVersionCode"]?.toString()?.toInt() ?: 26
-        versionName = project.properties["appVersionName"]?.toString() ?: "1.3.5"
+        applicationId = rootProject.extra["APPLICATION_ID"] as String
+        minSdk = rootProject.extra["MIN_SDK"] as Int
+        targetSdk = rootProject.extra["TARGET_SDK"] as Int
+        versionCode = project.properties["appVersionCode"]?.toString()?.toInt() ?: (rootProject.extra["VERSION_CODE"] as Int)
+        versionName = project.properties["appVersionName"]?.toString() ?: (rootProject.extra["VERSION_NAME"] as String)
+
+        resValue("string", "app_name", (rootProject.extra["APP_NAME"] as String))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         androidResources {

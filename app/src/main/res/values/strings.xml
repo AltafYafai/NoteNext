@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">NoteNext</string>
+    <!-- app_name is provided via build.gradle.kts from metadata.kt -->
     <string name="manage_labels">Manage Labels</string>
     <string name="label_icon">Label icon</string>
     <string name="pinned_note_description">Pinned note</string>

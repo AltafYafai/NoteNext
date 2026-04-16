@@ -25,11 +25,12 @@ jobs:
       with:
         gradle-version: 9.4.0
 
-    - name: Extract Version Info
-      id: version_info
+    - name: Extract Metadata
+      id: metadata
       run: |
-        VERSION_NAME=$(grep "appVersionName=" gradle.properties | cut -d'=' -f2)
-        VERSION_CODE=$(grep "appVersionCode=" gradle.properties | cut -d'=' -f2)
+        VERSION_NAME=$(grep "const val VERSION_NAME =" metadata.kt | cut -d'"' -f2)
+        VERSION_CODE=$(grep "const val VERSION_CODE =" metadata.kt | awk '{print $NF}' | sed 's/[,;]//g')
+        
         echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
         echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
