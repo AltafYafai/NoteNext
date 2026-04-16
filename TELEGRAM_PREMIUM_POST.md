@@ -44,7 +44,8 @@ This template is inspired by the **TechToli** style—clean, feature-rich, and p
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 📥 **DOWNLOAD & LINKS**
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔗 **Get it on Google Play:** [Coming Soon]
+🚀 **Play Store:** [Download Now](https://play.google.com/store/apps/details?id=com.suvojeet.notenext)
+☕ **Support:** [Coindrop](https://coindrop.to/suvojeet_sengupta)
 ⭐ **Star on GitHub:** https://github.com/AltafYafai/NoteNext
 💬 **Support Group:** @NoteNextCommunity
 

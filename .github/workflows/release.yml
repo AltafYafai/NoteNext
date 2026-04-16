@@ -114,6 +114,8 @@ jobs:
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                 tg_body += "📥 *DOWNLOAD & LINKS*\n"
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                tg_body += f"🚀 *Play Store:* [Download Now](https://play.google.com/store/apps/details?id=com.suvojeet.notenext)\n"
+                tg_body += f"☕ *Support:* [Coindrop](https://coindrop.to/suvojeet_sengupta)\n"
                 tg_body += f"⭐ *GitHub:* [AltafYafai/NoteNext](https://github.com/{repo})\n"
                 tg_body += f"💬 *Support:* @NoteNextCommunity\n\n"
                 tg_body += "#NoteNext #Android #Material3 #Privacy #AI #OpenSource"
