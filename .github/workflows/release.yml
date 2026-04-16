@@ -40,6 +40,9 @@ jobs:
         import os
 
         version = os.environ.get('VERSION_NAME')
+        build_code = os.environ.get('VERSION_CODE')
+        repo = os.environ.get('GITHUB_REPOSITORY')
+        
         try:
             with open('changelog.json', 'r') as f:
                 data = json.load(f)
@@ -50,10 +53,12 @@ jobs:
                 # GitHub Body
                 body = f"## Release v{version} ({release['date']})\n\n"
                 
-                # Telegram Message
-                tg_body = f"🚀 *NoteNext v{version} — Release Update* 📝\n\n"
-                tg_body += f"_{release['date']}_\n\n"
-                tg_body += "🌟 *Highlights*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                # --- Telegram Premium Message (TechToli Style) ---
+                tg_body = f"🚀 *NoteNext v{version} | Professional Release* 📝\n\n"
+                tg_body += f"*Experience the next generation of private, AI-powered note-taking.*\n\n"
+                tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                tg_body += "✨ *WHAT'S NEW IN THIS VERSION?*\n"
+                tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
 
                 # Group by type
                 features = [item for item in release['items'] if item['type'] == 'FEATURE']
@@ -62,37 +67,56 @@ jobs:
                 
                 if features:
                     body += "### New Features\n"
+                    tg_body += "🌟 *NEW FEATURES*\n"
                     for item in features:
                         body += f"- **{item['title']}**: {item['description']}\n"
-                        tg_body += f"✅ *{item['title']}*: {item['description']}\n"
+                        tg_body += f"• *{item['title']}*: {item['description']}\n"
                     body += "\n"
+                    tg_body += "\n"
                 
                 if improvements:
                     body += "### Improvements\n"
+                    tg_body += "🚀 *SYSTEM IMPROVEMENTS*\n"
                     for item in improvements:
                         body += f"- **{item['title']}**: {item['description']}\n"
-                        tg_body += f"⚡️ *{item['title']}*: {item['description']}\n"
+                        tg_body += f"• *{item['title']}*: {item['description']}\n"
                     body += "\n"
+                    tg_body += "\n"
                     
                 if fixes:
                     body += "### Bug Fixes\n"
+                    tg_body += "🐛 *CRITICAL BUG FIXES*\n"
                     for item in fixes:
                         body += f"- **{item['title']}**: {item['description']}\n"
-                        tg_body += f"🐛 *{item['title']}*: {item['description']}\n"
+                        tg_body += f"• *{item['title']}*: {item['description']}\n"
                     body += "\n"
+                    tg_body += "\n"
                 
                 body += "---\n"
                 body += "### Developer Information\n"
                 body += "- **Lead Developer**: Suvojeet Sengupta\n"
                 body += "- **GitHub**: [@suvojeet-sengupta](https://github.com/suvojeet-sengupta)\n"
-                body += "- **Build Version**: " + os.environ.get('VERSION_CODE') + "\n\n"
+                body += f"- **Build Version**: {build_code}\n\n"
                 body += "### Links\n"
-                body += f"- [Download Full Changelog](https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY')}/main/changelog.json)\n"
-                body += f"- [Project Repository](https://github.com/{os.environ.get('GITHUB_REPOSITORY')})\n"
+                body += f"- [Download Full Changelog](https://raw.githubusercontent.com/{repo}/main/changelog.json)\n"
+                body += f"- [Project Repository](https://github.com/{repo})\n"
                 
+                # Add Technical Info to Telegram
                 tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                tg_body += f"⭐️ *GitHub:* [AltafYafai/NoteNext](https://github.com/{os.environ.get('GITHUB_REPOSITORY')})\n"
-                tg_body += "#Android #Material3 #NoteNext #OpenSource"
+                tg_body += "📊 *TECHNICAL INFO*\n"
+                tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                tg_body += f"📦 *Package:* `com.suvojeet.notenext`\n"
+                tg_body += f"🏷️ *Version:* `{version}`\n"
+                tg_body += f"🏗️ *Build:* `{build_code}`\n"
+                tg_body += "📱 *Min SDK:* `26 (Android 8.0)`\n"
+                tg_body += "⚖️ *License:* `MIT (Open Source)`\n\n"
+
+                tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                tg_body += "📥 *DOWNLOAD & LINKS*\n"
+                tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                tg_body += f"⭐ *GitHub:* [AltafYafai/NoteNext](https://github.com/{repo})\n"
+                tg_body += f"💬 *Support:* @NoteNextCommunity\n\n"
+                tg_body += "#NoteNext #Android #Material3 #Privacy #AI #OpenSource"
 
                 with open('release_body.md', 'w') as f:
                     f.write(body)
