@@ -47,8 +47,14 @@ jobs:
             release = next((r for r in data['releases'] if r['version'] == version), None)
             
             if release:
+                # GitHub Body
                 body = f"## Release v{version} ({release['date']})\n\n"
                 
+                # Telegram Message
+                tg_body = f"🚀 *NoteNext v{version} — Release Update* 📝\n\n"
+                tg_body += f"_{release['date']}_\n\n"
+                tg_body += "🌟 *Highlights*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
                 # Group by type
                 features = [item for item in release['items'] if item['type'] == 'FEATURE']
                 improvements = [item for item in release['items'] if item['type'] == 'IMPROVEMENT']
@@ -58,18 +64,21 @@ jobs:
                     body += "### New Features\n"
                     for item in features:
                         body += f"- **{item['title']}**: {item['description']}\n"
+                        tg_body += f"✅ *{item['title']}*: {item['description']}\n"
                     body += "\n"
                 
                 if improvements:
                     body += "### Improvements\n"
                     for item in improvements:
                         body += f"- **{item['title']}**: {item['description']}\n"
+                        tg_body += f"⚡️ *{item['title']}*: {item['description']}\n"
                     body += "\n"
                     
                 if fixes:
                     body += "### Bug Fixes\n"
                     for item in fixes:
                         body += f"- **{item['title']}**: {item['description']}\n"
+                        tg_body += f"🐛 *{item['title']}*: {item['description']}\n"
                     body += "\n"
                 
                 body += "---\n"
@@ -81,14 +90,25 @@ jobs:
                 body += f"- [Download Full Changelog](https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY')}/main/changelog.json)\n"
                 body += f"- [Project Repository](https://github.com/{os.environ.get('GITHUB_REPOSITORY')})\n"
                 
+                tg_body += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                tg_body += f"⭐️ *GitHub:* [AltafYafai/NoteNext](https://github.com/{os.environ.get('GITHUB_REPOSITORY')})\n"
+                tg_body += "#Android #Material3 #NoteNext #OpenSource"
+
                 with open('release_body.md', 'w') as f:
                     f.write(body)
+                with open('tg_body.txt', 'w') as f:
+                    f.write(tg_body)
             else:
                 with open('release_body.md', 'w') as f:
                     f.write(f"Automated release for version {version}")
+                with open('tg_body.txt', 'w') as f:
+                    f.write(f"🚀 NoteNext v{version} Released!")
         except Exception as e:
+            error_msg = f"Automated release for version {version}\n\nError parsing changelog: {str(e)}"
             with open('release_body.md', 'w') as f:
-                f.write(f"Automated release for version {version}\n\nError parsing changelog: {str(e)}")
+                f.write(error_msg)
+            with open('tg_body.txt', 'w') as f:
+                f.write(error_msg)
 
     - name: Decode Keystore
       run: |
@@ -125,3 +145,12 @@ jobs:
           ${{ env.APK_PATH }}
           ${{ env.AAB_PATH }}
         overwrite: true
+
+    - name: Send Release to Telegram
+      uses: appleboy/telegram-action@master
+      with:
+        to: ${{ secrets.TELEGRAM_CHAT_ID }}
+        token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        format: markdown
+        message_file: tg_body.txt
+        document: ${{ env.APK_PATH }}
