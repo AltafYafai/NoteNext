@@ -91,6 +91,7 @@ class NotesViewModel @Inject constructor(
         private const val KEY_EDITING_TITLE = "editing_title"
         private const val KEY_EDITING_CONTENT = "editing_content"
         private const val KEY_EXPANDED_NOTE_ID = "expanded_note_id"
+        private const val KEY_NOTE_TYPE = "note_type"
     }
 
     val listState = listDelegate.listState
@@ -127,6 +128,12 @@ class NotesViewModel @Inject constructor(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+
+        // Restore expanded note if process was killed
+        val restoredNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
+        if (restoredNoteId != null && restoredNoteId != -1) {
+            onEvent(NotesEvent.ExpandNote(restoredNoteId))
         }
     }
 
@@ -639,6 +646,7 @@ class NotesViewModel @Inject constructor(
                             savedStateHandle[KEY_EXPANDED_NOTE_ID] = event.noteId
                             savedStateHandle[KEY_EDITING_TITLE] = note.title
                             savedStateHandle[KEY_EDITING_CONTENT] = note.content
+                            savedStateHandle[KEY_NOTE_TYPE] = note.noteType.name
 
                             editorDelegate.updateState { it.copy(
                                 expandedNoteId = event.noteId,
@@ -672,6 +680,7 @@ class NotesViewModel @Inject constructor(
                         savedStateHandle[KEY_EXPANDED_NOTE_ID] = -1
                         savedStateHandle[KEY_EDITING_TITLE] = ""
                         savedStateHandle[KEY_EDITING_CONTENT] = ""
+                        savedStateHandle[KEY_NOTE_TYPE] = event.noteType.name
                         editorDelegate.updateState { it.copy(
                             expandedNoteId = -1,
                             editingTitle = "",
@@ -716,6 +725,7 @@ class NotesViewModel @Inject constructor(
                 savedStateHandle.remove<Int>(KEY_EXPANDED_NOTE_ID)
                 savedStateHandle.remove<String>(KEY_EDITING_TITLE)
                 savedStateHandle.remove<String>(KEY_EDITING_CONTENT)
+                savedStateHandle.remove<String>(KEY_NOTE_TYPE)
             }
 
             is NotesEvent.AddChecklistItem -> {
@@ -1090,6 +1100,9 @@ class NotesViewModel @Inject constructor(
                     // If empty, add one empty item
                     val finalItems = if (checklistItems.isEmpty()) listOf(ChecklistItem(text = "", isChecked = false, position = 0)) else checklistItems
                     
+                    savedStateHandle[KEY_NOTE_TYPE] = NoteType.CHECKLIST.name
+                    savedStateHandle[KEY_EDITING_CONTENT] = ""
+
                     editorDelegate.updateState { it.copy(
                         editingNoteType = NoteType.CHECKLIST,
                         editingChecklist = finalItems,
@@ -1098,6 +1111,9 @@ class NotesViewModel @Inject constructor(
                 } else {
                     // Convert CHECKLIST to TEXT
                     val textContent = editState.value.editingChecklist.joinToString("\n") { it.text }
+                    savedStateHandle[KEY_NOTE_TYPE] = NoteType.TEXT.name
+                    savedStateHandle[KEY_EDITING_CONTENT] = textContent
+
                     editorDelegate.updateState { it.copy(
                         editingNoteType = NoteType.TEXT,
                         editingContent = TextFieldValue(textContent),
@@ -1432,6 +1448,7 @@ class NotesViewModel @Inject constructor(
                         editingLastEdited = currentTime
                     ) }
                     lastCreatedNoteId = currentNoteId.toInt()
+                    savedStateHandle[KEY_EXPANDED_NOTE_ID] = lastCreatedNoteId
                 } else {
                     // Update lastEdited time so UI (MoreOptionsSheet) shows it
                     editorDelegate.updateState { it.copy(

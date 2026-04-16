@@ -27,13 +27,15 @@ class NoteEditorDelegate @Inject constructor(
         private const val KEY_EDITING_TITLE = "editing_title"
         private const val KEY_EDITING_CONTENT = "editing_content"
         private const val KEY_EXPANDED_NOTE_ID = "expanded_note_id"
+        private const val KEY_NOTE_TYPE = "note_type"
     }
 
     private val _editState = MutableStateFlow(
         NotesEditState(
             editingTitle = savedStateHandle.get<String>(KEY_EDITING_TITLE) ?: "",
             editingContent = TextFieldValue(richTextController.parseMarkdownToAnnotatedString(savedStateHandle.get<String>(KEY_EDITING_CONTENT) ?: "")),
-            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID)
+            expandedNoteId = savedStateHandle.get<Int>(KEY_EXPANDED_NOTE_ID),
+            editingNoteType = savedStateHandle.get<String>(KEY_NOTE_TYPE)?.let { NoteType.valueOf(it) } ?: NoteType.TEXT
         )
     )
     val editState = _editState.asStateFlow()
